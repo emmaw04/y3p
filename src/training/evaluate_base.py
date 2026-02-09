@@ -27,7 +27,7 @@ from src.data import (
     COMPOUND_CLASSES,
     infer_feature_types,
 )
-from src.preprocessing import make_preprocessor_for_model   # <- instead of build_preprocessor
+from data.preprocessing import make_preprocessor_for_model   # <- instead of build_preprocessor
 from src.models import (
     ModelConfig,
     build_model_pipeline,

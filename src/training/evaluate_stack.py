@@ -25,7 +25,7 @@ from src.data import (
     infer_feature_types,
     COMPOUND_CLASSES,
 )
-from src.preprocessing import build_preprocessor, PreprocessConfig
+from data.preprocessing import build_preprocessor, PreprocessConfig
 from src.models import (
     ModelConfig,
     build_model_pipeline,
@@ -42,7 +42,7 @@ from src.models import (
 
 from src.data import build_feature_sequences
 from src.models import make_tcn_binary
-from src.preprocessing import make_preprocessor_for_model  # (you used this in evaluate_base.py)
+from data.preprocessing import make_preprocessor_for_model  # (you used this in evaluate_base.py)
 
 
 import pandas as pd

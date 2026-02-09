@@ -16,7 +16,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src.data import load_stage1_dataset, make_race_group_folds
-from src.preprocessing import build_preprocessor, PreprocessConfig
+from data.preprocessing import build_preprocessor, PreprocessConfig
 from src.models import ModelConfig, make_meta_binary_mlp
 
 
