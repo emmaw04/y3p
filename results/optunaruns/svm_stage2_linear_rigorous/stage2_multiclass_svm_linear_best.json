@@ -1,0 +1,21 @@
+{
+  "study": "stage2_multiclass_svm_linear",
+  "optimised_objective": "logloss",
+  "best_value_logloss_mean": 1.0480596751125295,
+  "best_params": {
+    "kernel": "linear",
+    "C": 0.007207205492599375
+  },
+  "n_trials": 100,
+  "n_splits": 8,
+  "holdout_race_ids_excluded": [
+    2,
+    24,
+    53,
+    73,
+    75
+  ],
+  "sample_frac": 1.0,
+  "max_races": 0,
+  "early_stopping_rounds": 20
+}

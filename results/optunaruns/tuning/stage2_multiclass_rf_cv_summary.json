@@ -1,0 +1,17 @@
+{
+  "study": "stage2_multiclass_rf",
+  "task": "multiclass",
+  "model": "rf",
+  "metrics": {
+    "accuracy_mean": 0.5956003635454645,
+    "accuracy_std": 0.0352210218570009,
+    "precision_macro_mean": 0.4497521458549613,
+    "precision_macro_std": 0.08392717189128762,
+    "recall_macro_mean": 0.4344555871625844,
+    "recall_macro_std": 0.08622779767440963,
+    "f1_macro_mean": 0.4306655002602785,
+    "f1_macro_std": 0.08192732607196396,
+    "logloss_mean": 0.9314837133825449,
+    "logloss_std": 0.06052234437815991
+  }
+}

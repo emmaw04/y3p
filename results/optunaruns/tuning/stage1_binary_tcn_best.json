@@ -1,0 +1,28 @@
+{
+  "study": "stage1_binary_tcn",
+  "optimised_objective": "logloss",
+  "best_value_logloss_mean": 0.19942002015879862,
+  "best_params": {
+    "seq_len": 12,
+    "filters": 64,
+    "kernel_size": 3,
+    "dropout": 0.10879485872574356,
+    "learning_rate": 0.00011662890273931399,
+    "batch_size": 512,
+    "focal_gamma": 1.0,
+    "focal_alpha": 0.5,
+    "pooling": "gap"
+  },
+  "n_trials": 3,
+  "n_splits": 5,
+  "holdout_race_ids_excluded": [
+    2,
+    24,
+    53,
+    73,
+    75
+  ],
+  "sample_frac": 0.6,
+  "max_races": 40,
+  "early_stopping_rounds": 20
+}

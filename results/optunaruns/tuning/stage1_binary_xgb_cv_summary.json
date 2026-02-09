@@ -1,0 +1,21 @@
+{
+  "study": "stage1_binary_xgb",
+  "task": "binary",
+  "model": "xgb",
+  "metrics": {
+    "accuracy_mean": 0.8295225539818907,
+    "accuracy_std": 0.0989136999744735,
+    "precision_mean": 0.14777303740100858,
+    "precision_std": 0.10148324595208931,
+    "recall_mean": 0.6750819270485481,
+    "recall_std": 0.022454871566795907,
+    "f1_mean": 0.22890959647696746,
+    "f1_std": 0.12126286279020006,
+    "roc_auc_mean": 0.8346045489977765,
+    "roc_auc_std": 0.07829044252185419,
+    "pr_auc_mean": 0.22130787320176104,
+    "pr_auc_std": 0.17062214297957107,
+    "logloss_mean": 0.4635708425024001,
+    "logloss_std": 0.24714567033067492
+  }
+}

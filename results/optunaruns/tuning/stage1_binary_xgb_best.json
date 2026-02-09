@@ -1,0 +1,29 @@
+{
+  "study": "stage1_binary_xgb",
+  "optimised_objective": "logloss",
+  "best_value_logloss_mean": 0.5344986488190473,
+  "best_params": {
+    "n_estimators": 345,
+    "max_depth": 8,
+    "learning_rate": 0.12106896936002161,
+    "subsample": 0.6849356442713105,
+    "colsample_bytree": 0.5090949803242604,
+    "min_child_weight": 2,
+    "reg_lambda": 0.026892128247368887,
+    "reg_alpha": 2.6237821581611893,
+    "gamma": 2.1597250932105787,
+    "scale_pos_weight": 26.646294743608884
+  },
+  "n_trials": 4,
+  "n_splits": 5,
+  "holdout_race_ids_excluded": [
+    2,
+    24,
+    53,
+    73,
+    75
+  ],
+  "sample_frac": 1.0,
+  "max_races": 0,
+  "early_stopping_rounds": 20
+}

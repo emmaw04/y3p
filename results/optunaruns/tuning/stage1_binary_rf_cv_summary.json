@@ -1,0 +1,21 @@
+{
+  "study": "stage1_binary_rf",
+  "task": "binary",
+  "model": "rf",
+  "metrics": {
+    "accuracy_mean": 0.97068437477147,
+    "accuracy_std": 0.0032129963734246468,
+    "precision_mean": 0.5215709506194828,
+    "precision_std": 0.15218099861513298,
+    "recall_mean": 0.10625363841008044,
+    "recall_std": 0.04953195798757416,
+    "f1_mean": 0.1655491482363202,
+    "f1_std": 0.057409583504709615,
+    "roc_auc_mean": 0.893947665074117,
+    "roc_auc_std": 0.01840574223876358,
+    "pr_auc_mean": 0.28782706294170995,
+    "pr_auc_std": 0.042019905264431896,
+    "logloss_mean": 0.09492298481284736,
+    "logloss_std": 0.008735117486876106
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "type": "keras_multiclass_ann",
+  "n_classes": 5,
+  "input_dim": 6,
+  "preprocessor": "vse_compound_ann_preprocessor.joblib",
+  "model": "vse_compound_ann_model.keras",
+  "uses_sparse_toarray": true
+}

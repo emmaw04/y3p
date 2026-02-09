@@ -1,0 +1,22 @@
+{
+  "X1_columns": [
+    "lapno",
+    "race_progress",
+    "position",
+    "fcy_status",
+    "pit_stops_so_far",
+    "tyre_change_pursuer",
+    "track_category",
+    "current_compound",
+    "lap_time",
+    "interval",
+    "tyre_age",
+    "close_ahead",
+    "race_track",
+    "rained_yet",
+    "is_raining",
+    "minutes_rain",
+    "fulfilled_second_compound",
+    "row_id"
+  ]
+}

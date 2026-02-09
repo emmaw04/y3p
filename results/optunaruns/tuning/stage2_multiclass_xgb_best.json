@@ -1,0 +1,25 @@
+{
+  "study": "stage2_multiclass_xgb",
+  "optimised_objective": "logloss",
+  "best_value_logloss_mean": 0.9273819558001266,
+  "best_params": {
+    "n_estimators": 4404,
+    "max_depth": 7,
+    "learning_rate": 0.20634912494467203,
+    "subsample": 0.9897570538738893,
+    "colsample_bytree": 0.5151275191150386,
+    "min_child_weight": 2,
+    "reg_lambda": 0.02591056758604487,
+    "reg_alpha": 2.2733958364357734,
+    "gamma": 0.4938415319283539
+  },
+  "n_trials": 100,
+  "n_splits": 5,
+  "holdout_race_ids_excluded": [
+    2,
+    24,
+    53,
+    73,
+    75
+  ]
+}

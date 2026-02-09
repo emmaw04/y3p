@@ -1,0 +1,7 @@
+{
+  "type": "keras_binary_ann",
+  "input_dim": 18,
+  "preprocessor": "ann_preprocessor.joblib",
+  "model": "ann_model.keras",
+  "uses_sparse_toarray": true
+}
