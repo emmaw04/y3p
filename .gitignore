@@ -12,15 +12,6 @@ __pycache__/
 *.h5
 *.pt
 
-# Data
-data/raw/
-data/processed/
-
-# Results
-results/
-optunaruns/
-runs/
-
 # OS
 .DS_Store
 
