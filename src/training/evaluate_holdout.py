@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 from joblib import load
 
-from src.data import HOLDOUT_RACE_IDS
+from src.data.data import HOLDOUT_RACE_IDS
 
 # Keras (ANN + TCN)
 import tensorflow as tf
@@ -148,8 +148,7 @@ def _keras_predict_proba(model: tf.keras.Model, X_np: np.ndarray, batch_size: in
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage1_csv", required=True, help="Path to output1.csv")
-    ap.add_argument(
-        "--artifacts_root",
+    ap.add_argument("--artifacts_root",
         required=True,
         help="Root folder containing stage1_binary/artifacts/",
     )

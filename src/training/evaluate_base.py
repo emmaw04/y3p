@@ -5,8 +5,6 @@ import argparse
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
-from src.data import build_feature_sequences
-from src.models import make_tcn_binary
 from sklearn.model_selection import GroupKFold
 from sklearn.base import clone
 
@@ -23,20 +21,22 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import StratifiedKFold
 
-from src.data import (
+from src.data.data import (
     COMPOUND_CLASSES,
     infer_feature_types,
+    build_prob_sequences_4lap,
+    build_feature_sequences,
 )
 from data.preprocessing import make_preprocessor_for_model   # <- instead of build_preprocessor
-from src.models import (
+from src.models.models import (
     ModelConfig,
     build_model_pipeline,
     get_binary_base_learners,
     get_multiclass_base_learners,
+    make_ann_binary_vse_ffnn, 
+    make_lstm_binary_head_vse,
+    make_tcn_binary
 )
-from src.data import build_prob_sequences_4lap
-from src.models import make_ann_binary_vse_ffnn, make_lstm_binary_head_vse
-
 
 # -----------------------------
 # Metrics
@@ -488,7 +488,7 @@ def main():
         if args.data_stage2 is None:
             raise ValueError("For --stage2 you must pass --data_stage2")
 
-        from src.data import load_stage2_dataset, get_stage2_Xy
+        from src.data.data import load_stage2_dataset, get_stage2_Xy
         df = load_stage2_dataset(args.data_stage2, strict=True)
         X, y = get_stage2_Xy(df)
 
@@ -499,7 +499,7 @@ def main():
         if args.data_stage1 is None:
             raise ValueError("For stage1 you must pass --data_stage1")
 
-        from src.data import load_stage1_dataset, get_stage1_xy
+        from src.data.data import load_stage1_dataset, get_stage1_xy
         df = load_stage1_dataset(args.data_stage1)
         X, y = get_stage1_xy(df)
 

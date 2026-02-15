@@ -21,15 +21,15 @@ from sklearn.metrics import (
 )
 
 
-from src.data import (
+from src.data.data import (
     infer_feature_types, COMPOUND_CLASSES,
     load_stage1_dataset, load_stage2_dataset,
     get_stage1_xy, get_stage2_xy,
     encode_y_compound,
     make_race_group_folds,  # FoldBundle(folds=[(tr_idx, va_idx), ...], fold_race_ids=[...])
+    build_feature_sequences
 )
-from src.preprocessing import make_preprocessor_for_model
-from src.data import build_feature_sequences
+from src.data.preprocessing import make_preprocessor_for_model
 from sklearn.svm import SVC, LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 
