@@ -340,20 +340,26 @@ def build_meta_table_stage1(
       race_id, row_id (ID only), y_pit,
       p_svm, p_rf, p_xgb, p_ann,
       tcn_proba, tcn_effective_len,
-      raw/context features from X1
+      raw/context features from X1 (with ID/label columns stripped out).
     """
-    # Tabular base OOF
+    # --- Base OOF probs (tabular) ---
     base_keys = ["svm", "rf", "xgb", "ann"]
     df_base_probs, used_base = collect_oof_base_probs_binary(
         X1, y1, folds_base, cfg=cfg, base_keys=base_keys, verbose=verbose
     )
 
-    # TCN OOF
+    # --- Base OOF probs (TCN) ---
     tcn_oof, tcn_eff_scaled = collect_oof_tcn_binary(
-        df1, folds_base, cfg=cfg, seq_len=seq_len_tcn, pad_left=True, add_timestep_mask=True, verbose=verbose
+        df1,
+        folds_base,
+        cfg=cfg,
+        seq_len=seq_len_tcn,
+        pad_left=True,
+        add_timestep_mask=True,
+        verbose=verbose,
     )
 
-    # Meta-table core
+    # --- Core meta-table (IDs + label) ---
     meta = pd.DataFrame(
         {
             "race_id": df1["race_id"].to_numpy(),
@@ -362,29 +368,30 @@ def build_meta_table_stage1(
         }
     )
 
-    # Add probs
+    # --- Add OOF prob features ---
     meta = pd.concat([meta, df_base_probs.reset_index(drop=True)], axis=1)
     meta["tcn_proba"] = tcn_oof.astype(float)
     meta["tcn_effective_len"] = tcn_eff_scaled.astype(float)
 
-    # Add raw/context features (X1 should already exclude label/IDs)
-    meta = pd.concat([meta, X1.reset_index(drop=True)], axis=1)
+    # --- Add raw/context features, but HARD DROP anything that must not appear / duplicate ---
+    X1_safe = X1.copy()
+    X1_safe = X1_safe.drop(columns=["race_id", "row_id", "y_pit", "driver_id"], errors="ignore")
+    meta = pd.concat([meta, X1_safe.reset_index(drop=True)], axis=1)
 
-    # Hard safety: remove forbidden features if they somehow exist
-    forbidden = {"y_pit", "row_id", "race_id", "driver_id"}
-    leak_cols = [c for c in meta.columns if c in {"driver_id"}]
-    if leak_cols:
-        meta = meta.drop(columns=leak_cols)
+    # --- Sanity checks (fail fast BEFORE saving parquet) ---
+    if meta.columns.duplicated().any():
+        dupes = meta.columns[meta.columns.duplicated()].tolist()
+        raise RuntimeError(f"Duplicate columns in meta table (fix feature sources): {dupes}")
 
-    # sanity checks
     if "y_pit" not in meta.columns:
         raise RuntimeError("meta-table missing y_pit")
     if "race_id" not in meta.columns:
         raise RuntimeError("meta-table missing race_id")
-    if any(c in meta.columns for c in ["driver_id"]):
+    if "row_id" not in meta.columns:
+        raise RuntimeError("meta-table missing row_id")
+    if "driver_id" in meta.columns:
         raise RuntimeError("driver_id leaked into meta-table")
 
-    # Ensure required base cols exist (warn if not)
     expected_base = [f"p_{k}" for k in used_base]
     missing = [c for c in expected_base if c not in meta.columns]
     if missing:
@@ -595,6 +602,13 @@ def main() -> None:
     ap.add_argument("--seq_len_tcn", type=int, default=8)
     ap.add_argument("--recompute_base_oof", action="store_true", help="Force recomputation of PART A base OOF cache")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--smoke_test", action="store_true", help="Run a quick 1-fold smoke test (base + meta).")
+    ap.add_argument(
+        "--smoke_schema_only",
+        action="store_true",
+        help="Fast smoke test: build a tiny meta table (no training) and try writing parquet.",
+    )
+
     args = ap.parse_args()
 
     out_root = _ensure_dir(Path(args.outdir) / args.run_name)
@@ -613,6 +627,49 @@ def main() -> None:
     vprint(args.verbose, "[ablation_eval] loading stage1 dataset...")
     df1 = load_stage1_dataset(args.data_stage1)
     X1, y1 = get_stage1_xy(df1)
+
+    if args.smoke_schema_only:
+        print("[smoke_schema_only] Running fast schema/parquet smoke test (NO training).")
+
+        # pick 2 non-holdout races to keep it tiny
+        all_races = sorted(df1["race_id"].unique().tolist())
+        smoke_races = [r for r in all_races if int(r) not in set(map(int, HOLDOUT_RACE_IDS))][:2]
+        df_smoke = df1[df1["race_id"].isin(smoke_races)].copy()
+
+        # cap rows hard so it’s always fast
+        df_smoke = df_smoke.head(2000).reset_index(drop=True)
+
+        X_smoke, y_smoke = get_stage1_xy(df_smoke)
+
+        # IMPORTANT: strip any IDs/labels so we can't create duplicates
+        X_smoke_safe = X_smoke.drop(columns=["race_id", "row_id", "y_pit", "driver_id"], errors="ignore")
+
+        # make dummy prob cols (no training)
+        meta_smoke = pd.DataFrame(
+            {
+                "race_id": df_smoke["race_id"].to_numpy(),
+                "row_id": df_smoke["row_id"].to_numpy() if "row_id" in df_smoke.columns else np.arange(len(df_smoke)),
+                "y_pit": y_smoke.to_numpy().astype(int),
+                "p_svm": np.zeros(len(df_smoke), dtype=float),
+                "p_rf": np.zeros(len(df_smoke), dtype=float),
+                "p_xgb": np.zeros(len(df_smoke), dtype=float),
+                "p_ann": np.zeros(len(df_smoke), dtype=float),
+                "tcn_proba": np.zeros(len(df_smoke), dtype=float),
+                "tcn_effective_len": np.zeros(len(df_smoke), dtype=float),
+            }
+        )
+        meta_smoke = pd.concat([meta_smoke, X_smoke_safe.reset_index(drop=True)], axis=1)
+
+        # fail fast if duplicates exist (this is what killed your run)
+        if meta_smoke.columns.duplicated().any():
+            dupes = meta_smoke.columns[meta_smoke.columns.duplicated()].tolist()
+            raise RuntimeError(f"[smoke_schema_only] Duplicate columns detected: {dupes}")
+
+        smoke_path = out_root / "reports" / "smoke_meta_table.parquet"
+        meta_smoke.to_parquet(smoke_path, index=False)
+        print(f"[smoke_schema_only] OK: wrote {smoke_path} with {len(meta_smoke)} rows and {meta_smoke.shape[1]} cols.")
+        return
+
 
     n_races = int(df1["race_id"].nunique())
     vprint(args.verbose, f"[ablation_eval] df1 rows={len(df1)} unique_races={n_races}")
@@ -699,6 +756,9 @@ def main() -> None:
     # Use make_race_group_folds on the meta table as well (race-wise)
     fb_meta = make_race_group_folds(meta_df[["race_id", "y_pit"]].copy(), target_col="y_pit", n_splits=args.n_splits, seed=args.seed)
     folds_meta = fb_meta.folds
+    if args.smoke_test:
+        folds_base = folds_base[:1]
+        folds_meta = folds_meta[:1]
 
     # Ablation specs
     ablation_specs = make_ablation_specs(
