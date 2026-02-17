@@ -27,7 +27,7 @@ from src.data.data import (
     build_prob_sequences_4lap,
     build_feature_sequences,
 )
-from data.preprocessing import make_preprocessor_for_model   # <- instead of build_preprocessor
+from src.data.preprocessing import make_preprocessor_for_model   # <- instead of build_preprocessor
 from src.models.models import (
     ModelConfig,
     build_model_pipeline,
@@ -35,8 +35,15 @@ from src.models.models import (
     get_multiclass_base_learners,
     make_ann_binary_vse_ffnn, 
     make_lstm_binary_head_vse,
-    make_tcn_binary
+    make_tcn_binary,
 )
+from src.models.models import (
+    make_tcn_binary,
+    make_gru_binary,
+    make_lstm_binary,
+    make_tcn_gru_binary,
+)
+
 
 # -----------------------------
 # Metrics
@@ -388,13 +395,19 @@ def run_cv_tcn(
         Xt_all = Xt_all.astype(np.float32)
 
         # Build sequences over the whole race timeline
-        X_seq, y_seq, idx_last, seq_idx = build_feature_sequences(
-            keys, Xt_all, y_full, seq_len=seq_len
+        X_seq, y_seq, idx_last, seq_idx, eff_len = build_feature_sequences(
+            keys, Xt_all, y_full,
+            seq_len=seq_len,
+            pad_left=True,
+            add_timestep_mask=True,
         )
 
         # NO LEAKAGE: only keep sequences whose ALL timesteps are inside the fold split
-        tr_mask = np.all(np.isin(seq_idx, tr_idx), axis=1)
-        va_mask = np.all(np.isin(seq_idx, va_idx), axis=1)
+        def _all_in_or_pad(seq_idx: np.ndarray, allowed_idx: np.ndarray) -> np.ndarray:
+            return np.all((seq_idx == -1) | np.isin(seq_idx, allowed_idx), axis=1)
+
+        tr_mask = _all_in_or_pad(seq_idx, tr_idx)
+        va_mask = _all_in_or_pad(seq_idx, va_idx)
 
         X_seq_tr, y_seq_tr = X_seq[tr_mask], y_seq[tr_mask]
         X_seq_va, y_seq_va = X_seq[va_mask], y_seq[va_mask]
@@ -451,6 +464,115 @@ def run_cv_tcn(
     }
     return fold_metrics, summary
 
+SEQ_MODEL_FACTORIES = {
+    "tcn": lambda cfg, seq_len: make_tcn_binary(cfg, seq_len=seq_len),
+    "gru": lambda cfg, seq_len: make_gru_binary(cfg),
+    "lstm": lambda cfg, seq_len: make_lstm_binary(cfg),
+    "tcn_gru": lambda cfg, seq_len: make_tcn_gru_binary(cfg),
+}
+
+def run_cv_seq(
+    df,
+    *,
+    seq_model: str,
+    cfg: ModelConfig,
+    n_splits: int,
+    seed: int,
+    threshold: float,
+    save_models: bool,
+    outdir: Path,
+    seq_len: int = 8,
+):
+    df = df.reset_index(drop=True)
+    y_full = df["y_pit"].astype(int)
+    keys = df[["race_id", "driver_id", "lapno"]].copy()
+
+    X_tab = df.drop(columns=["y_pit", "y_compound", "race_id", "driver_id"], errors="ignore").copy()
+    num_cols, cat_cols = infer_feature_types(X_tab)
+
+    # IMPORTANT: use the SAME preprocessor as TCN for all seq models
+    base_pre = make_preprocessor_for_model("tcn", num_cols=num_cols, cat_cols=cat_cols)
+
+    groups = (df["race_id"].astype(str) + "_" + df["driver_id"].astype(str)).to_numpy()
+    folds = _make_group_folds(groups, n_splits=n_splits)
+
+    fold_metrics = []
+    oof_pred = np.full(len(df), np.nan, dtype=float)
+
+    if seq_model not in SEQ_MODEL_FACTORIES:
+        raise ValueError(f"Unknown seq_model={seq_model}. Choose from {list(SEQ_MODEL_FACTORIES)}")
+
+    for fold, (tr_idx, va_idx) in enumerate(folds):
+        X_tr, y_tr = X_tab.iloc[tr_idx], y_full.iloc[tr_idx]
+
+        pre = clone(base_pre)
+        pre.fit(X_tr, y_tr)
+
+        Xt_all = pre.transform(X_tab)
+        if hasattr(Xt_all, "toarray"):
+            Xt_all = Xt_all.toarray()
+        Xt_all = Xt_all.astype(np.float32)
+
+        X_seq, y_seq, idx_last, seq_idx, eff_len = build_feature_sequences(
+            keys, Xt_all, y_full,
+            seq_len=seq_len,
+            pad_left=True,
+            add_timestep_mask=True,
+        )
+
+        def _all_in_or_pad(seq_idx, allowed_idx):
+            return np.all((seq_idx == -1) | np.isin(seq_idx, allowed_idx), axis=1)
+
+        tr_mask = _all_in_or_pad(seq_idx, tr_idx)
+        va_mask = _all_in_or_pad(seq_idx, va_idx)
+
+        X_seq_tr, y_seq_tr = X_seq[tr_mask], y_seq[tr_mask]
+        X_seq_va, y_seq_va = X_seq[va_mask], y_seq[va_mask]
+        idx_last_va = idx_last[va_mask]
+
+        if len(y_seq_tr) == 0 or len(y_seq_va) == 0:
+            print(f"[fold {fold}] skipping (no full sequences in train/valid after leakage filter)")
+            continue
+
+        n_pos = int(np.sum(y_seq_tr == 1))
+        n_neg = int(np.sum(y_seq_tr == 0))
+        if n_pos == 0:
+            print(f"[fold {fold}] skipping (no positives in training sequences)")
+            continue
+
+        pos_w = min(20.0, float(n_neg / n_pos))
+        class_w = {0: 1.0, 1: pos_w}
+
+        model = SEQ_MODEL_FACTORIES[seq_model](cfg, seq_len)
+        model.fit(X_seq_tr, y_seq_tr, class_weight=class_w)
+
+        proba_pos = model.predict_proba(X_seq_va)[:, 1]
+        oof_pred[idx_last_va] = proba_pos
+
+        m = compute_binary_metrics(y_seq_va, proba_pos, threshold=threshold)
+        row = {"fold": int(fold), "n_valid_seq": int(len(y_seq_va)), "pos_weight": float(pos_w), **m}
+        fold_metrics.append(row)
+
+        if save_models:
+            dump(pre, outdir / f"{seq_model}_pre_fold_{fold}.joblib")
+            model_path = outdir / f"{seq_model}_model_fold_{fold}.keras"
+            model.model_.save(model_path)
+
+        shown = " ".join(f"{k}={row[k]:.4f}" for k in ["accuracy","precision","recall","f1","roc_auc","pr_auc","logloss"])
+        print(f"[{seq_model} fold {fold}] {shown} (n_valid_seq={row['n_valid_seq']} pos_w={pos_w:.2f})")
+
+    np.save(outdir / "oof_pred_proba_pos.npy", oof_pred)
+
+    summary = {
+        "task": "binary",
+        "model": seq_model,
+        "seq_len": int(seq_len),
+        "n_splits": len(folds),
+        "seed": seed,
+        "threshold": threshold,
+        **summarize_fold_metrics(fold_metrics, ["accuracy","precision","recall","f1","roc_auc","pr_auc","logloss"]),
+    }
+    return fold_metrics, summary
 
 
 # -----------------------------
@@ -466,7 +588,7 @@ def main():
     ap.add_argument("--task", choices=["binary", "multiclass"], required=True)
     ap.add_argument("--model", required=True, help="Model name (e.g., svm, rf, xgb, ann, hybrid_vse, tcn)")
     ap.add_argument("--stage2", action="store_true", help="Run stage-2 compound task on stage2 dataset")
-
+    
     ap.add_argument("--outdir", default="runs/base", help="Base output directory")
     ap.add_argument("--n_splits", type=int, default=5)
     ap.add_argument("--seed", type=int, default=42)
@@ -488,9 +610,9 @@ def main():
         if args.data_stage2 is None:
             raise ValueError("For --stage2 you must pass --data_stage2")
 
-        from src.data.data import load_stage2_dataset, get_stage2_Xy
+        from src.data.data import load_stage2_dataset, get_stage2_xy
         df = load_stage2_dataset(args.data_stage2, strict=True)
-        X, y = get_stage2_Xy(df)
+        X, y = get_stage2_xy(df)
 
         args.n_classes = len(COMPOUND_CLASSES)
         (outdir / "classes.json").write_text(json.dumps({"classes": list(COMPOUND_CLASSES)}, indent=2))
@@ -523,9 +645,10 @@ def main():
         print(json.dumps(summary, indent=2))
         return
 
-    if (not args.stage2) and args.task == "binary" and args.model.lower() == "tcn":
-        fold_metrics, summary = run_cv_tcn(
+    if (not args.stage2) and args.task == "binary" and args.model.lower() in {"tcn","gru","lstm","tcn_gru"}:
+        fold_metrics, summary = run_cv_seq(
             df,
+            seq_model=args.model.lower(),
             cfg=ModelConfig(random_state=args.seed),
             n_splits=args.n_splits,
             seed=args.seed,
@@ -538,6 +661,7 @@ def main():
         (outdir / "summary.json").write_text(json.dumps(summary, indent=2))
         print(json.dumps(summary, indent=2))
         return
+
 
     # -----------------------
     # Generic base evaluation
