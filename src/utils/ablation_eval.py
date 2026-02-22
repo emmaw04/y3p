@@ -1,29 +1,42 @@
 #!/usr/bin/env python3
 # src/utils/ablation_eval.py
 """
-Ablation evaluation for Stage-1 (binary pit/no-pit) stacked ensemble using
-a rigorous two-level CV procedure:
+Ablation evaluation for Stage-1 (binary pit/no-pit) using a rigorous two-level CV procedure.
 
-PART A (Base OOF):
-  - 5-fold race-wise CV -> generate OOF probabilities for base learners
-    (svm, rf, xgb, ann) + TCN (tcn_proba, tcn_effective_len).
-  - Build a meta-table with:
-      race_id, row_id (ID only), y_pit (label),
-      p_* base OOF probs, tcn_* OOF probs,
-      raw/context features (from get_stage1_xy()).
+MODE A: META (stacked ensemble ablation)
+  PART A (Base OOF):
+    - 5-fold race-wise CV -> generate OOF probabilities for base learners
+      (svm, rf, xgb, ann) + TCN (tcn_proba, tcn_effective_len).
+    - Build a meta-table with:
+        race_id, row_id (ID only), y_pit (label),
+        p_* base OOF probs, tcn_* OOF probs,
+        raw/context features (from get_stage1_xy()).
 
-PART B (Meta OOF + Ablation):
-  - 5-fold race-wise CV on the meta-table.
+  PART B (Meta OOF + Ablation):
+    - 5-fold race-wise CV on the meta-table.
+    - For each fold and each ablation setting:
+        * train meta model (XGB) on meta-train rows ONLY
+        * tune threshold on meta-train ONLY (maximize F1)
+        * evaluate on meta-test ONLY
+    - Report fold-level metrics + aggregated deltas vs baseline.
+
+MODE B: SEQ (single sequence model ablation: TCN / TCN-GRU)
+  - 5-fold race-wise CV on lap rows.
   - For each fold and each ablation setting:
-      * train meta model (XGB) on meta-train rows ONLY
-      * tune threshold on meta-train ONLY (maximize F1)
-      * evaluate on meta-test ONLY
-  - Report fold-level metrics + aggregated deltas vs baseline.
+      * fit sequence model on train sequences ONLY
+      * tune threshold on train sequences ONLY
+      * evaluate on test sequences ONLY
+  - Ablation is applied to the *sequence input tensors* by zeroing selected feature dims.
 
-Outputs:
-  1) ablation_results.csv (fold-level)
-  2) ablation_summary.csv (aggregated across folds; deltas vs baseline)
-  3) prints top-5 most damaging ablations by PR-AUC drop and LogLoss increase
+Why "zeroing"?
+  - After preprocessing, we no longer have raw columns; we have transformed feature dims.
+  - Zeroing selected dims is a clean “remove this information” intervention.
+
+Outputs (for each mode):
+  - reports/<mode>_ablation_results.csv (fold-level)
+  - reports/<mode>_ablation_summary.csv (aggregated; deltas vs baseline)
+  - reports/<mode>_ablation_specs.json
+  - reports/<mode>_feature_sets.json
 """
 
 from __future__ import annotations
@@ -32,11 +45,10 @@ import argparse
 import json
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional, Set
 
 import numpy as np
 import pandas as pd
-from joblib import dump
 from sklearn.base import clone
 from sklearn.metrics import (
     average_precision_score,
@@ -89,7 +101,6 @@ def _write_json(path: Path, obj: Any) -> None:
 # Metrics + threshold tuning
 # -----------------------------
 def _safe_logloss(y_true: np.ndarray, proba_pos: np.ndarray) -> float:
-    # avoid logloss blow-ups on exact 0/1
     p = np.clip(proba_pos.astype(float), 1e-15, 1 - 1e-15)
     return float(log_loss(y_true, p, labels=[0, 1]))
 
@@ -105,26 +116,17 @@ def tune_threshold_max_f1(
     *,
     grid: Optional[np.ndarray] = None,
 ) -> float:
-    """
-    Tune threshold to maximize F1 on TRAIN ONLY.
-    Deterministic, same procedure for all ablations.
-
-    grid default: 0.01..0.99 step 0.01
-    """
     if grid is None:
         grid = np.linspace(0.01, 0.99, 99)
 
     best_t = 0.5
     best_f1 = -1.0
-
-    # vectorized-ish: still cheap with 99 thresholds
     for t in grid:
         y_pred = (proba_pos >= t).astype(int)
         f1 = f1_score(y_true, y_pred, zero_division=0)
         if f1 > best_f1:
             best_f1 = f1
             best_t = float(t)
-
     return best_t
 
 
@@ -136,7 +138,6 @@ def compute_fold_metrics(
 ) -> Dict[str, float]:
     y_true = y_true.astype(int)
     proba_pos = proba_pos.astype(float)
-
     y_pred = (proba_pos >= threshold).astype(int)
 
     pr_auc = float(average_precision_score(y_true, proba_pos))
@@ -157,7 +158,7 @@ def compute_fold_metrics(
 
 
 # -----------------------------
-# PART A: Base-level OOF probs
+# PART A: Base-level OOF probs (META mode)
 # -----------------------------
 def collect_oof_base_probs_binary(
     X: pd.DataFrame,
@@ -168,14 +169,7 @@ def collect_oof_base_probs_binary(
     base_keys: List[str],
     verbose: bool = False,
 ) -> Tuple[pd.DataFrame, List[str]]:
-    """
-    Generate base OOF probabilities for tabular base learners, race-wise folds.
-    Returns:
-      df_probs: columns p_<name>
-      used_names: list of base models in order
-    """
     base_all = get_binary_base_learners(cfg)
-    # keep only requested and present
     base_names = [k for k in base_keys if k in base_all]
     if not base_names:
         raise ValueError(f"No requested base learners found. Requested={base_keys}, available={list(base_all.keys())}")
@@ -183,13 +177,12 @@ def collect_oof_base_probs_binary(
     n = len(y)
     out = np.zeros((n, len(base_names)), dtype=float)
 
-    # infer once on full X for consistent preprocessor config; make_preprocessor_for_model uses col lists
     num_cols, cat_cols = infer_feature_types(X)
 
-    vprint(verbose, f"[PART A][tabular oof] n={n} folds={len(folds)} base={base_names}")
+    vprint(verbose, f"[META][PART A][tabular oof] n={n} folds={len(folds)} base={base_names}")
 
     for fold_id, (tr_idx, te_idx) in enumerate(folds):
-        vprint(verbose, f"[PART A][tabular oof][fold {fold_id}] train={len(tr_idx)} test={len(te_idx)}")
+        vprint(verbose, f"[META][PART A][tabular oof][fold {fold_id}] train={len(tr_idx)} test={len(te_idx)}")
         X_tr, y_tr = X.iloc[tr_idx], y.iloc[tr_idx]
         X_te = X.iloc[te_idx]
 
@@ -197,24 +190,12 @@ def collect_oof_base_probs_binary(
             vprint(verbose, f"  -> fit base='{name}'")
             est = clone(base_all[name])
 
-            # model-specific preprocessor (keeps behavior aligned with your evaluate_stack.py)
-            if name == "ann":
-                pre = make_preprocessor_for_model("ann", num_cols=num_cols, cat_cols=cat_cols)
-            elif name == "svm":
-                pre = make_preprocessor_for_model("svm", num_cols=num_cols, cat_cols=cat_cols)
-            elif name == "rf":
-                pre = make_preprocessor_for_model("rf", num_cols=num_cols, cat_cols=cat_cols)
-            elif name == "xgb":
-                pre = make_preprocessor_for_model("xgb", num_cols=num_cols, cat_cols=cat_cols)
-            else:
-                pre = make_preprocessor_for_model(name, num_cols=num_cols, cat_cols=cat_cols)
-
+            pre = make_preprocessor_for_model(name, num_cols=num_cols, cat_cols=cat_cols)
             pipe = build_model_pipeline(pre, est)
             pipe.fit(X_tr, y_tr)
 
             proba_pos = pipe.predict_proba(X_te)[:, 1].astype(float)
             out[te_idx, j] = proba_pos
-
             vprint(verbose, f"     wrote p_{name}: mean={float(np.mean(proba_pos)):.6f}")
 
     df_probs = pd.DataFrame(out, columns=[f"p_{n}" for n in base_names])
@@ -230,26 +211,22 @@ def collect_oof_tcn_binary(
     pad_left: bool = True,
     add_timestep_mask: bool = True,
     verbose: bool = False,
+    model_kind: str = "tcn",
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Generate OOF TCN predictions:
-      - trains TCN per fold on train races only
-      - predicts on test races only
-      - writes predictions to the "last timestep row" (idx_last) for each sequence,
-        which corresponds to each lap row in df1.
-
-    Returns:
-      tcn_oof_proba: (N,) float
-      tcn_eff_scaled: (N,) float in [0,1] (effective_len / seq_len)
+    OOF predictions from a sequence model. model_kind:
+      - "tcn": uses make_tcn_binary(cfg, seq_len)
+      - "tcn_gru": tries to call make_tcn_gru_binary(cfg, seq_len) if present
+                  (you must implement/import it in src.models.models).
     """
     y_full = df1["y_pit"].astype(int)
     keys = df1[["race_id", "driver_id", "lapno"]].copy()
 
-    # features for preprocessing (exclude label + identifiers)
     X_tab = df1.drop(
         columns=["y_pit", "y_compound", "race_id", "driver_id", "row_id"],
         errors="ignore",
     ).copy()
+
     num_cols, cat_cols = infer_feature_types(X_tab)
     pre_proto = make_preprocessor_for_model("tcn", num_cols=num_cols, cat_cols=cat_cols)
 
@@ -257,10 +234,10 @@ def collect_oof_tcn_binary(
     oof_pred = np.full(N, np.nan, dtype=float)
     oof_eff_len = np.zeros(N, dtype=float)
 
-    vprint(verbose, f"[PART A][tcn oof] N={N} folds={len(folds)} seq_len={seq_len} pad_left={pad_left} tmask={add_timestep_mask}")
+    vprint(verbose, f"[SEQ-OFF][{model_kind}] N={N} folds={len(folds)} seq_len={seq_len} pad_left={pad_left} tmask={add_timestep_mask}")
 
     for fold_id, (tr_idx, te_idx) in enumerate(folds):
-        vprint(verbose, f"[PART A][tcn oof][fold {fold_id}] train={len(tr_idx)} test={len(te_idx)}")
+        vprint(verbose, f"[SEQ-OFF][{model_kind}][fold {fold_id}] train={len(tr_idx)} test={len(te_idx)}")
 
         X_tr, y_tr = X_tab.iloc[tr_idx], y_full.iloc[tr_idx]
 
@@ -281,7 +258,7 @@ def collect_oof_tcn_binary(
             add_timestep_mask=add_timestep_mask,
         )
 
-        # allow padded timesteps (-1) in membership checks
+        # membership filtering
         if pad_left:
             tr_mask = np.all((seq_idx == -1) | np.isin(seq_idx, tr_idx), axis=1)
             te_mask = np.all((seq_idx == -1) | np.isin(seq_idx, te_idx), axis=1)
@@ -295,7 +272,7 @@ def collect_oof_tcn_binary(
         eff_len_te = eff_len[te_mask]
 
         if len(y_seq_tr) == 0 or len(X_seq_te) == 0:
-            vprint(verbose, f"[PART A][tcn oof][fold {fold_id}] skipping (no sequences after filtering)")
+            vprint(verbose, f"[SEQ-OFF][{model_kind}][fold {fold_id}] skipping (no sequences after filtering)")
             continue
 
         n_pos = int(np.sum(y_seq_tr == 1))
@@ -304,22 +281,27 @@ def collect_oof_tcn_binary(
             const_p = 1.0 if n_neg == 0 else 0.0
             oof_pred[idx_last_te] = const_p
             oof_eff_len[idx_last_te] = eff_len_te
-            vprint(verbose, f"[PART A][tcn oof][fold {fold_id}] degenerate y -> const_p={const_p}")
+            vprint(verbose, f"[SEQ-OFF][{model_kind}][fold {fold_id}] degenerate y -> const_p={const_p}")
             continue
 
         pos_w = min(20.0, float(n_neg / n_pos))
         class_w = {0: 1.0, 1: pos_w}
 
-        tcn = make_tcn_binary(cfg, seq_len=seq_len)
-        tcn.fit(X_seq_tr, y_seq_tr, class_weight=class_w)
+        if model_kind == "tcn":
+            model = make_tcn_binary(cfg, seq_len=seq_len)
+        elif model_kind == "tcn_gru":
+            from src.models.models import make_tcn_gru_binary  # type: ignore
+            model = make_tcn_gru_binary(cfg)  # seq_len inferred from X shape by SciKeras
+        else:
+            raise ValueError(f"Unknown model_kind={model_kind}")
 
-        proba_pos = tcn.predict_proba(X_seq_te)[:, 1].astype(float)
+        model.fit(X_seq_tr, y_seq_tr, class_weight=class_w)
+        proba_pos = model.predict_proba(X_seq_te)[:, 1].astype(float)
+
         oof_pred[idx_last_te] = proba_pos
         oof_eff_len[idx_last_te] = eff_len_te
+        vprint(verbose, f"[SEQ-OFF][{model_kind}][fold {fold_id}] wrote {len(idx_last_te)} preds (pos_w={pos_w:.2f})")
 
-        vprint(verbose, f"[PART A][tcn oof][fold {fold_id}] wrote {len(idx_last_te)} preds (pos_w={pos_w:.2f})")
-
-    # fill any NaNs robustly (should be none with pad_left=True)
     oof_pred = np.nan_to_num(oof_pred, nan=0.0)
     eff_scaled = oof_eff_len / float(seq_len)
     return oof_pred, eff_scaled
@@ -335,20 +317,11 @@ def build_meta_table_stage1(
     seq_len_tcn: int,
     verbose: bool = False,
 ) -> pd.DataFrame:
-    """
-    Builds meta-table with:
-      race_id, row_id (ID only), y_pit,
-      p_svm, p_rf, p_xgb, p_ann,
-      tcn_proba, tcn_effective_len,
-      raw/context features from X1 (with ID/label columns stripped out).
-    """
-    # --- Base OOF probs (tabular) ---
     base_keys = ["svm", "rf", "xgb", "ann"]
     df_base_probs, used_base = collect_oof_base_probs_binary(
         X1, y1, folds_base, cfg=cfg, base_keys=base_keys, verbose=verbose
     )
 
-    # --- Base OOF probs (TCN) ---
     tcn_oof, tcn_eff_scaled = collect_oof_tcn_binary(
         df1,
         folds_base,
@@ -357,9 +330,9 @@ def build_meta_table_stage1(
         pad_left=True,
         add_timestep_mask=True,
         verbose=verbose,
+        model_kind="tcn",
     )
 
-    # --- Core meta-table (IDs + label) ---
     meta = pd.DataFrame(
         {
             "race_id": df1["race_id"].to_numpy(),
@@ -368,17 +341,13 @@ def build_meta_table_stage1(
         }
     )
 
-    # --- Add OOF prob features ---
     meta = pd.concat([meta, df_base_probs.reset_index(drop=True)], axis=1)
     meta["tcn_proba"] = tcn_oof.astype(float)
     meta["tcn_effective_len"] = tcn_eff_scaled.astype(float)
 
-    # --- Add raw/context features, but HARD DROP anything that must not appear / duplicate ---
-    X1_safe = X1.copy()
-    X1_safe = X1_safe.drop(columns=["race_id", "row_id", "y_pit", "driver_id"], errors="ignore")
+    X1_safe = X1.copy().drop(columns=["race_id", "row_id", "y_pit", "driver_id"], errors="ignore")
     meta = pd.concat([meta, X1_safe.reset_index(drop=True)], axis=1)
 
-    # --- Sanity checks (fail fast BEFORE saving parquet) ---
     if meta.columns.duplicated().any():
         dupes = meta.columns[meta.columns.duplicated()].tolist()
         raise RuntimeError(f"Duplicate columns in meta table (fix feature sources): {dupes}")
@@ -401,7 +370,55 @@ def build_meta_table_stage1(
 
 
 # -----------------------------
-# PART B: Meta CV ablation eval
+# Feature groups (your engineered intent)
+# -----------------------------
+def build_stage1_feature_groups(cols: List[str]) -> Tuple[Dict[str, List[str]], List[str]]:
+    """
+    Returns (raw_groups, engineered_cols_present)
+    """
+    colset = set(cols)
+
+    engineered_all = [
+        "fcy_status",
+        "track_category",
+        "tyre_change_pursuer",
+        "close_ahead",
+        "gap_behind_s",
+        "n_cars_within_5s_ahead",
+        "tyre_age_diff_to_ahead",
+        "rejoin_gap_ahead_est_s",
+        "rejoin_gap_behind_est_s",
+    ]
+    engineered_all = [c for c in engineered_all if c in colset]
+
+    undercut_defence = [c for c in ["tyre_change_pursuer", "gap_behind_s"] if c in colset]
+    undercut_window = [c for c in [
+        "n_cars_within_5s_ahead",
+        "tyre_age_diff_to_ahead",
+        "rejoin_gap_ahead_est_s",
+        "rejoin_gap_behind_est_s",
+    ] if c in colset]
+
+    raw_groups: Dict[str, List[str]] = {
+        "G_race_phase": [c for c in ["lapno", "race_progress"] if c in colset],
+        "G_race_control": [c for c in ["fcy_status"] if c in colset],
+        "G_track": [c for c in ["race_track", "track_category"] if c in colset],
+        "G_tyre_state": [c for c in ["current_compound", "tyre_age", "fulfilled_second_compound"] if c in colset],
+        "G_strategy_history": [c for c in ["pit_stops_so_far"] if c in colset],
+        "G_pace": [c for c in ["lap_time"] if c in colset],
+        "G_traffic_proximity": [c for c in ["position", "interval", "close_ahead"] if c in colset],
+        "G_undercut_defence": undercut_defence,
+        "G_undercut_window": undercut_window,
+        "G_weather": [c for c in ["rained_yet", "is_raining", "minutes_rain"] if c in colset],
+    }
+
+    # remove empty groups
+    raw_groups = {k: v for k, v in raw_groups.items() if len(v) > 0}
+    return raw_groups, engineered_all
+
+
+# -----------------------------
+# Ablation specs (column-level for META; group specs for SEQ too)
 # -----------------------------
 def make_ablation_specs(
     *,
@@ -410,10 +427,8 @@ def make_ablation_specs(
     tcn_cols: List[str],
     raw_cols: List[str],
     raw_groups: Dict[str, List[str]],
+    engineered_cols: List[str],
 ) -> Dict[str, List[str]]:
-    """
-    Returns mapping ablation_name -> list_of_columns_to_use (feature columns ONLY).
-    """
     baseline_set = set(baseline_cols)
 
     def keep(cols: List[str]) -> List[str]:
@@ -430,20 +445,17 @@ def make_ablation_specs(
         return cols2
 
     specs: Dict[str, List[str]] = {}
-
-    # (0) baseline_full
     specs["baseline_full"] = baseline_cols
 
     # TIER 1
-    specs["base_only"] = keep(base_prob_cols)  # includes tcn cols if present in base_prob_cols
+    specs["base_only"] = keep(base_prob_cols)
     specs["raw_only"] = keep(raw_cols)
-    specs["classical_only"] = keep([c for c in base_prob_cols if c.startswith("p_")])  # p_* only
+    specs["classical_only"] = keep([c for c in base_prob_cols if c.startswith("p_")])
     specs["tcn_only"] = keep(tcn_cols)
 
-    # TIER 2 leave-one-base-out
+    # TIER 2 leave-one-base-out (p_* only)
     for c in [x for x in base_prob_cols if x.startswith("p_")]:
         specs[f"drop_{c}"] = drop([c])
-    # TCN leave-outs
     for c in tcn_cols:
         specs[f"drop_{c}"] = drop([c])
 
@@ -451,17 +463,28 @@ def make_ablation_specs(
     for gname, gcols in raw_groups.items():
         specs[f"drop_{gname}"] = drop(gcols)
 
-    # Optional targeted combos (max 3)
-    if "G_tyre" in raw_groups and "G_race_control" in raw_groups:
-        specs["drop_G_tyre_and_G_race_control"] = drop(raw_groups["G_tyre"] + raw_groups["G_race_control"])
-    if "G_tyre" in raw_groups and "G_traffic" in raw_groups:
-        specs["drop_G_tyre_and_G_traffic"] = drop(raw_groups["G_tyre"] + raw_groups["G_traffic"])
-    if "G_weather" in raw_groups and "G_tyre" in raw_groups:
-        specs["drop_G_weather_and_G_tyre"] = drop(raw_groups["G_weather"] + raw_groups["G_tyre"])
+    # Engineered specific
+    engineered_cols = [c for c in engineered_cols if c in baseline_set]
+    if engineered_cols:
+        specs["drop_ENGINEERED_ALL"] = drop(engineered_cols)
+        for c in engineered_cols:
+            specs[f"drop_{c}"] = drop([c])
+
+    # Optional: all undercut pack
+    undercut_pack = [c for c in [
+        "tyre_change_pursuer", "gap_behind_s",
+        "n_cars_within_5s_ahead", "tyre_age_diff_to_ahead",
+        "rejoin_gap_ahead_est_s", "rejoin_gap_behind_est_s"
+    ] if c in baseline_set]
+    if undercut_pack:
+        specs["drop_UNDERCUT_PACK"] = drop(undercut_pack)
 
     return specs
 
 
+# -----------------------------
+# PART B: Meta CV ablation eval (META mode)
+# -----------------------------
 def run_meta_ablation_cv(
     meta_df: pd.DataFrame,
     folds_meta: List[Tuple[np.ndarray, np.ndarray]],
@@ -470,20 +493,13 @@ def run_meta_ablation_cv(
     ablation_specs: Dict[str, List[str]],
     verbose: bool = False,
 ) -> pd.DataFrame:
-    """
-    For each meta fold and ablation spec:
-      - fit meta model on train fold (XGB) using selected cols
-      - tune threshold on train fold ONLY (maximize F1)
-      - evaluate on test fold ONLY
-    Returns fold-level results dataframe.
-    """
     y = meta_df["y_pit"].to_numpy().astype(int)
 
     results_rows: List[Dict[str, Any]] = []
     meta_model_proto = make_meta_binary_xgb(cfg)
 
     for fold_id, (tr_idx, te_idx) in enumerate(folds_meta):
-        vprint(verbose, f"\n[PART B][meta cv][fold {fold_id}] train={len(tr_idx)} test={len(te_idx)}")
+        vprint(verbose, f"\n[META][fold {fold_id}] train={len(tr_idx)} test={len(te_idx)}")
         y_tr = y[tr_idx]
         y_te = y[te_idx]
 
@@ -491,7 +507,6 @@ def run_meta_ablation_cv(
             X_tr = meta_df.iloc[tr_idx][cols]
             X_te = meta_df.iloc[te_idx][cols]
 
-            # Preprocess inside fold (no leakage)
             num_cols, cat_cols = infer_feature_types(X_tr)
             pre = build_preprocessor(
                 num_cols=num_cols,
@@ -503,39 +518,232 @@ def run_meta_ablation_cv(
             pipe = build_model_pipeline(pre, meta_est)
             pipe.fit(X_tr, y_tr)
 
-            # threshold tuning on meta-train only
             proba_tr = pipe.predict_proba(X_tr)[:, 1].astype(float)
             thr = tune_threshold_max_f1(y_tr, proba_tr)
 
-            # evaluate on meta-test only
             proba_te = pipe.predict_proba(X_te)[:, 1].astype(float)
             m = compute_fold_metrics(y_te, proba_te, threshold=thr)
 
-            row = {
+            results_rows.append({
+                "mode": "meta",
                 "ablation_name": ab_name,
-                "meta_fold_id": int(fold_id),
+                "fold_id": int(fold_id),
                 "n_test_rows": int(len(te_idx)),
                 "threshold": float(thr),
                 **m,
-            }
-            results_rows.append(row)
+            })
 
             if verbose:
                 vprint(
                     verbose,
-                    f"[PART B][{ab_name}][fold {fold_id}] "
-                    f"PR_AUC={m['PR_AUC']:.4f} LogLoss={m['LogLoss']:.4f} "
-                    f"F1={m['F1']:.4f} P={m['Precision']:.4f} R={m['Recall']:.4f} "
-                    f"TP={m['TP']} FP={m['FP']} FN={m['FN']} TN={m['TN']}"
+                    f"[META][{ab_name}][fold {fold_id}] PR_AUC={m['PR_AUC']:.4f} "
+                    f"LogLoss={m['LogLoss']:.4f} F1={m['F1']:.4f}"
                 )
 
     return pd.DataFrame(results_rows)
 
 
-def summarize_ablation_results(results_df: pd.DataFrame) -> pd.DataFrame:
+# -----------------------------
+# SEQ mode: sequence tensor ablation
+# -----------------------------
+def _feature_dim_groups_from_preprocessor(pre, X_cols: List[str]) -> Dict[str, List[int]]:
     """
-    Aggregate mean/std across folds per ablation + deltas vs baseline_full.
+    Map raw column groups -> transformed feature indices using pre.get_feature_names_out().
+    We rely on sklearn's naming convention: <transformer>__<col>... for one-hot.
     """
+    names = list(pre.get_feature_names_out(X_cols))
+    # strip to strings
+    names = [str(n) for n in names]
+
+    def dims_for_col(col: str) -> List[int]:
+        idxs: List[int] = []
+        for i, nm in enumerate(names):
+            base = nm.split("__", 1)[1] if "__" in nm else nm
+            # base may be "col" or "col_value"
+            if base == col or base.startswith(col + "_") or base.startswith(col + "="):
+                idxs.append(i)
+        return idxs
+
+    # Build raw groups based on the columns present
+    raw_groups, engineered_cols = build_stage1_feature_groups(X_cols)
+
+    dim_groups: Dict[str, List[int]] = {}
+
+    for gname, cols in raw_groups.items():
+        dims: List[int] = []
+        for c in cols:
+            dims.extend(dims_for_col(c))
+        dim_groups[gname] = sorted(set(dims))
+
+    # Add engineered packs (dims)
+    if engineered_cols:
+        dims: List[int] = []
+        for c in engineered_cols:
+            dims.extend(dims_for_col(c))
+        dim_groups["ENGINEERED_ALL"] = sorted(set(dims))
+
+    # Undercut pack
+    undercut_pack_cols = [c for c in [
+        "tyre_change_pursuer", "gap_behind_s",
+        "n_cars_within_5s_ahead", "tyre_age_diff_to_ahead",
+        "rejoin_gap_ahead_est_s", "rejoin_gap_behind_est_s"
+    ] if c in X_cols]
+    if undercut_pack_cols:
+        dims: List[int] = []
+        for c in undercut_pack_cols:
+            dims.extend(dims_for_col(c))
+        dim_groups["UNDERCUT_PACK"] = sorted(set(dims))
+
+    # Also include individual-col groups (optional but super informative)
+    for c in engineered_cols:
+        dim_groups[f"COL_{c}"] = sorted(set(dims_for_col(c)))
+
+    # Drop empty
+    dim_groups = {k: v for k, v in dim_groups.items() if len(v) > 0}
+    return dim_groups
+
+
+def _apply_dim_ablation(X_seq: np.ndarray, dims: List[int]) -> np.ndarray:
+    """
+    Zero out selected feature dims for every timestep.
+    X_seq: (N, T, D)
+    dims: list of feature indices into D
+    """
+    X2 = np.array(X_seq, copy=True)
+    if len(dims) == 0:
+        return X2
+    X2[:, :, dims] = 0.0
+    return X2
+
+
+def run_seq_ablation_cv(
+    df1: pd.DataFrame,
+    folds: List[Tuple[np.ndarray, np.ndarray]],
+    *,
+    cfg: ModelConfig,
+    model_kind: str,
+    seq_len: int,
+    pad_left: bool,
+    add_timestep_mask: bool,
+    verbose: bool = False,
+) -> pd.DataFrame:
+    """
+    Train/eval a single sequence model with ablations applied to input tensors.
+    Ablations: baseline_full + drop_<group> (zero group dims)
+    """
+    y_full = df1["y_pit"].astype(int)
+    keys = df1[["race_id", "driver_id", "lapno"]].copy()
+
+    # raw feature table for preprocessing
+    X_tab = df1.drop(
+        columns=["y_pit", "y_compound", "race_id", "driver_id", "row_id"],
+        errors="ignore",
+    ).copy()
+    X_cols = list(X_tab.columns)
+
+    # Fit preprocessor prototype
+    num_cols, cat_cols = infer_feature_types(X_tab)
+    pre_proto = make_preprocessor_for_model("tcn", num_cols=num_cols, cat_cols=cat_cols)
+
+    results: List[Dict[str, Any]] = []
+
+    for fold_id, (tr_idx, te_idx) in enumerate(folds):
+        vprint(verbose, f"\n[SEQ][{model_kind}][fold {fold_id}] train_rows={len(tr_idx)} test_rows={len(te_idx)}")
+
+        # fit preprocessor on train rows only
+        pre = clone(pre_proto)
+        pre.fit(X_tab.iloc[tr_idx], y_full.iloc[tr_idx])
+
+        Xt_all = pre.transform(X_tab)
+        if hasattr(Xt_all, "toarray"):
+            Xt_all = Xt_all.toarray()
+        Xt_all = Xt_all.astype(np.float32)
+
+        X_seq, y_seq, idx_last, seq_idx, eff_len = build_feature_sequences(
+            keys,
+            Xt_all,
+            y_full,
+            seq_len=seq_len,
+            pad_left=pad_left,
+            add_timestep_mask=add_timestep_mask,
+        )
+
+        # split sequences by fold membership
+        if pad_left:
+            tr_mask = np.all((seq_idx == -1) | np.isin(seq_idx, tr_idx), axis=1)
+            te_mask = np.all((seq_idx == -1) | np.isin(seq_idx, te_idx), axis=1)
+        else:
+            tr_mask = np.all(np.isin(seq_idx, tr_idx), axis=1)
+            te_mask = np.all(np.isin(seq_idx, te_idx), axis=1)
+
+        X_tr, y_tr = X_seq[tr_mask], y_seq[tr_mask]
+        X_te, y_te = X_seq[te_mask], y_seq[te_mask]
+
+        if len(y_tr) == 0 or len(y_te) == 0:
+            vprint(verbose, f"[SEQ][{model_kind}][fold {fold_id}] skipping (no sequences after filtering)")
+            continue
+
+        # build dim groups for ablation
+        dim_groups = _feature_dim_groups_from_preprocessor(pre, X_cols=X_cols)
+
+        # baseline + drop groups
+        ablations: Dict[str, Optional[List[int]]] = {"baseline_full": None}
+        for gname, dims in dim_groups.items():
+            ablations[f"drop_{gname}"] = dims
+
+        # helper to build model
+        def _make_model():
+            if model_kind == "tcn":
+                return make_tcn_binary(cfg, seq_len=seq_len)
+            elif model_kind == "tcn_gru":
+                from src.models.models import make_tcn_gru_binary  # type: ignore
+                return make_tcn_gru_binary(cfg)  # seq_len inferred from X shape by SciKeras
+            else:
+                raise ValueError(f"Unknown model_kind={model_kind}")
+
+        # class weights on training sequences
+        n_pos = int(np.sum(y_tr == 1))
+        n_neg = int(np.sum(y_tr == 0))
+        if n_pos == 0 or n_neg == 0:
+            # degenerate: skip fold
+            vprint(verbose, f"[SEQ][{model_kind}][fold {fold_id}] degenerate y in train sequences; skipping")
+            continue
+        pos_w = min(20.0, float(n_neg / n_pos))
+        class_w = {0: 1.0, 1: pos_w}
+
+        for ab_name, dims in ablations.items():
+            X_tr_ab = X_tr if dims is None else _apply_dim_ablation(X_tr, dims)
+            X_te_ab = X_te if dims is None else _apply_dim_ablation(X_te, dims)
+
+            model = _make_model()
+            model.fit(X_tr_ab, y_tr, class_weight=class_w)
+
+            proba_tr = model.predict_proba(X_tr_ab)[:, 1].astype(float)
+            thr = tune_threshold_max_f1(y_tr, proba_tr)
+
+            proba_te = model.predict_proba(X_te_ab)[:, 1].astype(float)
+            m = compute_fold_metrics(y_te, proba_te, threshold=thr)
+
+            results.append({
+                "mode": "seq",
+                "model_kind": model_kind,
+                "ablation_name": ab_name,
+                "fold_id": int(fold_id),
+                "n_test_seqs": int(len(y_te)),
+                "threshold": float(thr),
+                **m,
+            })
+
+            if verbose:
+                vprint(verbose, f"[SEQ][{model_kind}][{ab_name}][fold {fold_id}] PR_AUC={m['PR_AUC']:.4f} LogLoss={m['LogLoss']:.4f} F1={m['F1']:.4f}")
+
+    return pd.DataFrame(results)
+
+
+# -----------------------------
+# Summaries
+# -----------------------------
+def summarize_ablation_results(results_df: pd.DataFrame, baseline_name: str = "baseline_full") -> pd.DataFrame:
     agg = results_df.groupby("ablation_name").agg(
         mean_PR_AUC=("PR_AUC", "mean"),
         std_PR_AUC=("PR_AUC", "std"),
@@ -551,42 +759,35 @@ def summarize_ablation_results(results_df: pd.DataFrame) -> pd.DataFrame:
         mean_TN=("TN", "mean"),
     ).reset_index()
 
-    base = agg[agg["ablation_name"] == "baseline_full"]
+    base = agg[agg["ablation_name"] == baseline_name]
     if len(base) != 1:
-        raise RuntimeError("baseline_full summary missing or duplicated.")
+        raise RuntimeError(f"{baseline_name} summary missing or duplicated.")
     base_row = base.iloc[0]
 
     agg["delta_PR_AUC_vs_baseline"] = agg["mean_PR_AUC"] - float(base_row["mean_PR_AUC"])
     agg["delta_LogLoss_vs_baseline"] = agg["mean_LogLoss"] - float(base_row["mean_LogLoss"])
     agg["delta_F1_vs_baseline"] = agg["mean_F1"] - float(base_row["mean_F1"])
 
-    # helpful “damage” measures (positive = worse)
     agg["PR_AUC_drop_vs_baseline"] = float(base_row["mean_PR_AUC"]) - agg["mean_PR_AUC"]
     agg["LogLoss_increase_vs_baseline"] = agg["mean_LogLoss"] - float(base_row["mean_LogLoss"])
-
     return agg
 
 
-def print_top5_damage(summary_df: pd.DataFrame) -> None:
+def print_top5_damage(summary_df: pd.DataFrame, title: str) -> None:
     def _top(df: pd.DataFrame, col: str) -> pd.DataFrame:
         return df[df["ablation_name"] != "baseline_full"].sort_values(col, ascending=False).head(5)
 
     top_pr = _top(summary_df, "PR_AUC_drop_vs_baseline")
     top_ll = _top(summary_df, "LogLoss_increase_vs_baseline")
 
-    print("\nTop-5 most damaging ablations (by PR-AUC drop):")
+    print(f"\n{title}")
+    print("Top-5 most damaging ablations (by PR-AUC drop):")
     for _, r in top_pr.iterrows():
-        print(
-            f"  {r['ablation_name']}: PR_AUC_drop={r['PR_AUC_drop_vs_baseline']:.4f} "
-            f"(mean_PR_AUC={r['mean_PR_AUC']:.4f})"
-        )
+        print(f"  {r['ablation_name']}: PR_AUC_drop={r['PR_AUC_drop_vs_baseline']:.4f} (mean_PR_AUC={r['mean_PR_AUC']:.4f})")
 
     print("\nTop-5 most damaging ablations (by LogLoss increase):")
     for _, r in top_ll.iterrows():
-        print(
-            f"  {r['ablation_name']}: LogLoss_increase={r['LogLoss_increase_vs_baseline']:.4f} "
-            f"(mean_LogLoss={r['mean_LogLoss']:.4f})"
-        )
+        print(f"  {r['ablation_name']}: LogLoss_increase={r['LogLoss_increase_vs_baseline']:.4f} (mean_LogLoss={r['mean_LogLoss']:.4f})")
 
 
 # -----------------------------
@@ -595,228 +796,194 @@ def print_top5_damage(summary_df: pd.DataFrame) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data_stage1", required=True, help="Path to stage1 dataset (pit/no-pit), e.g. output1.csv")
-    ap.add_argument("--outdir", default="results/runs/ablation", help="Output directory root")
-    ap.add_argument("--run_name", default="stage1_meta_ablation", help="Subfolder under outdir")
+    ap.add_argument("--outdir", default="runs/ablation", help="Output directory root")
+    ap.add_argument("--run_name", default="stage1_ablation", help="Subfolder under outdir")
     ap.add_argument("--n_splits", type=int, default=5)
     ap.add_argument("--seed", type=int, default=SEED_DEFAULT)
-    ap.add_argument("--seq_len_tcn", type=int, default=8)
-    ap.add_argument("--recompute_base_oof", action="store_true", help="Force recomputation of PART A base OOF cache")
+
+    # sequence settings (used in META-partA TCN and SEQ mode)
+    ap.add_argument("--seq_len", type=int, default=8)
+    ap.add_argument("--pad_left", action="store_true", help="Pad left to allow early laps.")
+    ap.add_argument("--add_timestep_mask", action="store_true", help="Append timestep mask feature.")
+
+    ap.add_argument("--recompute_base_oof", action="store_true", help="Force recomputation of META base OOF cache")
     ap.add_argument("--verbose", action="store_true")
-    ap.add_argument("--smoke_test", action="store_true", help="Run a quick 1-fold smoke test (base + meta).")
+    ap.add_argument("--smoke_test", action="store_true", help="Run a quick 1-fold smoke test.")
+
     ap.add_argument(
-        "--smoke_schema_only",
-        action="store_true",
-        help="Fast smoke test: build a tiny meta table (no training) and try writing parquet.",
+        "--mode",
+        type=str,
+        default="meta",
+        choices=["meta", "seq", "both"],
+        help="meta: stacked ensemble ablation; seq: single sequence model ablation; both: run both.",
+    )
+
+    ap.add_argument(
+        "--seq_model",
+        type=str,
+        default="tcn",
+        choices=["tcn", "tcn_gru"],
+        help="Which sequence model factory to use for SEQ mode. Requires make_tcn_gru_binary for tcn_gru.",
     )
 
     args = ap.parse_args()
 
     out_root = _ensure_dir(Path(args.outdir) / args.run_name)
     cache_dir = _ensure_dir(out_root / "cache")
-    _ensure_dir(out_root / "reports")
+    reports_dir = _ensure_dir(out_root / "reports")
 
     cfg = ModelConfig(random_state=int(args.seed))
 
     print(f"[ablation_eval] out_root: {out_root}")
-    print(f"[ablation_eval] seed={args.seed} n_splits={args.n_splits} seq_len_tcn={args.seq_len_tcn}")
+    print(f"[ablation_eval] seed={args.seed} n_splits={args.n_splits} seq_len={args.seq_len} pad_left={args.pad_left} tmask={args.add_timestep_mask}")
     print(f"[ablation_eval] HOLDOUT_RACE_IDS={list(map(int, HOLDOUT_RACE_IDS))}")
 
-    # -----------------------------
     # Load data
-    # -----------------------------
     vprint(args.verbose, "[ablation_eval] loading stage1 dataset...")
     df1 = load_stage1_dataset(args.data_stage1)
-    X1, y1 = get_stage1_xy(df1)
 
-    if args.smoke_schema_only:
-        print("[smoke_schema_only] Running fast schema/parquet smoke test (NO training).")
+    # folds are on lap rows (race-wise)
+    fb = make_race_group_folds(df1, target_col="y_pit", n_splits=args.n_splits, seed=args.seed)
+    folds = fb.folds
+    if args.smoke_test:
+        folds = folds[:1]
 
-        # pick 2 non-holdout races to keep it tiny
-        all_races = sorted(df1["race_id"].unique().tolist())
-        smoke_races = [r for r in all_races if int(r) not in set(map(int, HOLDOUT_RACE_IDS))][:2]
-        df_smoke = df1[df1["race_id"].isin(smoke_races)].copy()
+    # -----------------------------
+    # MODE: META
+    # -----------------------------
+    if args.mode in ("meta", "both"):
+        X1, y1 = get_stage1_xy(df1)
 
-        # cap rows hard so it’s always fast
-        df_smoke = df_smoke.head(2000).reset_index(drop=True)
+        # cache paths
+        meta_table_path = cache_dir / "meta_table.parquet"
+        meta_manifest_path = cache_dir / "meta_table_manifest.json"
 
-        X_smoke, y_smoke = get_stage1_xy(df_smoke)
+        if meta_table_path.exists() and (not args.recompute_base_oof):
+            print(f"[META][PART A] loading cached meta-table: {meta_table_path}")
+            meta_df = pd.read_parquet(meta_table_path)
+        else:
+            print("[META][PART A] generating base-level OOF probabilities (tabular + TCN)...")
+            meta_df = build_meta_table_stage1(
+                df1,
+                X1,
+                y1,
+                folds,
+                cfg=cfg,
+                seq_len_tcn=int(args.seq_len),
+                verbose=args.verbose,
+            )
+            meta_df.to_parquet(meta_table_path, index=False)
+            _write_json(
+                meta_manifest_path,
+                {
+                    "data_stage1": str(args.data_stage1),
+                    "n_rows": int(len(meta_df)),
+                    "n_races": int(meta_df["race_id"].nunique()),
+                    "n_splits_base": int(args.n_splits),
+                    "seed": int(args.seed),
+                    "seq_len": int(args.seq_len),
+                    "pad_left": bool(args.pad_left),
+                    "add_timestep_mask": bool(args.add_timestep_mask),
+                    "holdout_race_ids": list(map(int, HOLDOUT_RACE_IDS)),
+                    "model_config": asdict(cfg),
+                },
+            )
+            print(f"[META][PART A] wrote meta-table cache: {meta_table_path}")
 
-        # IMPORTANT: strip any IDs/labels so we can't create duplicates
-        X_smoke_safe = X_smoke.drop(columns=["race_id", "row_id", "y_pit", "driver_id"], errors="ignore")
+        # Define feature sets
+        id_cols = {"race_id", "row_id"}
+        label_col = "y_pit"
 
-        # make dummy prob cols (no training)
-        meta_smoke = pd.DataFrame(
-            {
-                "race_id": df_smoke["race_id"].to_numpy(),
-                "row_id": df_smoke["row_id"].to_numpy() if "row_id" in df_smoke.columns else np.arange(len(df_smoke)),
-                "y_pit": y_smoke.to_numpy().astype(int),
-                "p_svm": np.zeros(len(df_smoke), dtype=float),
-                "p_rf": np.zeros(len(df_smoke), dtype=float),
-                "p_xgb": np.zeros(len(df_smoke), dtype=float),
-                "p_ann": np.zeros(len(df_smoke), dtype=float),
-                "tcn_proba": np.zeros(len(df_smoke), dtype=float),
-                "tcn_effective_len": np.zeros(len(df_smoke), dtype=float),
-            }
+        base_prob_cols = ["p_svm", "p_rf", "p_xgb", "p_ann", "tcn_proba", "tcn_effective_len"]
+        base_prob_cols = [c for c in base_prob_cols if c in meta_df.columns]
+        tcn_cols = [c for c in ["tcn_proba", "tcn_effective_len"] if c in meta_df.columns]
+
+        raw_cols = [c for c in meta_df.columns if c not in (id_cols | {label_col} | set(base_prob_cols))]
+        raw_cols = [c for c in raw_cols if c not in {"driver_id"}]
+
+        baseline_cols = base_prob_cols + raw_cols
+
+        raw_groups, engineered_cols = build_stage1_feature_groups(raw_cols)
+
+        ablation_specs = make_ablation_specs(
+            baseline_cols=baseline_cols,
+            base_prob_cols=base_prob_cols,
+            tcn_cols=tcn_cols,
+            raw_cols=raw_cols,
+            raw_groups=raw_groups,
+            engineered_cols=engineered_cols,
         )
-        meta_smoke = pd.concat([meta_smoke, X_smoke_safe.reset_index(drop=True)], axis=1)
 
-        # fail fast if duplicates exist (this is what killed your run)
-        if meta_smoke.columns.duplicated().any():
-            dupes = meta_smoke.columns[meta_smoke.columns.duplicated()].tolist()
-            raise RuntimeError(f"[smoke_schema_only] Duplicate columns detected: {dupes}")
+        _write_json(reports_dir / "meta_ablation_specs.json", {"ablations": list(ablation_specs.keys())})
+        _write_json(reports_dir / "meta_feature_sets.json", {
+            "baseline_cols": baseline_cols,
+            "base_prob_cols": base_prob_cols,
+            "tcn_cols": tcn_cols,
+            "raw_cols": raw_cols,
+            "raw_groups": raw_groups,
+            "engineered_cols": engineered_cols,
+        })
 
-        smoke_path = out_root / "reports" / "smoke_meta_table.parquet"
-        meta_smoke.to_parquet(smoke_path, index=False)
-        print(f"[smoke_schema_only] OK: wrote {smoke_path} with {len(meta_smoke)} rows and {meta_smoke.shape[1]} cols.")
-        return
+        # meta folds should be race-wise too; we reuse folds by indexing meta_df rows (same ordering)
+        fb_meta = make_race_group_folds(meta_df[["race_id", "y_pit"]].copy(), target_col="y_pit", n_splits=args.n_splits, seed=args.seed)
+        folds_meta = fb_meta.folds
+        if args.smoke_test:
+            folds_meta = folds_meta[:1]
 
-
-    n_races = int(df1["race_id"].nunique())
-    vprint(args.verbose, f"[ablation_eval] df1 rows={len(df1)} unique_races={n_races}")
-    vprint(args.verbose, f"[ablation_eval] X1 shape={X1.shape} y1 pos_rate={float(np.mean(y1.to_numpy())):.4f}")
-
-    # -----------------------------
-    # PART A folds (base OOF)
-    # -----------------------------
-    vprint(args.verbose, "[PART A] building race-group folds (base OOF)...")
-    fb_base = make_race_group_folds(df1, target_col="y_pit", n_splits=args.n_splits, seed=args.seed)
-    folds_base = fb_base.folds
-
-    # cache paths
-    meta_table_path = cache_dir / "meta_table.parquet"
-    meta_manifest_path = cache_dir / "meta_table_manifest.json"
-
-    if meta_table_path.exists() and (not args.recompute_base_oof):
-        print(f"[PART A] loading cached meta-table: {meta_table_path}")
-        meta_df = pd.read_parquet(meta_table_path)
-    else:
-        print("[PART A] generating base-level OOF probabilities (tabular + TCN)...")
-        meta_df = build_meta_table_stage1(
-            df1,
-            X1,
-            y1,
-            folds_base,
+        print(f"[META][PART B] running meta ablation CV: n_ablations={len(ablation_specs)} n_folds={len(folds_meta)}")
+        meta_results = run_meta_ablation_cv(
+            meta_df,
+            folds_meta,
             cfg=cfg,
-            seq_len_tcn=int(args.seq_len_tcn),
+            ablation_specs=ablation_specs,
             verbose=args.verbose,
         )
-        meta_df.to_parquet(meta_table_path, index=False)
-        _write_json(
-            meta_manifest_path,
-            {
-                "data_stage1": str(args.data_stage1),
-                "n_rows": int(len(meta_df)),
-                "n_races": int(meta_df["race_id"].nunique()),
-                "n_splits_base": int(args.n_splits),
-                "seed": int(args.seed),
-                "seq_len_tcn": int(args.seq_len_tcn),
-                "holdout_race_ids": list(map(int, HOLDOUT_RACE_IDS)),
-                "model_config": asdict(cfg),
-            },
+
+        meta_results_path = reports_dir / "meta_ablation_results.csv"
+        meta_results.to_csv(meta_results_path, index=False)
+        print(f"[META][reports] wrote: {meta_results_path}")
+
+        meta_summary = summarize_ablation_results(meta_results, baseline_name="baseline_full")
+        meta_summary_path = reports_dir / "meta_ablation_summary.csv"
+        meta_summary.to_csv(meta_summary_path, index=False)
+        print(f"[META][reports] wrote: {meta_summary_path}")
+
+        print_top5_damage(meta_summary, title="[META] Damage rankings")
+
+    # -----------------------------
+    # MODE: SEQ (TCN / TCN-GRU)
+    # -----------------------------
+    if args.mode in ("seq", "both"):
+        print(f"[SEQ] running single-model ablation for model={args.seq_model}")
+
+        seq_results = run_seq_ablation_cv(
+            df1=df1,
+            folds=folds,
+            cfg=cfg,
+            model_kind=args.seq_model,
+            seq_len=int(args.seq_len),
+            pad_left=bool(args.pad_left),
+            add_timestep_mask=bool(args.add_timestep_mask),
+            verbose=args.verbose,
         )
-        print(f"[PART A] wrote meta-table cache: {meta_table_path}")
 
-    # -----------------------------
-    # Define feature sets
-    # -----------------------------
-    # label / identifiers (NEVER used as features)
-    id_cols = {"race_id", "row_id"}
-    label_col = "y_pit"
+        seq_results_path = reports_dir / f"seq_{args.seq_model}_ablation_results.csv"
+        seq_results.to_csv(seq_results_path, index=False)
+        print(f"[SEQ][reports] wrote: {seq_results_path}")
 
-    # base prob cols (as per your manifest)
-    base_prob_cols = ["p_svm", "p_rf", "p_xgb", "p_ann", "tcn_proba", "tcn_effective_len"]
-    base_prob_cols = [c for c in base_prob_cols if c in meta_df.columns]
+        seq_summary = summarize_ablation_results(seq_results, baseline_name="baseline_full")
+        seq_summary_path = reports_dir / f"seq_{args.seq_model}_ablation_summary.csv"
+        seq_summary.to_csv(seq_summary_path, index=False)
+        print(f"[SEQ][reports] wrote: {seq_summary_path}")
 
-    tcn_cols = [c for c in ["tcn_proba", "tcn_effective_len"] if c in meta_df.columns]
-    p_cols = [c for c in base_prob_cols if c.startswith("p_")]
+        print_top5_damage(seq_summary, title=f"[SEQ:{args.seq_model}] Damage rankings")
 
-    # raw/context cols = everything except ids, label, and prob cols
-    raw_cols = [c for c in meta_df.columns if c not in (id_cols | {label_col} | set(base_prob_cols))]
-    # safety: never allow any forbidden cols to sneak in
-    raw_cols = [c for c in raw_cols if c not in {"driver_id"}]
-
-    baseline_cols = base_prob_cols + raw_cols
-
-    # raw groups
-    raw_groups: Dict[str, List[str]] = {
-        "G_race_phase": [c for c in ["lapno", "race_progress"] if c in meta_df.columns],
-        "G_race_control": [c for c in ["fcy_status"] if c in meta_df.columns],
-        "G_track": [c for c in ["race_track", "track_category"] if c in meta_df.columns],
-        "G_tyre": [c for c in ["current_compound", "tyre_age", "fulfilled_second_compound"] if c in meta_df.columns],
-        "G_traffic": [c for c in ["position", "interval", "close_ahead"] if c in meta_df.columns],
-        "G_strategy_history": [c for c in ["pit_stops_so_far", "tyre_change_pursuer"] if c in meta_df.columns],
-        "G_pace": [c for c in ["lap_time"] if c in meta_df.columns],
-        "G_weather": [c for c in ["rained_yet", "is_raining", "minutes_rain"] if c in meta_df.columns],
-    }
-
-    # -----------------------------
-    # PART B folds (meta OOF ablation)
-    # -----------------------------
-    vprint(args.verbose, "[PART B] building race-group folds (meta CV)...")
-    # Use make_race_group_folds on the meta table as well (race-wise)
-    fb_meta = make_race_group_folds(meta_df[["race_id", "y_pit"]].copy(), target_col="y_pit", n_splits=args.n_splits, seed=args.seed)
-    folds_meta = fb_meta.folds
-    if args.smoke_test:
-        folds_base = folds_base[:1]
-        folds_meta = folds_meta[:1]
-
-    # Ablation specs
-    ablation_specs = make_ablation_specs(
-        baseline_cols=baseline_cols,
-        base_prob_cols=base_prob_cols,
-        tcn_cols=tcn_cols,
-        raw_cols=raw_cols,
-        raw_groups=raw_groups,
-    )
-    _write_json(out_root / "reports" / "ablation_specs.json", {"ablations": list(ablation_specs.keys())})
-    _write_json(out_root / "reports" / "feature_sets.json", {
-        "baseline_cols": baseline_cols,
-        "base_prob_cols": base_prob_cols,
-        "raw_cols": raw_cols,
-        "raw_groups": raw_groups,
-    })
-
-    print(f"[PART B] running meta ablation CV: n_ablations={len(ablation_specs)} n_folds={len(folds_meta)}")
-    results_df = run_meta_ablation_cv(
-        meta_df,
-        folds_meta,
-        cfg=cfg,
-        ablation_specs=ablation_specs,
-        verbose=args.verbose,
-    )
-
-    # Write fold-level results
-    results_path = out_root / "reports" / "ablation_results.csv"
-    results_df.to_csv(results_path, index=False)
-    print(f"[reports] wrote: {results_path}")
-
-    # Aggregate + deltas
-    summary_df = summarize_ablation_results(results_df)
-    summary_path = out_root / "reports" / "ablation_summary.csv"
-    summary_df.to_csv(summary_path, index=False)
-    print(f"[reports] wrote: {summary_path}")
-
-    # Rankings
-    ranking_pr = summary_df.sort_values("PR_AUC_drop_vs_baseline", ascending=False)
-    ranking_ll = summary_df.sort_values("LogLoss_increase_vs_baseline", ascending=False)
-    ranking_pr.to_csv(out_root / "reports" / "ranking_by_pr_auc_drop.csv", index=False)
-    ranking_ll.to_csv(out_root / "reports" / "ranking_by_logloss_increase.csv", index=False)
-
-    print_top5_damage(summary_df)
-
-    print(f"\n[ablation_eval] done. Outputs in: {out_root / 'reports'}")
+    print(f"\n[ablation_eval] done. Outputs in: {reports_dir}")
 
 
 if __name__ == "__main__":
     main()
 
-"""
-python -m src.utils.ablation_eval \
-  --data_stage1 data/processed/output1.csv \
-  --outdir runs/ablation \
-  --run_name stage1_meta_ablation \
-  --n_splits 5 \
-  --seed 42 \
-  --seq_len_tcn 8 \
-  --verbose
-"""
+'''
+g
+'''
