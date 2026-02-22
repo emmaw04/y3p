@@ -564,7 +564,8 @@ def _build_keras_tcn_binary(seq_len: int, n_features: int) -> "keras.Model":
     model = keras.Model(x_in, y_out)
 
     # Focal loss helps minority class learning without exploding class weights
-    loss = keras.losses.BinaryFocalCrossentropy(gamma=2.0, alpha=0.75)
+    #loss = keras.losses.BinaryFocalCrossentropy(gamma=2.0, alpha=0.75)
+    loss = "binary_crossentropy"
 
     model.compile(
         optimizer=keras.optimizers.Adam(learning_rate=1e-3),
@@ -606,3 +607,133 @@ def make_tcn_binary(cfg: ModelConfig, *, seq_len: int = 8) -> BaseEstimator:
         verbose=1,
         random_state=cfg.random_state,
     )
+
+# src/models/models.py (near TCN section)
+def _compile_seq_binary(model: "keras.Model") -> "keras.Model":
+    opt = keras.optimizers.Adam(learning_rate=1e-3)
+    model.compile(
+        optimizer=opt,
+        loss="binary_crossentropy",
+        metrics=[
+            keras.metrics.AUC(curve="PR", name="pr_auc"),
+            keras.metrics.AUC(curve="ROC", name="roc_auc"),
+        ],
+    )
+    return model
+
+def _build_keras_gru_binary(seq_len: int, n_features: int) -> "keras.Model":
+    x_in = layers.Input(shape=(seq_len, n_features))
+
+    x = layers.GRU(
+        64, return_sequences=True,
+        dropout=0.2, recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x_in)
+    x = layers.GRU(
+        32, return_sequences=True,
+        dropout=0.2, recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x)
+
+    x = layers.LayerNormalization()(x)
+    x = layers.GlobalAveragePooling1D()(x)
+
+    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(1, activation="sigmoid")(x)
+
+    model = keras.Model(x_in, y_out)
+    return _compile_seq_binary(model)
+
+def _build_keras_lstm_binary(seq_len: int, n_features: int) -> "keras.Model":
+    x_in = layers.Input(shape=(seq_len, n_features))
+
+    x = layers.LSTM(
+        64, return_sequences=True,
+        dropout=0.2, recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x_in)
+    x = layers.LSTM(
+        32, return_sequences=True,
+        dropout=0.2, recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x)
+
+    x = layers.LayerNormalization()(x)
+    x = layers.GlobalAveragePooling1D()(x)
+
+    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(1, activation="sigmoid")(x)
+
+    model = keras.Model(x_in, y_out)
+    return _compile_seq_binary(model)
+
+def _build_keras_tcn_gru_binary(seq_len: int, n_features: int) -> "keras.Model":
+    x_in = layers.Input(shape=(seq_len, n_features))
+
+    x = layers.Conv1D(64, 3, padding="causal", dilation_rate=1)(x_in)
+    x = layers.LayerNormalization()(x)
+    x = layers.Activation("relu")(x)
+
+    for d in [1, 2, 4, 8]:
+        x = _tcn_residual_block(x, filters=64, kernel_size=3, dilation=d, dropout=0.15)
+
+    # GRU head reads the conv features over time
+    x = layers.GRU(
+        32, return_sequences=False,
+        dropout=0.2, recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x)
+
+    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(1, activation="sigmoid")(x)
+
+    model = keras.Model(x_in, y_out)
+    return _compile_seq_binary(model)
+
+def _make_seq_classifier(cfg: ModelConfig, build_fn) -> BaseEstimator:
+    if not _HAS_KERAS:
+        raise ImportError("SciKeras/TensorFlow not installed. pip install scikeras tensorflow")
+
+    def model_fn(meta):
+        _, sl, nf = meta["X_shape_"]
+        keras.utils.set_random_seed(cfg.random_state)
+        return build_fn(int(sl), int(nf))   # ✅ use the builder you passed in
+
+    early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_pr_auc",
+        mode="max",
+        patience=6,
+        restore_best_weights=True,
+    )
+
+    return KerasClassifier(
+        model=model_fn,
+        epochs=80,
+        batch_size=512,
+        validation_split=0.1,
+        callbacks=[early_stop],
+        verbose=1,
+        random_state=cfg.random_state,
+    )
+
+
+def make_gru_binary(cfg: ModelConfig) -> BaseEstimator:
+    return _make_seq_classifier(cfg, _build_keras_gru_binary)
+
+def make_lstm_binary(cfg: ModelConfig) -> BaseEstimator:
+    return _make_seq_classifier(cfg, _build_keras_lstm_binary)
+
+def make_tcn_gru_binary(cfg: ModelConfig) -> BaseEstimator:
+    return _make_seq_classifier(cfg, _build_keras_tcn_gru_binary)
+
+"""
+relevant commands for sequential models
+python -m src.training.evaluate_base --data_stage1 data/processed/output1.csv --task binary --model tcn --outdir results/runs/seq
+python -m src.training.evaluate_base --data_stage1 data/processed/output1.csv --task binary --model gru --outdir results/runs/seq
+python -m src.training.evaluate_base --data_stage1 data/processed/output1.csv --task binary --model lstm --outdir results/runs/seq
+python -m src.training.evaluate_base --data_stage1 data/processed/output1.csv --task binary --model tcn_gru --outdir results/runs/seq
+
+"""

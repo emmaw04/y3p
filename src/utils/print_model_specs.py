@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from sklearn.base import clone
 
-from src.models import (
+from src.models.models import (
     ModelConfig,
     get_binary_base_learners,
     get_multiclass_base_learners,

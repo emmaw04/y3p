@@ -15,9 +15,9 @@ from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, average_pre
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from src.data import load_stage1_dataset, make_race_group_folds
+from src.data.data import load_stage1_dataset, make_race_group_folds
 from data.preprocessing import build_preprocessor, PreprocessConfig
-from src.models import ModelConfig, make_meta_binary_mlp
+from src.models.models import ModelConfig, make_meta_binary_mlp
 
 
 def binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray, threshold: float = 0.5) -> Dict[str, float]:

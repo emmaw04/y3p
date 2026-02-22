@@ -1,0 +1,15 @@
+{
+  "task": "binary",
+  "model": "lstm",
+  "seq_len": 8,
+  "n_splits": 5,
+  "seed": 42,
+  "threshold": 0.5,
+  "accuracy_mean": 0.9489614187365797,
+  "precision_mean": 0.34744212537920777,
+  "recall_mean": 0.8877970528575357,
+  "f1_mean": 0.49885641501806044,
+  "roc_auc_mean": 0.9787256296525488,
+  "pr_auc_mean": 0.702406072200735,
+  "logloss_mean": 0.1292615823253331
+}

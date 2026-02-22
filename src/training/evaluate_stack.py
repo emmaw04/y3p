@@ -18,15 +18,16 @@ from sklearn.metrics import (
     average_precision_score,
 )
 
-from src.data import (
+from src.data.data import (
     load_stage1_dataset, load_stage2_dataset,
     get_stage1_xy, get_stage2_xy,
     make_race_group_folds,
     infer_feature_types,
     COMPOUND_CLASSES,
+    build_feature_sequences
 )
-from data.preprocessing import build_preprocessor, PreprocessConfig
-from src.models import (
+from src.data.preprocessing import build_preprocessor, PreprocessConfig
+from src.models.models import (
     ModelConfig,
     build_model_pipeline,
     get_binary_base_learners,
@@ -37,12 +38,10 @@ from src.models import (
     make_meta_binary_mlp,
     make_meta_multiclass_xgb,
     make_meta_multiclass_mlp,
+    make_tcn_binary,
 )
 
-
-from src.data import build_feature_sequences
-from src.models import make_tcn_binary
-from data.preprocessing import make_preprocessor_for_model  # (you used this in evaluate_base.py)
+from src.data.preprocessing import make_preprocessor_for_model  # (you used this in evaluate_base.py)
 
 
 import pandas as pd

@@ -19,7 +19,7 @@ import pandas as pd
 from joblib import dump
 from sklearn.base import clone
 
-from src.data import (
+from src.data.data import (
     load_stage1_dataset,
     load_stage2_dataset,
     get_stage1_xy,
@@ -30,8 +30,8 @@ from src.data import (
     HOLDOUT_RACE_IDS,
     build_feature_sequences,
 )
-from src.preprocessing import make_preprocessor_for_model, build_preprocessor, PreprocessConfig
-from src.models import (
+from src.data.preprocessing import make_preprocessor_for_model, build_preprocessor, PreprocessConfig
+from src.models.models import (
     ModelConfig,
     build_model_pipeline,
     get_binary_base_learners,

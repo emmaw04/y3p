@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 from joblib import load
 
-from src.data import HOLDOUT_RACE_IDS
+from src.data.data import HOLDOUT_RACE_IDS
 
 # Keras (ANN + TCN)
 import tensorflow as tf
@@ -51,6 +51,46 @@ def _race_metrics(y_true: np.ndarray, y_score: np.ndarray, threshold: float = 0.
         out["pr_auc"] = float(average_precision_score(y_true, y_score))
 
     return out
+
+def _segments_from_bool_mask(x: np.ndarray, mask: np.ndarray) -> List[Tuple[float, float]]:
+    """
+    Convert a boolean mask over x into contiguous (x_start, x_end) segments.
+    x: 1D array (monotonic increasing is ideal; your race_progress_pct should be)
+    mask: 1D bool array of same length
+    Returns list of (start_x, end_x) where mask is True.
+    """
+    x = np.asarray(x, dtype=float)
+    mask = np.asarray(mask, dtype=bool)
+    if len(x) == 0:
+        return []
+
+    segs: List[Tuple[float, float]] = []
+    in_seg = False
+    seg_start = None
+
+    for i in range(len(mask)):
+        if mask[i] and not in_seg:
+            in_seg = True
+            seg_start = x[i]
+        elif (not mask[i]) and in_seg:
+            # segment ends at previous point
+            seg_end = x[i - 1]
+            segs.append((float(seg_start), float(seg_end)))
+            in_seg = False
+            seg_start = None
+
+    # close if ended in True
+    if in_seg and seg_start is not None:
+        segs.append((float(seg_start), float(x[-1])))
+
+    # tiny cleanup: if start==end (single-point), expand a hair so it's visible
+    cleaned = []
+    for a, b in segs:
+        if a == b:
+            cleaned.append((a, min(100.0, b + 0.5)))  # +0.5% progress
+        else:
+            cleaned.append((a, b))
+    return cleaned
 
 
 def _read_json(path: Path) -> Dict:
@@ -148,8 +188,7 @@ def _keras_predict_proba(model: tf.keras.Model, X_np: np.ndarray, batch_size: in
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage1_csv", required=True, help="Path to output1.csv")
-    ap.add_argument(
-        "--artifacts_root",
+    ap.add_argument("--artifacts_root",
         required=True,
         help="Root folder containing stage1_binary/artifacts/",
     )
@@ -208,6 +247,12 @@ def main():
     # -----------------------
     # Build base features -> meta features
     # -----------------------
+    # After dfh is created (and sorted), before X_raw = _ensure_columns(...)
+    for c in ["rained_yet", "is_raining", "minutes_rain"]:
+        if c in dfh.columns:
+            dfh[c] = pd.to_numeric(dfh[c], errors="coerce").fillna(0.0)
+        else:
+            dfh[c] = 0.0
     X_raw = _ensure_columns(dfh, x1_cols)
 
     # sklearn base probas
@@ -241,10 +286,20 @@ def main():
 
     # Hard check against model expectation
     expected_T, expected_F = tcn_model.input_shape[1], tcn_model.input_shape[2]
-    if expected_T != 8:
-        raise ValueError(f"Unexpected TCN time window. Model expects T={expected_T}, not 8.")
+
+    # If sklearn dropped columns (e.g., all-missing), pad zeros back up to expected_F
+    if X_tcn_row.shape[1] < expected_F:
+        pad = expected_F - X_tcn_row.shape[1]
+        X_tcn_row = np.concatenate(
+            [X_tcn_row, np.zeros((X_tcn_row.shape[0], pad), dtype=X_tcn_row.dtype)],
+            axis=1
+        )
+
+    # If it ever produces *more* columns than expected, that's a real mismatch -> error
     if X_tcn_row.shape[1] != expected_F:
-        raise ValueError(f"TCN feature dim mismatch: model expects F={expected_F}, got F={X_tcn_row.shape[1]}")
+        raise ValueError(
+            f"TCN feature dim mismatch: model expects F={expected_F}, got F={X_tcn_row.shape[1]}"
+        )
 
     # Build sequences in lap order within each driver/race group
     keys_df = dfh[["race_id", "driver_id", "lapno"]]
@@ -279,7 +334,8 @@ def main():
     out = dfh[["race_id", "driver_id", "lapno"]].copy()
     out["race_progress_pct"] = (pd.to_numeric(dfh["race_progress"], errors="coerce") * 100.0).astype(float).values
     out["y_pit"] = pd.to_numeric(dfh["y_pit"], errors="coerce").fillna(0).astype(int).values
-
+    out["is_raining"] = pd.to_numeric(dfh.get("is_raining"), errors="coerce").fillna(0).astype(int).values
+    out["fcy_status"] = pd.to_numeric(dfh.get("fcy_status"), errors="coerce").fillna(0).astype(int).values
     out["p_pit"] = proba.astype(float)
     out["pit_pred"] = pit_pred.astype(int)
 
@@ -312,6 +368,21 @@ def main():
 
         plt.figure(figsize=(10, 4))
         plt.plot(x, y, marker="o", linewidth=1)
+
+        # --- background shading ---
+        rain_mask = g["is_raining"].to_numpy(dtype=int) == 1
+        fcy_mask = g["fcy_status"].to_numpy(dtype=int) != 0
+
+        rain_segs = _segments_from_bool_mask(x, rain_mask)
+        fcy_segs = _segments_from_bool_mask(x, fcy_mask)
+
+        # Rain = blue
+        for a, b in rain_segs:
+            plt.axvspan(a, b, alpha=0.12, facecolor="blue", linewidth=0)
+
+        # FCY/VSC/SC = yellow
+        for a, b in fcy_segs:
+            plt.axvspan(a, b, alpha=0.12, facecolor="yellow", linewidth=0)
 
         # threshold line (50%)
         plt.axhline(PIT_THRESHOLD * 100.0, linewidth=1)

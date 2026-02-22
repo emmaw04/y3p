@@ -58,7 +58,7 @@ def make_preprocessor_for_model(model_name: str, num_cols: Sequence[str], cat_co
     if model in {"ann", "hybrid_vse"}:
         return make_preprocessor_for_keras(num_cols, cat_cols)
 
-    if model in {"tcn"}:
+    if model in {"tcn", "gru", "lstm", "tcn_gru"}:
         # TCN probably still needs one-hot because it’s learning temporal patterns in that space,
         # but you can also ordinal encode if you want consistency
         return build_preprocessor(num_cols, cat_cols, PreprocessConfig(scale_numeric=True, sparse_onehot=False))

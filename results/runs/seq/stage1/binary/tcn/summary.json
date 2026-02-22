@@ -1,0 +1,15 @@
+{
+  "task": "binary",
+  "model": "tcn",
+  "seq_len": 8,
+  "n_splits": 5,
+  "seed": 42,
+  "threshold": 0.5,
+  "accuracy_mean": 0.9565787489661167,
+  "precision_mean": 0.39593341893293826,
+  "recall_mean": 0.8930707490992311,
+  "f1_mean": 0.5447457179838482,
+  "roc_auc_mean": 0.9746115417436861,
+  "pr_auc_mean": 0.7470652251473113,
+  "logloss_mean": 0.11434986955546451
+}

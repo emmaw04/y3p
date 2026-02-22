@@ -1,0 +1,89 @@
+{
+  "baseline_cols": [
+    "p_svm",
+    "p_rf",
+    "p_xgb",
+    "p_ann",
+    "tcn_proba",
+    "tcn_effective_len",
+    "lapno",
+    "race_progress",
+    "position",
+    "fcy_status",
+    "pit_stops_so_far",
+    "tyre_change_pursuer",
+    "track_category",
+    "current_compound",
+    "lap_time",
+    "interval",
+    "tyre_age",
+    "close_ahead",
+    "race_track",
+    "rained_yet",
+    "is_raining",
+    "minutes_rain",
+    "fulfilled_second_compound"
+  ],
+  "base_prob_cols": [
+    "p_svm",
+    "p_rf",
+    "p_xgb",
+    "p_ann",
+    "tcn_proba",
+    "tcn_effective_len"
+  ],
+  "raw_cols": [
+    "lapno",
+    "race_progress",
+    "position",
+    "fcy_status",
+    "pit_stops_so_far",
+    "tyre_change_pursuer",
+    "track_category",
+    "current_compound",
+    "lap_time",
+    "interval",
+    "tyre_age",
+    "close_ahead",
+    "race_track",
+    "rained_yet",
+    "is_raining",
+    "minutes_rain",
+    "fulfilled_second_compound"
+  ],
+  "raw_groups": {
+    "G_race_phase": [
+      "lapno",
+      "race_progress"
+    ],
+    "G_race_control": [
+      "fcy_status"
+    ],
+    "G_track": [
+      "race_track",
+      "track_category"
+    ],
+    "G_tyre": [
+      "current_compound",
+      "tyre_age",
+      "fulfilled_second_compound"
+    ],
+    "G_traffic": [
+      "position",
+      "interval",
+      "close_ahead"
+    ],
+    "G_strategy_history": [
+      "pit_stops_so_far",
+      "tyre_change_pursuer"
+    ],
+    "G_pace": [
+      "lap_time"
+    ],
+    "G_weather": [
+      "rained_yet",
+      "is_raining",
+      "minutes_rain"
+    ]
+  }
+}
