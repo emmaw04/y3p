@@ -1,0 +1,9 @@
+Host: falcon-02
+Repo: /dcs/23/u5514578/cs310/y3p
+Python: /dcs/23/u5514578/cs310/y3p/venv/bin/python
+TF 2.20.0 GPUs [PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')]
+[ablation_eval] out_root: runs/ablation/stage1_seq_tcn_ablation
+[ablation_eval] seed=42 n_splits=5 seq_len=8 pad_left=True tmask=True
+[ablation_eval] HOLDOUT_RACE_IDS=[53, 73, 24, 75, 2]
+[SEQ] running single-model ablation for model=tcn
+Epoch 1/80
