@@ -1,0 +1,72 @@
+2026-02-22 21:12:52.111152: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-02-22 21:12:52.144618: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-02-22 21:12:54.208360: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+/dcs/23/u5514578/cs310/y3p/src/utils/ablation_eval.py:51: DeprecationWarning: 
+Pyarrow will become a required dependency of pandas in the next major release of pandas (pandas 3.0),
+(to allow more performant data types, such as the Arrow string type, and better interoperability with other libraries)
+but was not found to be installed on your system.
+If this would cause problems for you,
+please provide us feedback at https://github.com/pandas-dev/pandas/issues/54466
+        
+  import pandas as pd
+2026-02-22 21:12:58.941306: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-02-22 21:12:58.975872: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-02-22 21:13:00.194784: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1771794784.900773  488449 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 22361 MB memory:  -> device: 0, name: NVIDIA RTX A5000, pci bus id: 0000:01:00.0, compute capability: 8.6
+2026-02-22 21:13:05.111820: W external/local_xla/xla/service/gpu/llvm_gpu_backend/default/nvptx_libdevice_path.cc:41] Can't find libdevice directory ${CUDA_DIR}/nvvm/libdevice. This may result in compilation or runtime failures, if the program we try to run uses routines from libdevice.
+Searched for CUDA in the following directories:
+  ./cuda_sdk_lib
+  src.utils.ablation_eval.runfiles/cuda_nvcc
+  src.utils.ablation_eval.runfiles/cuda_nvdisasm
+  src.utils.ablation_eval.runfiles/nvidia_nvshmem
+  src.uti/cuda_nvcc
+  src.uti/cuda_nvdisasm
+  src.uti/nvidia_nvshmem
+  
+  /usr/local/cuda
+  /opt/cuda
+  /dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/tensorflow/python/platform/../../../nvidia/cuda_nvcc
+  /dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/tensorflow/python/platform/../../../../nvidia/cuda_nvcc
+  /dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/tensorflow/python/platform/../../cuda
+  /dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/tensorflow/python/platform/../../../../../..
+  /dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/tensorflow/python/platform/../../../../../../..
+  .
+You can choose the search directory by setting xla_gpu_cuda_data_dir in HloModule's DebugOptions.  For most apps, setting the environment variable XLA_FLAGS=--xla_gpu_cuda_data_dir=/path/to/cuda will work.
+2026-02-22 21:13:05.469086: W external/local_xla/xla/service/gpu/llvm_gpu_backend/nvptx_backend.cc:110] libdevice is required by this HLO module but was not found at ./libdevice.10.bc
+error: libdevice not found at ./libdevice.10.bc
+2026-02-22 21:13:05.469516: E tensorflow/compiler/mlir/tools/kernel_gen/tf_framework_c_interface.cc:227] INTERNAL: Generating device code failed.
+2026-02-22 21:13:05.470011: W tensorflow/core/framework/op_kernel.cc:1842] UNKNOWN: JIT compilation failed.
+2026-02-22 21:13:05.470026: I tensorflow/core/framework/local_rendezvous.cc:407] Local rendezvous is aborting with status: UNKNOWN: JIT compilation failed.
+Traceback (most recent call last):
+  File "/usr/lib64/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib64/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/dcs/23/u5514578/cs310/y3p/src/utils/ablation_eval.py", line 985, in <module>
+    main()
+  File "/dcs/23/u5514578/cs310/y3p/src/utils/ablation_eval.py", line 959, in main
+    seq_results = run_seq_ablation_cv(
+  File "/dcs/23/u5514578/cs310/y3p/src/utils/ablation_eval.py", line 719, in run_seq_ablation_cv
+    model.fit(X_tr_ab, y_tr, class_weight=class_w)
+  File "/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/scikeras/wrappers.py", line 1501, in fit
+    super().fit(X=X, y=y, sample_weight=sample_weight, **kwargs)
+  File "/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/scikeras/wrappers.py", line 770, in fit
+    self._fit(
+  File "/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/scikeras/wrappers.py", line 925, in _fit
+    X, y = self._initialize(X, y)
+  File "/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/scikeras/wrappers.py", line 862, in _initialize
+    self.model_ = self._build_keras_model()
+  File "/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/scikeras/wrappers.py", line 431, in _build_keras_model
+    model = final_build_fn(**build_params)
+  File "/dcs/23/u5514578/cs310/y3p/src/models/models.py", line 703, in model_fn
+    return build_fn(int(sl), int(nf))   # ✅ use the builder you passed in
+  File "/dcs/23/u5514578/cs310/y3p/src/models/models.py", line 683, in _build_keras_tcn_gru_binary
+    x = layers.GRU(
+  File "/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/keras/src/utils/traceback_utils.py", line 122, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/keras/src/backend/tensorflow/numpy.py", line 2106, in sign
+    return tf.sign(x)
+tensorflow.python.framework.errors_impl.UnknownError: {{function_node __wrapped__Sign_device_/job:localhost/replica:0/task:0/device:GPU:0}} JIT compilation failed. [Op:Sign] name: 

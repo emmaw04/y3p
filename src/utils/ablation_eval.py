@@ -615,6 +615,139 @@ def _apply_dim_ablation(X_seq: np.ndarray, dims: List[int]) -> np.ndarray:
     X2[:, :, dims] = 0.0
     return X2
 
+# -----------------------------
+# TABULAR base-model ablation (SVM / XGB etc.)
+# -----------------------------
+def make_tabular_ablation_specs(
+    X_cols: List[str],
+) -> Tuple[Dict[str, List[str]], Dict[str, Any]]:
+    """
+    Mirror SEQ-style ablations, but at *raw column level*.
+
+    Returns:
+      ablation_specs: dict name -> list of columns to KEEP
+      feature_sets: metadata (baseline_cols, raw_groups, engineered_cols, undercut_pack_cols)
+    """
+    colset = set(X_cols)
+    baseline_cols = list(X_cols)
+
+    raw_groups, engineered_cols = build_stage1_feature_groups(baseline_cols)
+
+    # undercut pack columns (same list as elsewhere)
+    undercut_pack_cols = [c for c in [
+        "tyre_change_pursuer", "gap_behind_s",
+        "n_cars_within_5s_ahead", "tyre_age_diff_to_ahead",
+        "rejoin_gap_ahead_est_s", "rejoin_gap_behind_est_s"
+    ] if c in colset]
+
+    def drop(cols_to_drop: List[str]) -> List[str]:
+        dset = set(cols_to_drop)
+        kept = [c for c in baseline_cols if c not in dset]
+        if not kept:
+            raise ValueError("Ablation produced empty feature set.")
+        return kept
+
+    ablations: Dict[str, List[str]] = {"baseline_full": baseline_cols}
+
+    # drop each raw group (same names as SEQ)
+    for gname, gcols in raw_groups.items():
+        ablations[f"drop_{gname}"] = drop(gcols)
+
+    # engineered pack + individual engineered cols (same as SEQ)
+    engineered_cols = [c for c in engineered_cols if c in colset]
+    if engineered_cols:
+        ablations["drop_ENGINEERED_ALL"] = drop(engineered_cols)
+        for c in engineered_cols:
+            ablations[f"drop_COL_{c}"] = drop([c])
+
+    # undercut pack
+    if undercut_pack_cols:
+        ablations["drop_UNDERCUT_PACK"] = drop(undercut_pack_cols)
+
+    feature_sets = {
+        "baseline_cols": baseline_cols,
+        "raw_groups": raw_groups,
+        "engineered_cols": engineered_cols,
+        "undercut_pack_cols": undercut_pack_cols,
+    }
+    return ablations, feature_sets
+
+
+def run_tabular_ablation_cv(
+    X: pd.DataFrame,
+    y: pd.Series,
+    folds: List[Tuple[np.ndarray, np.ndarray]],
+    *,
+    cfg: ModelConfig,
+    model_name: str,
+    verbose: bool = False,
+) -> Tuple[pd.DataFrame, Dict[str, List[str]], Dict[str, Any]]:
+    """
+    Per-fold ablation for a *single* tabular base learner.
+    Uses:
+      - train fold only to fit
+      - train fold only to tune threshold (max F1)
+      - test fold only to evaluate
+
+    Returns: (results_df, ablation_specs, feature_sets)
+    """
+    X_cols = list(X.columns)
+    ablation_specs, feature_sets = make_tabular_ablation_specs(X_cols)
+
+    y_np = y.to_numpy().astype(int)
+
+    # prototype estimator from your registry
+    base_all = get_binary_base_learners(cfg)
+    if model_name not in base_all:
+        raise ValueError(f"Unknown base model '{model_name}'. Available={list(base_all.keys())}")
+
+    results_rows: List[Dict[str, Any]] = []
+
+    vprint(verbose, f"[BASE][{model_name}] n={len(y_np)} folds={len(folds)} n_ablations={len(ablation_specs)}")
+
+    for fold_id, (tr_idx, te_idx) in enumerate(folds):
+        vprint(verbose, f"\n[BASE][{model_name}][fold {fold_id}] train={len(tr_idx)} test={len(te_idx)}")
+
+        y_tr = y_np[tr_idx]
+        y_te = y_np[te_idx]
+
+        for ab_name, cols_keep in ablation_specs.items():
+            X_tr = X.iloc[tr_idx][cols_keep]
+            X_te = X.iloc[te_idx][cols_keep]
+
+            num_cols, cat_cols = infer_feature_types(X_tr)
+
+            # IMPORTANT: use your model-specific preprocessor rules
+            pre = make_preprocessor_for_model(model_name, num_cols=num_cols, cat_cols=cat_cols)
+
+            est = clone(base_all[model_name])
+            pipe = build_model_pipeline(pre, est)
+            pipe.fit(X_tr, y_tr)
+
+            proba_tr = pipe.predict_proba(X_tr)[:, 1].astype(float)
+            thr = tune_threshold_max_f1(y_tr, proba_tr)
+
+            proba_te = pipe.predict_proba(X_te)[:, 1].astype(float)
+            m = compute_fold_metrics(y_te, proba_te, threshold=thr)
+
+            results_rows.append({
+                "mode": "base",
+                "model_kind": model_name,
+                "ablation_name": ab_name,
+                "fold_id": int(fold_id),
+                "n_test_rows": int(len(te_idx)),
+                "threshold": float(thr),
+                **m,
+            })
+
+            if verbose:
+                vprint(
+                    verbose,
+                    f"[BASE][{model_name}][{ab_name}][fold {fold_id}] "
+                    f"PR_AUC={m['PR_AUC']:.4f} LogLoss={m['LogLoss']:.4f} F1={m['F1']:.4f}"
+                )
+
+    return pd.DataFrame(results_rows), ablation_specs, feature_sets
 
 def run_seq_ablation_cv(
     df1: pd.DataFrame,
@@ -814,8 +947,21 @@ def main() -> None:
         "--mode",
         type=str,
         default="meta",
-        choices=["meta", "seq", "both"],
-        help="meta: stacked ensemble ablation; seq: single sequence model ablation; both: run both.",
+        choices=["meta", "seq", "base", "both", "all"],
+        help=(
+            "meta: stacked ensemble ablation; "
+            "seq: single sequence model ablation; "
+            "base: tabular base-model ablation (svm/xgb); "
+            "both: meta+seq; "
+            "all: meta+seq+base."
+        ),
+    )
+
+    ap.add_argument(
+        "--base_models",
+        type=str,
+        default="svm,xgb",
+        help="Comma-separated base models to ablate in BASE mode (e.g. 'svm,xgb').",
     )
 
     ap.add_argument(
@@ -950,6 +1096,47 @@ def main() -> None:
 
         print_top5_damage(meta_summary, title="[META] Damage rankings")
 
+        # -----------------------------
+    # MODE: BASE (tabular SVM/XGB etc.)
+    # -----------------------------
+    if args.mode in ("base", "all"):
+        X1, y1 = get_stage1_xy(df1)
+
+        # match what you avoid leaking elsewhere
+        X_base = X1.copy().drop(columns=["race_id", "row_id", "driver_id", "y_pit"], errors="ignore")
+
+        # folds reuse df1 row indices -> same ordering in X_base/y1
+        base_models = [s.strip() for s in str(args.base_models).split(",") if s.strip()]
+        if not base_models:
+            raise ValueError("--base_models parsed to empty list")
+
+        for bm in base_models:
+            print(f"[BASE] running tabular ablation for model={bm}")
+
+            base_results, base_specs, base_feature_sets = run_tabular_ablation_cv(
+                X=X_base,
+                y=y1,
+                folds=folds,
+                cfg=cfg,
+                model_name=bm,
+                verbose=args.verbose,
+            )
+
+            # write per-model reports
+            _write_json(reports_dir / f"base_{bm}_ablation_specs.json", {"ablations": list(base_specs.keys())})
+            _write_json(reports_dir / f"base_{bm}_feature_sets.json", base_feature_sets)
+
+            base_results_path = reports_dir / f"base_{bm}_ablation_results.csv"
+            base_results.to_csv(base_results_path, index=False)
+            print(f"[BASE][reports] wrote: {base_results_path}")
+
+            base_summary = summarize_ablation_results(base_results, baseline_name="baseline_full")
+            base_summary_path = reports_dir / f"base_{bm}_ablation_summary.csv"
+            base_summary.to_csv(base_summary_path, index=False)
+            print(f"[BASE][reports] wrote: {base_summary_path}")
+
+            print_top5_damage(base_summary, title=f"[BASE:{bm}] Damage rankings")
+
     # -----------------------------
     # MODE: SEQ (TCN / TCN-GRU)
     # -----------------------------
@@ -985,5 +1172,51 @@ if __name__ == "__main__":
     main()
 
 '''
-g
+python3 -m src.utils.ablation_eval \
+  --data_stage1 data/processed/output1.csv \
+  --outdir runs/ablation \
+  --run_name stage1_seq_tcn_ablation \
+  --mode seq \
+  --seq_model tcn \
+  --n_splits 5 \
+  --seed 42 \
+  --seq_len 8 \
+  --pad_left \
+  --add_timestep_mask \
+  --verbose
+
+
+python3 -m src.utils.ablation_eval \
+  --data_stage1 data/processed/output1.csv \
+  --outdir runs/ablation \
+  --run_name stage1_seq_tcn_gru_ablation \
+  --mode seq \
+  --seq_model tcn_gru \
+  --n_splits 5 \
+  --seed 42 \
+  --seq_len 8 \
+  --pad_left \
+  --add_timestep_mask \
+  --verbose
 '''
+
+
+'''
+python3 -m src.utils.ablation_eval \
+  --data_stage1 path/to/output1.csv \
+  --mode base \
+  --base_models svm,xgb \
+  --n_splits 5 \
+  --seed 42 \
+  --verbose
+  
+  
+python3 -m src.utils.ablation_eval \
+  --data_stage1 path/to/output1.csv \
+  --mode all \
+  --base_models svm,xgb \
+  --seq_model tcn \
+  --seq_len 8 \
+  --pad_left \
+  --add_timestep_mask
+  '''
