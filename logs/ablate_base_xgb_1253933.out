@@ -1,0 +1,23 @@
+[ablation_eval] out_root: runs/ablation/stage1_ablation
+[ablation_eval] seed=42 n_splits=5 seq_len=8 pad_left=False tmask=False
+[ablation_eval] HOLDOUT_RACE_IDS=[53, 73, 24, 75, 2]
+[BASE] running tabular ablation for model=xgb
+[BASE][reports] wrote: runs/ablation/stage1_ablation/reports/base_xgb_ablation_results.csv
+[BASE][reports] wrote: runs/ablation/stage1_ablation/reports/base_xgb_ablation_summary.csv
+
+[BASE:xgb] Damage rankings
+Top-5 most damaging ablations (by PR-AUC drop):
+  drop_G_pace: PR_AUC_drop=0.2255 (mean_PR_AUC=0.2056)
+  drop_G_track: PR_AUC_drop=0.1162 (mean_PR_AUC=0.3150)
+  drop_ENGINEERED_ALL: PR_AUC_drop=0.0567 (mean_PR_AUC=0.3745)
+  drop_UNDERCUT_PACK: PR_AUC_drop=0.0490 (mean_PR_AUC=0.3822)
+  drop_G_traffic_proximity: PR_AUC_drop=0.0361 (mean_PR_AUC=0.3950)
+
+Top-5 most damaging ablations (by LogLoss increase):
+  drop_G_pace: LogLoss_increase=0.0235 (mean_LogLoss=0.1012)
+  drop_G_track: LogLoss_increase=0.0116 (mean_LogLoss=0.0893)
+  drop_ENGINEERED_ALL: LogLoss_increase=0.0079 (mean_LogLoss=0.0856)
+  drop_UNDERCUT_PACK: LogLoss_increase=0.0078 (mean_LogLoss=0.0855)
+  drop_G_tyre_state: LogLoss_increase=0.0059 (mean_LogLoss=0.0835)
+
+[ablation_eval] done. Outputs in: runs/ablation/stage1_ablation/reports

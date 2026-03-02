@@ -1,0 +1,13 @@
+{
+  "task": "multiclass",
+  "model": "svm",
+  "n_splits": 5,
+  "seed": 42,
+  "threshold": null,
+  "n_classes": 5,
+  "accuracy_mean": 0.7149532710280374,
+  "precision_macro_mean": 0.7827020512256194,
+  "recall_macro_mean": 0.6956346084030829,
+  "f1_macro_mean": 0.7235164495157023,
+  "logloss_mean": 0.6841849961191514
+}

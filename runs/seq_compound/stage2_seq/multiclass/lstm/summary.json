@@ -1,0 +1,13 @@
+{
+  "task": "multiclass",
+  "model": "lstm",
+  "seq_len": 8,
+  "n_splits": 5,
+  "seed": 42,
+  "n_classes": 5,
+  "accuracy_mean": 0.5721008829213353,
+  "precision_macro_mean": 0.4154698120167303,
+  "recall_macro_mean": 0.4052873553990036,
+  "f1_macro_mean": 0.4050925928459918,
+  "logloss_mean": 1.0895854045802236
+}

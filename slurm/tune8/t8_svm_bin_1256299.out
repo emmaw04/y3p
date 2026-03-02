@@ -1,0 +1,451 @@
+Job started on tiger-02 at Thu 26 Feb 11:12:03 GMT 2026
+CPUs: 16  MEM: 64000
+CMD: python -m src.utils.tune_8_optuna --data_stage1 data/processed/output1.csv --task binary --model svm --n_splits 5 --max_races 80 --n_trials 400 --seed 42 --timeout_sec 170000 --outdir runs/tuning_8_final
+[I 2026-02-26 11:12:38,712] Trial 49 finished with value: 0.10677595108724056 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 24.281708108750575, 'gamma': 0.04017555853350587, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 32 with value: 0.10665651935711515.
+[I 2026-02-26 11:18:57,431] Trial 50 pruned. 
+[I 2026-02-26 11:19:12,200] Trial 51 finished with value: 0.11582167278178586 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 66.38035939214815, 'gamma': 0.023789850119717754, 'calib_method': 'isotonic', 'calib_cv': 3}. Best is trial 32 with value: 0.10665651935711515.
+[I 2026-02-26 11:19:49,139] Trial 52 finished with value: 0.10719589839233264 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 64.93398485765766, 'gamma': 0.09845942625033002, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 32 with value: 0.10665651935711515.
+[I 2026-02-26 11:20:41,686] Trial 53 pruned. 
+[I 2026-02-26 11:21:12,249] Trial 54 finished with value: 0.10676741889306776 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 24.87971310836659, 'gamma': 0.031032129659694253, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 32 with value: 0.10665651935711515.
+[I 2026-02-26 11:21:43,765] Trial 55 finished with value: 0.10709830691817661 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 34.93241503609504, 'gamma': 0.06604876230219983, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 32 with value: 0.10665651935711515.
+[I 2026-02-26 11:22:42,337] Trial 56 finished with value: 0.10692691814454322 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 75.45960585706695, 'gamma': 0.17553274572068786, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 32 with value: 0.10665651935711515.
+[I 2026-02-26 11:23:13,178] Trial 57 finished with value: 0.10696062280302843 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 22.822478012169917, 'gamma': 0.02457282153932844, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 32 with value: 0.10665651935711515.
+[I 2026-02-26 11:23:46,275] Trial 58 pruned. 
+[I 2026-02-26 11:24:27,931] Trial 59 pruned. 
+[I 2026-02-26 11:25:12,032] Trial 60 finished with value: 0.10598184068659226 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 1.4166747096307422, 'gamma': 0.04031387454567317, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 60 with value: 0.10598184068659226.
+[I 2026-02-26 11:26:25,792] Trial 61 finished with value: 0.104626120272918 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.2671873415336475, 'gamma': 0.07115996162910974, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:26:34,770] Trial 62 pruned. 
+[I 2026-02-26 11:27:15,993] Trial 63 finished with value: 0.10634254865743513 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 1.2267983233587592, 'gamma': 0.06201282284799075, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:31:33,971] Trial 64 pruned. 
+[I 2026-02-26 11:32:11,578] Trial 65 finished with value: 0.1067457121375055 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 1.5938762451550796, 'gamma': 0.08317361196001063, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:33:24,383] Trial 66 finished with value: 0.10463071503493722 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.3063960184285188, 'gamma': 0.05245993048234012, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:34:57,500] Trial 67 finished with value: 0.10650245978621616 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.21599580127672807, 'gamma': 0.2016686213240643, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:36:13,945] Trial 68 finished with value: 0.10531879798311225 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.25539501127469494, 'gamma': 0.14503376724454276, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:37:37,946] Trial 69 finished with value: 0.1058946412192027 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.24767861771407493, 'gamma': 0.176221703229853, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:37:43,234] Trial 70 pruned. 
+[I 2026-02-26 11:38:51,921] Trial 71 finished with value: 0.10594608323446612 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.4066477303047662, 'gamma': 0.16162530320027704, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:43:14,108] Trial 72 pruned. 
+[I 2026-02-26 11:49:21,449] Trial 73 pruned. 
+[I 2026-02-26 11:50:40,763] Trial 74 finished with value: 0.10571531269725865 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.2674313320761821, 'gamma': 0.1661685659535706, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:51:57,236] Trial 75 finished with value: 0.10541064119337355 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.2645754120218909, 'gamma': 0.1492844437255605, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:53:11,465] Trial 76 finished with value: 0.10536527065024726 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.2795503247309824, 'gamma': 0.14330084753849356, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:54:27,534] Trial 77 finished with value: 0.10524275223319757 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.256654547949156, 'gamma': 0.13937054370407984, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 61 with value: 0.104626120272918.
+[I 2026-02-26 11:58:21,647] Trial 78 pruned. 
+[I 2026-02-26 12:00:19,154] Trial 79 finished with value: 0.10456644115606784 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.07766849527934991, 'gamma': 0.13745545006836737, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 79 with value: 0.10456644115606784.
+[I 2026-02-26 12:00:22,436] Trial 80 pruned. 
+[I 2026-02-26 12:02:18,105] Trial 81 finished with value: 0.10468648729675686 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.08256812195741765, 'gamma': 0.141886923064782, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 79 with value: 0.10456644115606784.
+[I 2026-02-26 12:03:32,662] Trial 82 pruned. 
+[I 2026-02-26 12:04:46,810] Trial 83 finished with value: 0.11214558448471894 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.248006029513084, 'C': 0.07160530698604724, 'gamma': 0.12753140172688465, 'calib_method': 'isotonic', 'calib_cv': 5}. Best is trial 79 with value: 0.10456644115606784.
+[I 2026-02-26 12:06:41,576] Trial 84 finished with value: 0.10752193761534205 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.13726403944965362, 'gamma': 0.23044662700601684, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 79 with value: 0.10456644115606784.
+[I 2026-02-26 12:12:09,189] Trial 85 pruned. 
+[I 2026-02-26 12:14:17,637] Trial 86 finished with value: 0.10380475875801838 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.03575265776018722, 'gamma': 0.07968999800689697, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 86 with value: 0.10380475875801838.
+[I 2026-02-26 12:16:27,272] Trial 87 finished with value: 0.10376885019484616 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.03246021583587636, 'gamma': 0.06616848303144837, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 87 with value: 0.10376885019484616.
+[I 2026-02-26 12:18:42,166] Trial 88 finished with value: 0.10389461661546166 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.028186620483830232, 'gamma': 0.07664038999323053, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 87 with value: 0.10376885019484616.
+[I 2026-02-26 12:20:56,746] Trial 89 finished with value: 0.10386625210217497 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.029724966369118297, 'gamma': 0.07801038700682487, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 87 with value: 0.10376885019484616.
+[I 2026-02-26 12:23:06,807] Trial 90 finished with value: 0.10376997555187906 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.030731946829614134, 'gamma': 0.06075403180027898, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 87 with value: 0.10376885019484616.
+[I 2026-02-26 12:25:16,736] Trial 91 finished with value: 0.10378291219171894 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.03349406042608866, 'gamma': 0.07059631307110674, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 87 with value: 0.10376885019484616.
+[I 2026-02-26 12:27:28,870] Trial 92 finished with value: 0.10382222198702458 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.03235937114875505, 'gamma': 0.07761289621003128, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 87 with value: 0.10376885019484616.
+[I 2026-02-26 12:27:33,094] Trial 93 pruned. 
+[I 2026-02-26 12:29:39,451] Trial 94 finished with value: 0.10374055881567049 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.03671199060227741, 'gamma': 0.06942445281813157, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 94 with value: 0.10374055881567049.
+[I 2026-02-26 12:31:49,362] Trial 95 finished with value: 0.10378222764824815 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.035110062564749626, 'gamma': 0.07512473349597788, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 94 with value: 0.10374055881567049.
+[I 2026-02-26 12:34:03,426] Trial 96 finished with value: 0.10386705965756267 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.03378994328116909, 'gamma': 0.08871766931352443, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 94 with value: 0.10374055881567049.
+[I 2026-02-26 12:37:21,469] Trial 97 pruned. 
+[I 2026-02-26 12:39:24,996] Trial 98 finished with value: 0.10391444710599843 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.046284208368466855, 'gamma': 0.08774940679794452, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 94 with value: 0.10374055881567049.
+[I 2026-02-26 12:41:33,749] Trial 99 pruned. 
+[I 2026-02-26 12:43:08,455] Trial 100 pruned. 
+[I 2026-02-26 12:45:16,941] Trial 101 finished with value: 0.11172888580396564 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.035581329340331175, 'gamma': 0.0764869938218943, 'calib_method': 'isotonic', 'calib_cv': 5}. Best is trial 94 with value: 0.10374055881567049.
+[I 2026-02-26 12:47:39,069] Trial 102 pruned. 
+[I 2026-02-26 12:49:41,947] Trial 103 finished with value: 0.10401973625375889 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.05121796203943163, 'gamma': 0.09738748007512718, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 94 with value: 0.10374055881567049.
+[I 2026-02-26 12:51:46,564] Trial 104 finished with value: 0.10394191517253785 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.04608633274916957, 'gamma': 0.09166999776426717, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 94 with value: 0.10374055881567049.
+[I 2026-02-26 12:53:40,441] Trial 105 pruned. 
+[I 2026-02-26 12:56:10,835] Trial 106 pruned. 
+[I 2026-02-26 12:58:17,446] Trial 107 finished with value: 0.10376569764130925 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'balanced', 'C': 0.03894995082558198, 'gamma': 0.07299112037358493, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 94 with value: 0.10374055881567049.
+[I 2026-02-26 13:00:21,616] Trial 108 pruned. 
+[I 2026-02-26 13:02:22,106] Trial 109 finished with value: 0.10381341340226109 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 41.34568204772192, 'C': 0.02647787392454699, 'gamma': 0.06987615749152062, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 94 with value: 0.10374055881567049.
+[I 2026-02-26 13:04:23,808] Trial 110 pruned. 
+[I 2026-02-26 13:07:00,396] Trial 111 finished with value: 0.10427119241008605 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 75.67468477265763, 'C': 0.015884478131911406, 'gamma': 0.06652542812256024, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 94 with value: 0.10374055881567049.
+[I 2026-02-26 13:08:28,178] Trial 112 finished with value: 0.10359267547931908 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 22.421552850077784, 'C': 0.05685152462402032, 'gamma': 0.10329975634345404, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 112 with value: 0.10359267547931908.
+[I 2026-02-26 13:10:22,454] Trial 113 finished with value: 0.1076460981828248 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 22.505355130052145, 'C': 0.061921992300674106, 'gamma': 0.23206529892668074, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 112 with value: 0.10359267547931908.
+[I 2026-02-26 13:12:22,272] Trial 114 finished with value: 0.10439289841331093 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 46.0745003313021, 'C': 0.03679141596194256, 'gamma': 0.11712867649181495, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 112 with value: 0.10359267547931908.
+[I 2026-02-26 13:14:23,204] Trial 115 finished with value: 0.10390679797930535 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 33.518148260770985, 'C': 0.02521947567807782, 'gamma': 0.1015313442247678, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 112 with value: 0.10359267547931908.
+[I 2026-02-26 13:15:36,282] Trial 116 finished with value: 0.10265879523124917 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.233319213358918, 'C': 0.012334294960436545, 'gamma': 0.045748968926021025, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 116 with value: 0.10265879523124917.
+[I 2026-02-26 13:16:45,573] Trial 117 finished with value: 0.10268175496304699 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.526007011892826, 'C': 0.010777760608997706, 'gamma': 0.046709486036883144, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 116 with value: 0.10265879523124917.
+[I 2026-02-26 13:17:58,579] Trial 118 pruned. 
+[I 2026-02-26 13:18:00,239] Trial 119 pruned. 
+[I 2026-02-26 13:18:47,387] Trial 120 pruned. 
+[I 2026-02-26 13:19:56,350] Trial 121 finished with value: 0.1090276221981961 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.213933864664924, 'C': 0.013041642791502862, 'gamma': 0.059223276653568295, 'calib_method': 'isotonic', 'calib_cv': 5}. Best is trial 116 with value: 0.10265879523124917.
+[I 2026-02-26 13:21:28,693] Trial 122 pruned. 
+[I 2026-02-26 13:22:55,814] Trial 123 pruned. 
+[I 2026-02-26 13:23:56,935] Trial 124 finished with value: 0.10278260524061085 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.682009065273531, 'C': 0.026059905371785368, 'gamma': 0.06574233570729733, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 116 with value: 0.10265879523124917.
+[I 2026-02-26 13:24:56,100] Trial 125 finished with value: 0.10271377697558995 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.59344514522022, 'C': 0.04229611246346931, 'gamma': 0.06276897741068171, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 116 with value: 0.10265879523124917.
+[I 2026-02-26 13:25:59,223] Trial 126 pruned. 
+[I 2026-02-26 13:26:58,577] Trial 127 finished with value: 0.10283071711288612 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.426921794268646, 'C': 0.024266971452519735, 'gamma': 0.0604410574984855, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 116 with value: 0.10265879523124917.
+[I 2026-02-26 13:27:55,599] Trial 128 pruned. 
+[I 2026-02-26 13:28:56,136] Trial 129 finished with value: 0.1026373846727194 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.974367334272925, 'C': 0.042096001953834686, 'gamma': 0.05889167402670678, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 129 with value: 0.1026373846727194.
+[I 2026-02-26 13:29:54,928] Trial 130 pruned. 
+[I 2026-02-26 13:31:17,787] Trial 131 finished with value: 0.10253852644098549 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.750076830753349, 'C': 0.019654001761647853, 'gamma': 0.058873183877306036, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 131 with value: 0.10253852644098549.
+[I 2026-02-26 13:32:45,660] Trial 132 finished with value: 0.10432373668361161 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.800076633414694, 'C': 0.0191351999994411, 'gamma': 0.11293296812507049, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 131 with value: 0.10253852644098549.
+[I 2026-02-26 13:34:01,876] Trial 133 finished with value: 0.10258568522147134 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.840905258182739, 'C': 0.011598008275492077, 'gamma': 0.057903834904204116, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 131 with value: 0.10253852644098549.
+[I 2026-02-26 13:35:11,526] Trial 134 finished with value: 0.10257954711752296 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.540138545384067, 'C': 0.014896805173964134, 'gamma': 0.055678467567834865, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 131 with value: 0.10253852644098549.
+[I 2026-02-26 13:36:19,635] Trial 135 pruned. 
+[I 2026-02-26 13:37:36,927] Trial 136 pruned. 
+[I 2026-02-26 13:38:35,299] Trial 137 pruned. 
+[I 2026-02-26 13:39:42,055] Trial 138 finished with value: 0.10252565127972824 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.964449859850088, 'C': 0.023154035830654215, 'gamma': 0.05701303330500069, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 138 with value: 0.10252565127972824.
+[I 2026-02-26 13:40:47,002] Trial 139 pruned. 
+[I 2026-02-26 13:41:46,517] Trial 140 finished with value: 0.10391128560076009 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.799572159949514, 'C': 0.01351041419540496, 'gamma': 0.11169332163807841, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 138 with value: 0.10252565127972824.
+[I 2026-02-26 13:41:47,368] Trial 141 pruned. 
+[I 2026-02-26 13:42:35,351] Trial 142 pruned. 
+[I 2026-02-26 13:43:39,262] Trial 143 pruned. 
+[I 2026-02-26 13:44:52,280] Trial 144 finished with value: 0.10247934963331459 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.111365239683114, 'C': 0.017866135823169618, 'gamma': 0.05718396656435895, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 13:46:04,537] Trial 145 finished with value: 0.1025518504559487 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.141401049043214, 'C': 0.01778594866620127, 'gamma': 0.04694241640925544, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 13:47:14,997] Trial 146 pruned. 
+[I 2026-02-26 13:48:42,375] Trial 147 pruned. 
+[I 2026-02-26 13:49:35,204] Trial 148 pruned. 
+[I 2026-02-26 13:50:49,281] Trial 149 pruned. 
+[I 2026-02-26 13:51:51,456] Trial 150 pruned. 
+[I 2026-02-26 13:53:16,984] Trial 151 pruned. 
+[I 2026-02-26 13:54:30,100] Trial 152 finished with value: 0.10257690170498175 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.085741045521013, 'C': 0.014991669662114168, 'gamma': 0.062225858199426554, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 13:55:43,517] Trial 153 finished with value: 0.10252572542118363 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.255286476567672, 'C': 0.01593295750799791, 'gamma': 0.058544220965476776, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 13:56:56,524] Trial 154 finished with value: 0.10252328167904898 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.21217514807282, 'C': 0.016409557212771257, 'gamma': 0.05924544405975166, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 13:58:09,919] Trial 155 finished with value: 0.10252057519626241 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.357852030058758, 'C': 0.015566079610690883, 'gamma': 0.05360343272547919, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 13:59:22,900] Trial 156 finished with value: 0.10254205438530047 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.213910882952934, 'C': 0.015146000675922134, 'gamma': 0.057970977971725866, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:00:34,384] Trial 157 pruned. 
+[I 2026-02-26 14:01:53,183] Trial 158 finished with value: 0.10251981943993205 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.362871483655944, 'C': 0.013274021155064004, 'gamma': 0.053635122354132474, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:03:10,337] Trial 159 finished with value: 0.10257650429353941 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.934754575852395, 'C': 0.01176556440957129, 'gamma': 0.05000137620432245, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:04:29,144] Trial 160 finished with value: 0.10258720340942981 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.409776341942198, 'C': 0.012696682411608559, 'gamma': 0.047164669813632105, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:05:47,301] Trial 161 pruned. 
+[I 2026-02-26 14:07:02,079] Trial 162 pruned. 
+[I 2026-02-26 14:07:04,832] Trial 163 pruned. 
+[I 2026-02-26 14:08:16,542] Trial 164 finished with value: 0.10263355651267791 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.98258135505672, 'C': 0.012461321130953192, 'gamma': 0.04810830595730885, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:09:29,143] Trial 165 finished with value: 0.10261955022576805 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.218627720728282, 'C': 0.012582668741863447, 'gamma': 0.0479486392976366, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:10:45,866] Trial 166 finished with value: 0.10253737230107537 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.994315213462544, 'C': 0.013468883662049744, 'gamma': 0.05210334523065753, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:12:06,024] Trial 167 pruned. 
+[I 2026-02-26 14:13:20,463] Trial 168 pruned. 
+[I 2026-02-26 14:14:51,419] Trial 169 finished with value: 0.10364925001197448 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 16.644179549732538, 'C': 0.01272432331016239, 'gamma': 0.0877639063991591, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:15:25,082] Trial 170 pruned. 
+[I 2026-02-26 14:16:45,497] Trial 171 finished with value: 0.10337487094890221 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.43486846952603, 'C': 0.019947503663662547, 'gamma': 0.09347505533827878, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:17:54,796] Trial 172 pruned. 
+[I 2026-02-26 14:19:08,042] Trial 173 pruned. 
+[I 2026-02-26 14:20:13,293] Trial 174 finished with value: 0.1026847971893566 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.66280273393001, 'C': 0.015374039417210099, 'gamma': 0.05274223339911882, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:21:23,143] Trial 175 finished with value: 0.10259928476859423 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.39319181256667, 'C': 0.012547620887112186, 'gamma': 0.05664316376669971, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:22:33,664] Trial 176 finished with value: 0.10260640097276227 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.735440202712635, 'C': 0.0136325962318942, 'gamma': 0.050279050837339155, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:23:53,558] Trial 177 finished with value: 0.10292309525018947 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.835345428236302, 'C': 0.021489235835171747, 'gamma': 0.08209638620826606, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:24:59,662] Trial 178 pruned. 
+[I 2026-02-26 14:26:16,300] Trial 179 finished with value: 0.10258981544965703 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.743513282866152, 'C': 0.011026632025822205, 'gamma': 0.0587297647784024, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:27:36,367] Trial 180 finished with value: 0.10270299179838112 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.333092677191058, 'C': 0.010550779652183151, 'gamma': 0.06537979774336573, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:29:04,161] Trial 181 pruned. 
+[I 2026-02-26 14:30:16,423] Trial 182 finished with value: 0.10433799846473757 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.024351400977816, 'C': 0.018619827256027625, 'gamma': 0.12219912393422969, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:31:31,952] Trial 183 finished with value: 0.10294089694164894 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.746333356110426, 'C': 0.021208252382195578, 'gamma': 0.08247577692583206, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:32:43,460] Trial 184 finished with value: 0.102583374387572 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.931396246187669, 'C': 0.012001747392482364, 'gamma': 0.05313190573770197, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:33:53,447] Trial 185 finished with value: 0.10260923640350539 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.471612896614365, 'C': 0.011621882642568873, 'gamma': 0.06227872903395949, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:35:14,369] Trial 186 finished with value: 0.10252566128767382 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.785021580671664, 'C': 0.014872429250307228, 'gamma': 0.059429532224914566, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:36:37,264] Trial 187 finished with value: 0.1036412841932958 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.919731863314555, 'C': 0.016891686939844785, 'gamma': 0.09608768379964366, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:38:05,459] Trial 188 pruned. 
+[I 2026-02-26 14:39:11,302] Trial 189 finished with value: 0.10279170292262405 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.437604427303826, 'C': 0.014509259687081841, 'gamma': 0.07220268755117222, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 144 with value: 0.10247934963331459.
+[I 2026-02-26 14:40:26,812] Trial 190 finished with value: 0.10242028256070472 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.807632579679137, 'C': 0.018845277275605688, 'gamma': 0.05769329359861117, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 190 with value: 0.10242028256070472.
+[I 2026-02-26 14:41:46,537] Trial 191 pruned. 
+[I 2026-02-26 14:43:03,070] Trial 192 finished with value: 0.10272962700807584 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.862570026559709, 'C': 0.018388590294523412, 'gamma': 0.07371296996145471, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 190 with value: 0.10242028256070472.
+[I 2026-02-26 14:44:45,306] Trial 193 finished with value: 0.10424000140576259 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 19.893854311554893, 'C': 0.015903514403272295, 'gamma': 0.10550587473512443, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 190 with value: 0.10242028256070472.
+[I 2026-02-26 14:45:59,743] Trial 194 finished with value: 0.10256151976727616 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.38962211780007, 'C': 0.01255944105853791, 'gamma': 0.05569388926554587, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 190 with value: 0.10242028256070472.
+[I 2026-02-26 14:47:14,511] Trial 195 finished with value: 0.1025755247048058 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.447482218233144, 'C': 0.011540790505004369, 'gamma': 0.058191943510719255, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 190 with value: 0.10242028256070472.
+[I 2026-02-26 14:48:34,980] Trial 196 pruned. 
+[I 2026-02-26 14:49:47,625] Trial 197 finished with value: 0.10242978560018523 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.280601848066178, 'C': 0.02361119600253496, 'gamma': 0.060131520465916265, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 190 with value: 0.10242028256070472.
+[I 2026-02-26 14:51:00,325] Trial 198 finished with value: 0.1024267347560005 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.600252076083713, 'C': 0.02643392647529251, 'gamma': 0.05951273609339564, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 190 with value: 0.10242028256070472.
+[I 2026-02-26 14:52:11,582] Trial 199 finished with value: 0.10263507808557296 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.963794652123001, 'C': 0.02601312627362827, 'gamma': 0.073111858065207, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 190 with value: 0.10242028256070472.
+[I 2026-02-26 14:52:12,804] Trial 200 pruned. 
+[I 2026-02-26 14:53:06,811] Trial 201 finished with value: 0.10234078863893352 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 25.77001454404118, 'C': 0.022897663781240727, 'gamma': 0.09343740780295114, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 14:53:45,097] Trial 202 finished with value: 0.10381241136831862 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.44379892928524, 'C': 0.022617547373072342, 'gamma': 0.11831357189083462, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 14:54:16,273] Trial 203 finished with value: 0.11114963552542685 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.11151560148648, 'C': 0.028855705058091024, 'gamma': 0.08448953095426329, 'calib_method': 'isotonic', 'calib_cv': 3}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 14:55:14,245] Trial 204 pruned. 
+[I 2026-02-26 14:57:05,403] Trial 205 pruned. 
+[I 2026-02-26 14:57:41,486] Trial 206 finished with value: 0.10277028584999934 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.143432557446744, 'C': 0.017786998610459254, 'gamma': 0.0902700052650472, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 14:58:18,128] Trial 207 pruned. 
+[I 2026-02-26 15:00:05,974] Trial 208 pruned. 
+[I 2026-02-26 15:01:13,281] Trial 209 pruned. 
+[I 2026-02-26 15:02:35,457] Trial 210 finished with value: 0.10269484839762866 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.530887861252172, 'C': 0.021677209671548545, 'gamma': 0.07127527719440657, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:04:42,181] Trial 211 pruned. 
+[I 2026-02-26 15:05:52,981] Trial 212 pruned. 
+[I 2026-02-26 15:06:31,652] Trial 213 finished with value: 0.10313297490703881 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.156828561150014, 'C': 0.018203769852557162, 'gamma': 0.09436373675253601, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:09:19,849] Trial 214 pruned. 
+[I 2026-02-26 15:10:34,741] Trial 215 finished with value: 0.10258550360190541 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.531061017490073, 'C': 0.015021170481960743, 'gamma': 0.06364766949281511, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:11:45,349] Trial 216 finished with value: 0.10276642855277915 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.370790103911027, 'C': 0.01554073520773416, 'gamma': 0.0737122282433347, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:12:58,165] Trial 217 pruned. 
+[I 2026-02-26 15:14:30,144] Trial 218 finished with value: 0.10278624847102777 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 17.467438078934574, 'C': 0.013902708417792353, 'gamma': 0.06190872553361356, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:15:49,480] Trial 219 pruned. 
+[I 2026-02-26 15:17:00,525] Trial 220 pruned. 
+[I 2026-02-26 15:18:17,244] Trial 221 finished with value: 0.10274460774354169 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.703952661122553, 'C': 0.016884219871286636, 'gamma': 0.07354292196798742, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:19:27,005] Trial 222 finished with value: 0.1038470508888207 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.838179781903023, 'C': 0.011461579610995644, 'gamma': 0.10936306122195463, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:20:43,083] Trial 223 pruned. 
+[I 2026-02-26 15:21:58,141] Trial 224 finished with value: 0.10257273962016515 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.42593234439809, 'C': 0.011793366878515985, 'gamma': 0.05828073443430695, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:23:08,335] Trial 225 finished with value: 0.10257783529074038 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.513410434366655, 'C': 0.014925613969538119, 'gamma': 0.05835947535925813, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:24:18,633] Trial 226 pruned. 
+[I 2026-02-26 15:25:24,054] Trial 227 finished with value: 0.10296293616378112 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.338211592212867, 'C': 0.014181204395402823, 'gamma': 0.0805076977897539, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:26:33,067] Trial 228 finished with value: 0.10261555806815348 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.107703178239216, 'C': 0.012282084551598304, 'gamma': 0.057250192677515674, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:28:32,769] Trial 229 pruned. 
+[I 2026-02-26 15:29:59,337] Trial 230 finished with value: 0.10350487645394288 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.977062432260057, 'C': 0.017336555214243925, 'gamma': 0.09306673424243073, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:31:11,360] Trial 231 pruned. 
+[I 2026-02-26 15:32:32,172] Trial 232 finished with value: 0.10262787708078805 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.054329795733697, 'C': 0.019794591355462715, 'gamma': 0.06891380731672012, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:32:34,381] Trial 233 pruned. 
+[I 2026-02-26 15:33:47,286] Trial 234 pruned. 
+[I 2026-02-26 15:34:57,496] Trial 235 finished with value: 0.10259842049102619 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.566699271084376, 'C': 0.015349163711646742, 'gamma': 0.0636196746372845, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:36:11,656] Trial 236 finished with value: 0.10251759969705825 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.442839353187278, 'C': 0.015993087587626655, 'gamma': 0.05985690626130207, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:36:53,870] Trial 237 pruned. 
+[I 2026-02-26 15:38:11,932] Trial 238 pruned. 
+[I 2026-02-26 15:39:21,548] Trial 239 finished with value: 0.10303343069008408 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.20735546157869, 'C': 0.012244937088522489, 'gamma': 0.08445610489887254, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:40:30,308] Trial 240 pruned. 
+[I 2026-02-26 15:41:35,806] Trial 241 pruned. 
+[I 2026-02-26 15:42:50,905] Trial 242 finished with value: 0.10266022709481279 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.321201763529066, 'C': 0.01656944935397257, 'gamma': 0.06977339237565583, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:43:28,362] Trial 243 pruned. 
+[I 2026-02-26 15:44:42,976] Trial 244 finished with value: 0.10257497610028403 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.54113229978331, 'C': 0.014533988051085606, 'gamma': 0.06212990665295097, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:45:58,139] Trial 245 finished with value: 0.10250984302705916 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.585995058699131, 'C': 0.015910067093537334, 'gamma': 0.06025290860265426, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:47:20,307] Trial 246 finished with value: 0.10297025152285677 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.16089681952576, 'C': 0.018537430591300808, 'gamma': 0.08100889067222099, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:48:36,394] Trial 247 finished with value: 0.10256703788148402 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.73760840129437, 'C': 0.015298440307082137, 'gamma': 0.06361661526267409, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:49:51,637] Trial 248 finished with value: 0.10251376659882305 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.83330688550416, 'C': 0.020944133458010498, 'gamma': 0.06577958024451229, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:51:10,949] Trial 249 finished with value: 0.10383542233495009 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.98323714136121, 'C': 0.022703252237027415, 'gamma': 0.10729897538573635, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:52:33,695] Trial 250 finished with value: 0.10276187873208031 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.679025226498595, 'C': 0.020542999121323992, 'gamma': 0.07383334387016621, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:53:45,334] Trial 251 pruned. 
+[I 2026-02-26 15:55:07,247] Trial 252 finished with value: 0.10319697670341332 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.884399355646796, 'C': 0.01723976632232635, 'gamma': 0.08551621893146895, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:56:28,205] Trial 253 finished with value: 0.1051698781455043 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.512791867841464, 'C': 0.02619623934861658, 'gamma': 0.13876598302958804, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:57:47,069] Trial 254 finished with value: 0.10256924446823001 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.489613916695705, 'C': 0.017241422212209537, 'gamma': 0.06539920707767354, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 15:59:05,225] Trial 255 finished with value: 0.10255620572817208 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.403769432723662, 'C': 0.020038114164710352, 'gamma': 0.06680783545908404, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:00:29,102] Trial 256 finished with value: 0.10272263266181544 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 16.362521176775324, 'C': 0.02242258384126174, 'gamma': 0.06923107499346934, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:01:50,592] Trial 257 finished with value: 0.10364728460751818 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.623163249820953, 'C': 0.019253570098295127, 'gamma': 0.09902035528802235, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:03:09,700] Trial 258 finished with value: 0.10263504927094975 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.339707410620603, 'C': 0.024287945692989598, 'gamma': 0.06947240066116088, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:04:42,144] Trial 259 pruned. 
+[I 2026-02-26 16:05:59,079] Trial 260 finished with value: 0.10317894930001856 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.337485025768176, 'C': 0.030080801852825325, 'gamma': 0.09409254345376368, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:06:33,188] Trial 261 pruned. 
+[I 2026-02-26 16:06:34,715] Trial 262 pruned. 
+[I 2026-02-26 16:07:45,165] Trial 263 finished with value: 0.10246277840453191 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.856411087814783, 'C': 0.020747320704178854, 'gamma': 0.05948986297499563, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:09:12,724] Trial 264 finished with value: 0.1030958658635666 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 17.024647307243846, 'C': 0.02129980317410234, 'gamma': 0.08312494983030802, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:10:18,871] Trial 265 pruned. 
+[I 2026-02-26 16:11:35,980] Trial 266 finished with value: 0.10471866404803107 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.833387479140937, 'C': 0.021051161665829748, 'gamma': 0.12908705908613152, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:12:52,309] Trial 267 finished with value: 0.10248944149105137 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.788354400570704, 'C': 0.017012123721128907, 'gamma': 0.06075876833315772, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:14:11,911] Trial 268 pruned. 
+[I 2026-02-26 16:15:30,578] Trial 269 finished with value: 0.10276994030033097 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.289395435369219, 'C': 0.01825244690693314, 'gamma': 0.07437447386733537, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:16:41,140] Trial 270 finished with value: 0.10256520603961128 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.635063542357923, 'C': 0.016462508057272514, 'gamma': 0.060699846353843345, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:18:27,817] Trial 271 pruned. 
+[I 2026-02-26 16:18:59,829] Trial 272 finished with value: 0.10284690527199922 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.817348639779999, 'C': 0.024603598980145313, 'gamma': 0.10871849916259131, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:20:04,871] Trial 273 pruned. 
+[I 2026-02-26 16:21:15,027] Trial 274 finished with value: 0.10280538392445653 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.749699863839114, 'C': 0.03084370492253164, 'gamma': 0.08127682131039717, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:22:51,398] Trial 275 pruned. 
+[I 2026-02-26 16:24:02,134] Trial 276 finished with value: 0.10264860774306868 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.699545251842341, 'C': 0.016207734973682646, 'gamma': 0.06846315311805243, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:25:09,071] Trial 277 pruned. 
+[I 2026-02-26 16:26:22,961] Trial 278 pruned. 
+[I 2026-02-26 16:27:43,102] Trial 279 finished with value: 0.10252966857550079 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.635943508808772, 'C': 0.014300830436908848, 'gamma': 0.05960033966852817, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:28:45,992] Trial 280 pruned. 
+[I 2026-02-26 16:28:46,921] Trial 281 pruned. 
+[I 2026-02-26 16:30:14,083] Trial 282 finished with value: 0.10387572299579044 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.75291778358077, 'C': 0.013814722608311712, 'gamma': 0.096615152876118, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:31:28,130] Trial 283 pruned. 
+[I 2026-02-26 16:32:00,687] Trial 284 pruned. 
+[I 2026-02-26 16:33:19,941] Trial 285 pruned. 
+[I 2026-02-26 16:34:58,083] Trial 286 pruned. 
+[I 2026-02-26 16:36:13,046] Trial 287 finished with value: 0.10293090582292064 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.300130183265837, 'C': 0.013354180137519135, 'gamma': 0.0789562034271437, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:37:29,743] Trial 288 finished with value: 0.10250862873662088 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.095629337682713, 'C': 0.01662634845426611, 'gamma': 0.061696416427078384, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:38:38,835] Trial 289 pruned. 
+[I 2026-02-26 16:39:56,701] Trial 290 finished with value: 0.10244053681775933 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.267939492662462, 'C': 0.017631900406812413, 'gamma': 0.0589386297383873, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:41:00,424] Trial 291 pruned. 
+[I 2026-02-26 16:42:17,284] Trial 292 finished with value: 0.10292859479303026 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.793853648245726, 'C': 0.033369374757303116, 'gamma': 0.08421485678823867, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:43:31,696] Trial 293 pruned. 
+[I 2026-02-26 16:44:56,199] Trial 294 finished with value: 0.10433351643493874 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.983457721934515, 'C': 0.018659416628932845, 'gamma': 0.11254846573181769, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:45:23,964] Trial 295 pruned. 
+[I 2026-02-26 16:46:39,186] Trial 296 pruned. 
+[I 2026-02-26 16:47:48,036] Trial 297 pruned. 
+[I 2026-02-26 16:49:12,564] Trial 298 pruned. 
+[I 2026-02-26 16:50:28,627] Trial 299 finished with value: 0.10257417388378634 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.171430924883095, 'C': 0.021118324814423006, 'gamma': 0.06935286114838829, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:51:37,502] Trial 300 finished with value: 0.1029877756369526 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.970573902283904, 'C': 0.016346433547810513, 'gamma': 0.08300079642841884, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:52:47,046] Trial 301 pruned. 
+[I 2026-02-26 16:55:16,035] Trial 302 pruned. 
+[I 2026-02-26 16:56:35,415] Trial 303 finished with value: 0.10258164900112043 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.203838638765674, 'C': 0.023297808489269066, 'gamma': 0.06598327549147712, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 16:58:08,444] Trial 304 pruned. 
+[I 2026-02-26 16:59:25,716] Trial 305 pruned. 
+[I 2026-02-26 17:00:27,489] Trial 306 pruned. 
+[I 2026-02-26 17:00:28,721] Trial 307 pruned. 
+[I 2026-02-26 17:01:26,143] Trial 308 pruned. 
+[I 2026-02-26 17:02:36,567] Trial 309 pruned. 
+[I 2026-02-26 17:03:08,928] Trial 310 pruned. 
+[I 2026-02-26 17:04:23,534] Trial 311 pruned. 
+[I 2026-02-26 17:05:54,376] Trial 312 finished with value: 0.10440931476863305 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 16.3626438529121, 'C': 0.013783196939235791, 'gamma': 0.10529869983979838, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:07:11,213] Trial 313 finished with value: 0.1024702815966783 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.552634517901092, 'C': 0.021845775675997135, 'gamma': 0.06056594088275329, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:09:03,263] Trial 314 pruned. 
+[I 2026-02-26 17:10:22,636] Trial 315 pruned. 
+[I 2026-02-26 17:11:39,903] Trial 316 finished with value: 0.10284710401627314 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.50470074334181, 'C': 0.027193864496239045, 'gamma': 0.08192294909186724, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:13:06,673] Trial 317 pruned. 
+[I 2026-02-26 17:14:25,173] Trial 318 pruned. 
+[I 2026-02-26 17:14:58,921] Trial 319 finished with value: 0.10282887720359375 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.92035149290274, 'C': 0.02017808107396699, 'gamma': 0.1006156687492339, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:15:02,662] Trial 320 pruned. 
+[I 2026-02-26 17:16:10,988] Trial 321 pruned. 
+[I 2026-02-26 17:17:34,074] Trial 322 pruned. 
+[I 2026-02-26 17:18:47,375] Trial 323 pruned. 
+[I 2026-02-26 17:23:53,027] Trial 324 pruned. 
+[I 2026-02-26 17:25:12,506] Trial 325 pruned. 
+[I 2026-02-26 17:27:34,851] Trial 326 pruned. 
+[I 2026-02-26 17:28:51,711] Trial 327 pruned. 
+[I 2026-02-26 17:30:06,369] Trial 328 finished with value: 0.102547151452229 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.390713714100766, 'C': 0.01602552335614162, 'gamma': 0.06229734736021043, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:31:13,134] Trial 329 finished with value: 0.10331920844119417 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.472601436946505, 'C': 0.014258742133446458, 'gamma': 0.09414027719705675, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:31:44,320] Trial 330 pruned. 
+[I 2026-02-26 17:32:19,289] Trial 331 pruned. 
+[I 2026-02-26 17:33:26,782] Trial 332 pruned. 
+[I 2026-02-26 17:34:10,351] Trial 333 finished with value: 0.10717093199363248 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 84.2294966337745, 'C': 1.0486309402834726, 'gamma': 0.1231410147194522, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:35:25,973] Trial 334 finished with value: 0.10256248634787295 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.611418421110695, 'C': 0.01727260641138775, 'gamma': 0.06621723728072149, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:36:36,085] Trial 335 pruned. 
+[I 2026-02-26 17:37:52,226] Trial 336 finished with value: 0.10284952543461927 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 13.720787739922194, 'C': 0.024305670066639282, 'gamma': 0.08216405463589907, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:39:02,334] Trial 337 pruned. 
+[I 2026-02-26 17:40:25,621] Trial 338 finished with value: 0.10250940894643487 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.444430445426839, 'C': 0.014644315173580946, 'gamma': 0.05589864673501562, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:41:54,445] Trial 339 finished with value: 0.10273527079421756 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 16.50638276776302, 'C': 0.011381205441825947, 'gamma': 0.05966143941536967, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:43:18,550] Trial 340 finished with value: 0.10308427994349494 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.373726954482342, 'C': 0.014089337819891232, 'gamma': 0.078608307815741, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:45:04,778] Trial 341 pruned. 
+[I 2026-02-26 17:45:06,327] Trial 342 pruned. 
+[I 2026-02-26 17:49:31,412] Trial 343 pruned. 
+[I 2026-02-26 17:50:52,198] Trial 344 finished with value: 0.10384092967346428 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.10828971965319, 'C': 0.01326915147486797, 'gamma': 0.10232355455272911, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:51:45,084] Trial 345 pruned. 
+[I 2026-02-26 17:53:05,061] Trial 346 pruned. 
+[I 2026-02-26 17:54:10,804] Trial 347 pruned. 
+[I 2026-02-26 17:54:41,459] Trial 348 pruned. 
+[I 2026-02-26 17:55:40,899] Trial 349 pruned. 
+[I 2026-02-26 17:57:10,124] Trial 350 finished with value: 0.10293452426693694 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 16.879295629681454, 'C': 0.016629766913732934, 'gamma': 0.0749673869956104, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 17:58:02,352] Trial 351 pruned. 
+[I 2026-02-26 17:59:25,288] Trial 352 pruned. 
+[I 2026-02-26 18:00:44,809] Trial 353 finished with value: 0.10306683888044894 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.003079358519072, 'C': 0.0271027874395363, 'gamma': 0.08890531057079244, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:01:19,803] Trial 354 pruned. 
+[I 2026-02-26 18:02:31,519] Trial 355 finished with value: 0.10262249883459358 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.875504538908016, 'C': 0.013256466562209088, 'gamma': 0.06452318091104367, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:04:05,192] Trial 356 pruned. 
+[I 2026-02-26 18:06:05,664] Trial 357 pruned. 
+[I 2026-02-26 18:07:30,241] Trial 358 finished with value: 0.10281605570817438 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 16.062402001475963, 'C': 0.019779886446929146, 'gamma': 0.07510795051462975, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:08:13,655] Trial 359 pruned. 
+[I 2026-02-26 18:08:16,334] Trial 360 pruned. 
+[I 2026-02-26 18:08:55,346] Trial 361 pruned. 
+[I 2026-02-26 18:10:14,860] Trial 362 finished with value: 0.10256575543363045 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.536568018157968, 'C': 0.014978129575389312, 'gamma': 0.06293450429413876, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:11:28,707] Trial 363 finished with value: 0.10327384420232873 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.919488328817348, 'C': 0.011947916845321283, 'gamma': 0.09095606534866398, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:12:49,880] Trial 364 pruned. 
+[I 2026-02-26 18:13:29,064] Trial 365 pruned. 
+[I 2026-02-26 18:14:37,360] Trial 366 pruned. 
+[I 2026-02-26 18:15:41,375] Trial 367 finished with value: 0.10279107651502477 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.231618831458857, 'C': 0.031150234836582205, 'gamma': 0.07491053909919364, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:16:57,802] Trial 368 pruned. 
+[I 2026-02-26 18:19:35,492] Trial 369 pruned. 
+[I 2026-02-26 18:20:50,159] Trial 370 pruned. 
+[I 2026-02-26 18:22:13,333] Trial 371 finished with value: 0.10317149349325214 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.362110867207326, 'C': 0.01960420884529421, 'gamma': 0.08767981085663809, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:23:24,057] Trial 372 finished with value: 0.10258066213549251 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.905005114552205, 'C': 0.026570701450368734, 'gamma': 0.07067950058650815, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:24:43,257] Trial 373 pruned. 
+[I 2026-02-26 18:25:53,361] Trial 374 finished with value: 0.10398219811916773 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.834990180322954, 'C': 0.014964251433679495, 'gamma': 0.1131169774630503, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:27:07,367] Trial 375 pruned. 
+[I 2026-02-26 18:27:48,349] Trial 376 pruned. 
+[I 2026-02-26 18:28:57,024] Trial 377 pruned. 
+[I 2026-02-26 18:30:18,354] Trial 378 finished with value: 0.10270958286119089 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.83503910551947, 'C': 0.01648005897596971, 'gamma': 0.06994843892560411, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:30:19,275] Trial 379 pruned. 
+[I 2026-02-26 18:31:36,525] Trial 380 pruned. 
+[I 2026-02-26 18:32:47,297] Trial 381 pruned. 
+[I 2026-02-26 18:34:12,729] Trial 382 pruned. 
+[I 2026-02-26 18:35:21,096] Trial 383 pruned. 
+[I 2026-02-26 18:36:46,768] Trial 384 finished with value: 0.10295099656135587 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 15.357229219810073, 'C': 0.011563674706691887, 'gamma': 0.07240391977432373, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:37:54,864] Trial 385 pruned. 
+[I 2026-02-26 18:39:11,141] Trial 386 pruned. 
+[I 2026-02-26 18:40:20,005] Trial 387 pruned. 
+[I 2026-02-26 18:41:00,201] Trial 388 finished with value: 0.10304086141628895 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.878532760869541, 'C': 0.014856432868904852, 'gamma': 0.08594578064411099, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:42:15,662] Trial 389 pruned. 
+[I 2026-02-26 18:43:25,913] Trial 390 finished with value: 0.10263081473724159 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.588086473736208, 'C': 0.026325822481099995, 'gamma': 0.07212597121236067, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:44:49,536] Trial 391 finished with value: 0.10440376769401176 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 14.539888238940543, 'C': 0.020566381651453036, 'gamma': 0.11682531805735231, 'calib_method': 'sigmoid', 'calib_cv': 5}. Best is trial 201 with value: 0.10234078863893352.
+[I 2026-02-26 18:46:16,910] Trial 392 pruned. 
+[I 2026-02-26 18:47:18,839] Trial 393 pruned. 
+[I 2026-02-26 18:47:52,880] Trial 394 pruned. 
+[I 2026-02-26 18:49:53,493] Trial 395 pruned. 
+[I 2026-02-26 18:51:08,906] Trial 396 pruned. 
+[I 2026-02-26 18:52:19,481] Trial 397 pruned. 
+[I 2026-02-26 18:52:21,182] Trial 398 pruned. 
+[I 2026-02-26 18:52:54,130] Trial 399 finished with value: 0.10218229982833356 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.787226009150704, 'C': 0.01334832080426834, 'gamma': 0.07381519266289431, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 399 with value: 0.10218229982833356.
+[I 2026-02-26 18:53:42,684] Trial 400 pruned. 
+[I 2026-02-26 18:54:16,846] Trial 401 finished with value: 0.10470506144243948 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.145055036640802, 'C': 0.011217327890009628, 'gamma': 0.16710017573845556, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 399 with value: 0.10218229982833356.
+[I 2026-02-26 18:54:47,172] Trial 402 pruned. 
+[I 2026-02-26 18:55:22,933] Trial 403 finished with value: 0.11199734868908875 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 12.612542984393771, 'C': 0.017855539418870768, 'gamma': 0.09981235252890217, 'calib_method': 'isotonic', 'calib_cv': 3}. Best is trial 399 with value: 0.10218229982833356.
+[I 2026-02-26 18:55:56,088] Trial 404 finished with value: 0.10207317135953546 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.96980621314396, 'C': 0.025432249151892742, 'gamma': 0.07590339072563411, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 18:56:28,049] Trial 405 finished with value: 0.10219588193391922 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.408436919434351, 'C': 0.028420088103366912, 'gamma': 0.08414801791685045, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 18:57:00,464] Trial 406 finished with value: 0.10276789762271635 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.654734857059724, 'C': 0.04385302391682602, 'gamma': 0.11670850632127071, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 18:57:32,380] Trial 407 finished with value: 0.10232983462133112 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.069900349318797, 'C': 0.03569255568329037, 'gamma': 0.09586524561992658, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 18:58:08,057] Trial 408 finished with value: 0.10403046502173827 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.275832219311205, 'C': 0.03580921999834883, 'gamma': 0.1450221607150866, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 18:58:49,724] Trial 409 pruned. 
+[I 2026-02-26 18:59:21,312] Trial 410 finished with value: 0.10243011041597716 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.795128685237268, 'C': 0.037276342759131734, 'gamma': 0.10139454819706532, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 18:59:54,221] Trial 411 finished with value: 0.10356118073205385 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.884273614563591, 'C': 0.04047149964239258, 'gamma': 0.1384248887053531, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 19:00:27,031] Trial 412 finished with value: 0.10278429700754821 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.002531327513328, 'C': 0.03244624166295211, 'gamma': 0.10961133251591257, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 19:01:05,023] Trial 413 finished with value: 0.10509917447910966 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.203091588962018, 'C': 0.05344349197966025, 'gamma': 0.18304460497477987, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 19:01:33,651] Trial 414 finished with value: 0.10229035044168407 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.287474301091821, 'C': 0.04931293018568718, 'gamma': 0.10103938156393008, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 19:02:05,861] Trial 415 finished with value: 0.10377547641525398 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.201470370000514, 'C': 0.05468858097176849, 'gamma': 0.1458250888760378, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 19:02:35,862] Trial 416 finished with value: 0.10314844330979005 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 8.685192697424986, 'C': 0.04165450747015482, 'gamma': 0.11982646660788705, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 404 with value: 0.10207317135953546.
+[I 2026-02-26 19:03:07,170] Trial 417 finished with value: 0.1017528486098892 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 11.014297115537426, 'C': 0.06918046086451275, 'gamma': 0.1006913293008225, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 417 with value: 0.1017528486098892.
+[I 2026-02-26 19:03:33,214] Trial 418 finished with value: 0.10244988297271454 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 8.041390418509794, 'C': 0.0638059527463668, 'gamma': 0.0970664061795874, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 417 with value: 0.1017528486098892.
+[I 2026-02-26 19:04:05,214] Trial 419 finished with value: 0.10452513400386527 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 8.55584881391881, 'C': 0.0458973310607677, 'gamma': 0.15756729308422535, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 417 with value: 0.1017528486098892.
+[I 2026-02-26 19:04:35,516] Trial 420 finished with value: 0.10274734256335642 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.510291620129584, 'C': 0.04953371123034704, 'gamma': 0.11712504001052831, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 417 with value: 0.1017528486098892.
+[I 2026-02-26 19:04:39,903] Trial 421 pruned. 
+[I 2026-02-26 19:05:11,145] Trial 422 finished with value: 0.10214495642147003 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.455108339096999, 'C': 0.056343296991969195, 'gamma': 0.10512729725098027, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 417 with value: 0.1017528486098892.
+[I 2026-02-26 19:05:47,829] Trial 423 pruned. 
+[I 2026-02-26 19:06:19,498] Trial 424 finished with value: 0.10231745222038335 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.599250648315943, 'C': 0.10060825136516355, 'gamma': 0.12765690765989243, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 417 with value: 0.1017528486098892.
+[I 2026-02-26 19:06:52,135] Trial 425 finished with value: 0.10341746100490648 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.71449827901794, 'C': 0.06158628895284633, 'gamma': 0.140896527429678, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 417 with value: 0.1017528486098892.
+[I 2026-02-26 19:07:20,807] Trial 426 finished with value: 0.14577383198137778 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 8.551247661122398, 'C': 0.09624448819453991, 'gamma': 0.12529396421845523, 'calib_method': 'isotonic', 'calib_cv': 3}. Best is trial 417 with value: 0.1017528486098892.
+[I 2026-02-26 19:07:59,958] Trial 427 finished with value: 0.1053129989533195 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.537953940000692, 'C': 0.05528217758401924, 'gamma': 0.18960282988277397, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 417 with value: 0.1017528486098892.
+[I 2026-02-26 19:08:28,869] Trial 428 finished with value: 0.10174668022722973 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.890780792135708, 'C': 0.07895480951156007, 'gamma': 0.0982653821530031, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:09:02,731] Trial 429 finished with value: 0.10370621383968721 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.986142946894317, 'C': 0.06637220225714183, 'gamma': 0.151076105112171, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:09:35,632] Trial 430 finished with value: 0.10271212818547204 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.727753784298354, 'C': 0.054828274789395906, 'gamma': 0.12218246359226133, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:10:05,917] Trial 431 finished with value: 0.10196361633072556 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.400946580434313, 'C': 0.05896221302021464, 'gamma': 0.10027704541028326, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:10:35,798] Trial 432 finished with value: 0.10180966875218109 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.327422508445132, 'C': 0.08401352506232622, 'gamma': 0.10308801719691563, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:11:22,484] Trial 433 pruned. 
+[I 2026-02-26 19:11:52,686] Trial 434 finished with value: 0.10202066986825284 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.318572715642945, 'C': 0.08717348755326484, 'gamma': 0.11113957856859437, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:12:30,156] Trial 435 finished with value: 0.10441359908690502 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.47513433072573, 'C': 0.08600853908162942, 'gamma': 0.1780064165774711, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:13:00,754] Trial 436 finished with value: 0.10194701365679933 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.3648361043151, 'C': 0.08075654014853424, 'gamma': 0.10758107642464279, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:14:07,897] Trial 437 pruned. 
+[I 2026-02-26 19:14:41,218] Trial 438 finished with value: 0.10288659347350329 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 10.600318154001451, 'C': 0.08538019790254822, 'gamma': 0.13964970054319117, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:15:08,012] Trial 439 finished with value: 0.10180651124858338 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 8.963402570716458, 'C': 0.1415554710911174, 'gamma': 0.10494689982393003, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:15:36,106] Trial 440 finished with value: 0.10236110976995041 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 8.912609403632654, 'C': 0.07230582419413147, 'gamma': 0.1068601970519687, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:16:08,377] Trial 441 finished with value: 0.10385113249829711 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 8.760426912491004, 'C': 0.11645321864847263, 'gamma': 0.1568518500059341, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:16:37,032] Trial 442 finished with value: 0.10212927295487699 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.395145701147536, 'C': 0.07424153724526539, 'gamma': 0.10486704552208687, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 428 with value: 0.10174668022722973.
+[I 2026-02-26 19:17:04,537] Trial 443 finished with value: 0.1016707876124735 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.670613024252122, 'C': 0.14045115752859447, 'gamma': 0.10631674963849828, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 443 with value: 0.1016707876124735.
+[I 2026-02-26 19:17:31,770] Trial 444 finished with value: 0.10193745566406305 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.059619072902718, 'C': 0.1410283676766105, 'gamma': 0.11068118801058541, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 443 with value: 0.1016707876124735.
+[I 2026-02-26 19:18:11,445] Trial 445 finished with value: 0.10539215803717705 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.196056079966057, 'C': 0.17957244844417536, 'gamma': 0.21595193600556764, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 443 with value: 0.1016707876124735.
+[I 2026-02-26 19:18:40,428] Trial 446 finished with value: 0.10242905517272449 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.115278246688696, 'C': 0.13483507704639955, 'gamma': 0.1265715100888131, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 443 with value: 0.1016707876124735.
+[I 2026-02-26 19:18:44,575] Trial 447 pruned. 
+[I 2026-02-26 19:19:17,151] Trial 448 finished with value: 0.10333473538454219 and parameters: {'kernel': 'rbf', 'class_weight_mode': 'custom', 'pos_weight': 9.459063638814355, 'C': 0.14420334308203514, 'gamma': 0.15823902587723096, 'calib_method': 'sigmoid', 'calib_cv': 3}. Best is trial 443 with value: 0.1016707876124735.
+{
+  "study": "stage1_binary_svm",
+  "optimised_objective": "logloss",
+  "best_value_logloss_mean": 0.1016707876124735,
+  "best_params": {
+    "kernel": "rbf",
+    "class_weight_mode": "custom",
+    "pos_weight": 9.670613024252122,
+    "C": 0.14045115752859447,
+    "gamma": 0.10631674963849828,
+    "calib_method": "sigmoid",
+    "calib_cv": 3
+  },
+  "n_trials": 449,
+  "n_splits": 5,
+  "holdout_race_ids_excluded": [
+    2,
+    24,
+    53,
+    73,
+    75
+  ],
+  "sample_frac": 1.0,
+  "max_races": 80,
+  "early_stopping_rounds": 50
+}
+{
+  "study": "stage1_binary_svm",
+  "task": "binary",
+  "model": "svm",
+  "metrics": {
+    "accuracy_mean": 0.9726022369570859,
+    "accuracy_std": 0.009097643748472889,
+    "precision_mean": 0.24857142857142858,
+    "precision_std": 0.4330244843904703,
+    "recall_mean": 0.033174603174603176,
+    "recall_std": 0.05295619680971488,
+    "f1_mean": 0.04940222897669706,
+    "f1_std": 0.07289263888046027,
+    "roc_auc_mean": 0.8155582304057422,
+    "roc_auc_std": 0.042285773514166014,
+    "pr_auc_mean": 0.18482978876424438,
+    "pr_auc_std": 0.06243405705500199,
+    "logloss_mean": 0.10689032958044198,
+    "logloss_std": 0.026671347917351946
+  }
+}
+Job finished at Thu 26 Feb 19:19:34 GMT 2026

@@ -26,6 +26,8 @@ from src.data.data import (
     infer_feature_types,
     build_prob_sequences_4lap,
     build_feature_sequences,
+    make_race_group_folds,
+    load_stage2_seq_from_stage1,
 )
 from src.data.preprocessing import make_preprocessor_for_model   # <- instead of build_preprocessor
 from src.models.models import (
@@ -33,18 +35,15 @@ from src.models.models import (
     build_model_pipeline,
     get_binary_base_learners,
     get_multiclass_base_learners,
-    make_ann_binary_vse_ffnn, 
-    make_lstm_binary_head_vse,
     make_tcn_binary,
 )
 from src.models.models import (
-    make_tcn_binary,
-    make_gru_binary,
-    make_lstm_binary,
-    make_tcn_gru_binary,
+    make_tcn_multiclass,
+    make_gru_multiclass,
+    make_lstm_multiclass,
+    make_tcn_gru_multiclass,
 )
-
-
+from sklearn.utils.class_weight import compute_class_weight
 # -----------------------------
 # Metrics
 # -----------------------------
@@ -470,6 +469,126 @@ SEQ_MODEL_FACTORIES = {
     "lstm": lambda cfg, seq_len: make_lstm_binary(cfg),
     "tcn_gru": lambda cfg, seq_len: make_tcn_gru_binary(cfg),
 }
+SEQ_MODEL_FACTORIES_MC = {
+    "tcn": lambda cfg, n_classes: make_tcn_multiclass(cfg, n_classes=n_classes),
+    "gru": lambda cfg, n_classes: make_gru_multiclass(cfg, n_classes=n_classes),
+    "lstm": lambda cfg, n_classes: make_lstm_multiclass(cfg, n_classes=n_classes),
+    "tcn_gru": lambda cfg, n_classes: make_tcn_gru_multiclass(cfg, n_classes=n_classes),
+}
+
+def run_cv_seq_compound_at_pit(
+    df,
+    *,
+    seq_model: str,
+    cfg: ModelConfig,
+    n_splits: int,
+    seed: int,
+    save_models: bool,
+    outdir: Path,
+    seq_len: int,
+    n_classes: int,
+):
+    df = df.reset_index(drop=True)
+
+    # keys for sequencing
+    keys = df[["race_id", "driver_id", "lapno"]].copy()
+
+    # y for fold balancing: keep NaN on non-pit laps
+    y_encoded = df["y_compound_encoded"]  # float with NaN
+
+    # y for building sequences: fill NaN with -1 so build_feature_sequences doesn't crash
+    y_for_seq = y_encoded.fillna(-1).astype(int)
+
+    # features
+    X_tab = df.drop(columns=["y_pit", "y_compound", "y_compound_encoded", "race_id", "driver_id"], errors="ignore").copy()
+    num_cols, cat_cols = infer_feature_types(X_tab)
+
+    base_pre = make_preprocessor_for_model("tcn", num_cols=num_cols, cat_cols=cat_cols)
+
+    # race-wise folds (whole races held out)
+    fb = make_race_group_folds(df, group_col="race_id", target_col="y_compound_encoded", n_splits=n_splits, seed=seed, balance_labels=True)
+    folds = fb.folds
+
+    if seq_model not in SEQ_MODEL_FACTORIES_MC:
+        raise ValueError(f"Unknown seq_model={seq_model}. Choose from {list(SEQ_MODEL_FACTORIES_MC)}")
+
+    fold_metrics = []
+    oof_pred = np.full((len(df), n_classes), np.nan, dtype=float)
+
+    for fold, (tr_idx, va_idx) in enumerate(folds):
+        X_tr = X_tab.iloc[tr_idx]
+
+        pre = clone(base_pre)
+        pre.fit(X_tr)
+
+        Xt_all = pre.transform(X_tab)
+        if hasattr(Xt_all, "toarray"):
+            Xt_all = Xt_all.toarray()
+        Xt_all = Xt_all.astype(np.float32)
+
+        X_seq, y_seq, idx_last, seq_idx, eff_len = build_feature_sequences(
+            keys, Xt_all, y_for_seq,
+            seq_len=seq_len,
+            pad_left=True,
+            add_timestep_mask=True,
+        )
+
+        # sequences must belong entirely to train/valid (safe even though we split by race)
+        def _all_in_or_pad(seq_idx_arr, allowed_idx_arr):
+            return np.all((seq_idx_arr == -1) | np.isin(seq_idx_arr, allowed_idx_arr), axis=1)
+
+        tr_mask = _all_in_or_pad(seq_idx, tr_idx)
+        va_mask = _all_in_or_pad(seq_idx, va_idx)
+
+        # keep only labelled endpoints (pit laps): y_seq == -1 means non-pit endpoint
+        tr_mask &= (y_seq >= 0)
+        va_mask &= (y_seq >= 0)
+
+        X_seq_tr, y_seq_tr = X_seq[tr_mask], y_seq[tr_mask]
+        X_seq_va, y_seq_va = X_seq[va_mask], y_seq[va_mask]
+        idx_last_va = idx_last[va_mask]
+
+        if len(y_seq_tr) == 0 or len(y_seq_va) == 0:
+            print(f"[fold {fold}] skipping (no labelled pit sequences)")
+            continue
+
+        # class weights for multiclass
+        present = np.unique(y_seq_tr)
+        w = compute_class_weight(class_weight="balanced", classes=present, y=y_seq_tr)
+        class_w = {int(c): float(wi) for c, wi in zip(present, w)}
+        # optional: give neutral weight to unseen classes
+        for c in range(n_classes):
+            class_w.setdefault(c, 1.0)
+
+        model = SEQ_MODEL_FACTORIES_MC[seq_model](cfg, n_classes)
+        model.fit(X_seq_tr, y_seq_tr, class_weight=class_w)
+
+        proba = model.predict_proba(X_seq_va)
+        oof_pred[idx_last_va, :] = proba
+
+        m = compute_multiclass_metrics(y_seq_va, proba)
+        row = {"fold": int(fold), "n_valid_seq": int(len(y_seq_va)), **m}
+        fold_metrics.append(row)
+
+        if save_models:
+            dump(pre, outdir / f"{seq_model}_pre_fold_{fold}.joblib")
+            model.model_.save(outdir / f"{seq_model}_model_fold_{fold}.keras")
+
+        shown = " ".join(f"{k}={row[k]:.4f}" for k in ["accuracy","precision_macro","recall_macro","f1_macro","logloss"])
+        print(f"[{seq_model} fold {fold}] {shown} (n_valid_seq={row['n_valid_seq']})")
+
+    np.save(outdir / "oof_pred_proba.npy", oof_pred)
+
+    summary = {
+        "task": "multiclass",
+        "model": seq_model,
+        "seq_len": int(seq_len),
+        "n_splits": len(folds),
+        "seed": seed,
+        "n_classes": int(n_classes),
+        **summarize_fold_metrics(fold_metrics, ["accuracy","precision_macro","recall_macro","f1_macro","logloss"]),
+    }
+    return fold_metrics, summary
 
 def run_cv_seq(
     df,
@@ -595,11 +714,45 @@ def main():
     ap.add_argument("--threshold", type=float, default=0.5)
     ap.add_argument("--n_classes", type=int, default=None)
     ap.add_argument("--save_models", action="store_true")
+    ap.add_argument("--stage2_seq", action="store_true", help="Stage2 compound task using stage1 all-laps sequences (label only pit laps)")
+    ap.add_argument("--seq_len", type=int, default=12)
     args = ap.parse_args()
 
     stage_tag = "stage2" if args.stage2 else "stage1"
     outdir = Path(args.outdir) / stage_tag / args.task / args.model
     outdir.mkdir(parents=True, exist_ok=True)
+
+    if args.stage2_seq:
+        if args.task != "multiclass":
+            raise ValueError("--stage2_seq requires --task multiclass")
+        if args.data_stage1 is None:
+            raise ValueError("--stage2_seq requires --data_stage1 (output1.csv)")
+
+        df = load_stage2_seq_from_stage1(args.data_stage1)
+        args.n_classes = len(COMPOUND_CLASSES)
+
+        outdir = Path(args.outdir) / "stage2_seq" / args.task / args.model
+        outdir.mkdir(parents=True, exist_ok=True)
+        (outdir / "classes.json").write_text(json.dumps({"classes": list(COMPOUND_CLASSES)}, indent=2))
+
+        if args.model.lower() not in {"tcn","gru","lstm","tcn_gru"}:
+            raise ValueError("--stage2_seq currently supports seq models only: tcn/gru/lstm/tcn_gru")
+
+        fold_metrics, summary = run_cv_seq_compound_at_pit(
+            df,
+            seq_model=args.model.lower(),
+            cfg=ModelConfig(random_state=args.seed),
+            n_splits=args.n_splits,
+            seed=args.seed,
+            save_models=args.save_models,
+            outdir=outdir,
+            seq_len=args.seq_len,
+            n_classes=args.n_classes,
+        )
+        (outdir / "fold_metrics.json").write_text(json.dumps(fold_metrics, indent=2))
+        (outdir / "summary.json").write_text(json.dumps(summary, indent=2))
+        print(json.dumps(summary, indent=2))
+        return
 
     # -----------------------
     # Load the correct dataset
@@ -694,3 +847,20 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
+python -m src.evaluate_base --data dataoutput.csv --task multiclass --model hybrid_vse --stage2
+
+
+python -m src.training.evaluate_base --data_stage2 data/processed/output2_pit_stops_left.csv --stage2 --task multiclass --model xgb --outdir results/runs/runs_final/feb24 --save_models
+python -m src.training.evaluate_base --data_stage2 data/processed/output2_pit_stops_left.csv --stage2 --task multiclass --model rf --outdir results/runs/runs_final/feb24 --save_models
+python -m src.training.evaluate_base --data_stage2 data/processed/output2_pit_stops_left.csv --stage2 --task multiclass --model vse_compound_ann --outdir results/runs/runs_final/feb24
+python -m src.training.evaluate_base --data_stage2 data/processed/output2_pit_stops_left.csv --stage2 --task multiclass --model svm --outdir results/runs/runs_final/feb24 --save_models
+
+python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --stage2 --task multiclass --model xgb --outdir results/runs/runs_final/feb24 --save_models
+python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --stage2 --task multiclass --model rf --outdir results/runs/runs_final/feb24 --save_models
+python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --stage2 --task multiclass --model vse_compound_ann --outdir results/runs/runs_final/feb24 --save_models
+python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --stage2 --task multiclass --model svm --outdir results/runs/runs_final/feb24 --save_models
+
+
+"""

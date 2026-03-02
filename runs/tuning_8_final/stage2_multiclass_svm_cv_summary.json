@@ -1,0 +1,17 @@
+{
+  "study": "stage2_multiclass_svm",
+  "task": "multiclass",
+  "model": "svm",
+  "metrics": {
+    "accuracy_mean": 0.4776159560156753,
+    "accuracy_std": 0.04127859506569974,
+    "precision_macro_mean": 0.42036928175215704,
+    "precision_macro_std": 0.11698379433057916,
+    "recall_macro_mean": 0.34929207585140176,
+    "recall_macro_std": 0.04613241932165756,
+    "f1_macro_mean": 0.34093405047419106,
+    "f1_macro_std": 0.059448634288846336,
+    "logloss_mean": 1.148206741777215,
+    "logloss_std": 0.05351822260771876
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "task": "multiclass",
+  "model": "rf",
+  "n_splits": 5,
+  "seed": 42,
+  "threshold": null,
+  "n_classes": 5,
+  "accuracy_mean": 0.7161214953271028,
+  "precision_macro_mean": 0.7857263818395067,
+  "recall_macro_mean": 0.6821310793791151,
+  "f1_macro_mean": 0.7172143125979634,
+  "logloss_mean": 0.729378918635952
+}

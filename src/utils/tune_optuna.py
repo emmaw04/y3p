@@ -89,6 +89,92 @@ def mean_std_summary(fold_rows: List[Dict[str, Any]], metric_keys: List[str]) ->
         out[f"{k}_std"] = float(np.std(vals, ddof=1)) if len(vals) > 1 else float("nan")
     return out
 
+def _race_level_strata(df: pd.DataFrame) -> pd.Series:
+    """
+    Return a race_id-indexed Series of strata labels like:
+      "rain0_fcy0", "rain1_fcy0", "rain0_fcy1", "rain1_fcy1"
+    Uses columns if present; otherwise falls back to 0.
+    """
+    rid = df["race_id"]
+
+    def _has(col: str) -> bool:
+        return col in df.columns
+
+    # rain flag
+    if _has("rained_yet"):
+        rain = df.groupby("race_id")["rained_yet"].max().fillna(0).astype(int)
+    elif _has("is_raining"):
+        rain = df.groupby("race_id")["is_raining"].max().fillna(0).astype(int)
+    elif _has("minutes_rain"):
+        rain = (df.groupby("race_id")["minutes_rain"].max().fillna(0) > 0).astype(int)
+    else:
+        rain = pd.Series(0, index=df["race_id"].unique())
+
+    # FCY flag
+    if _has("fcy_status"):
+        fcy = (df.groupby("race_id")["fcy_status"].max().fillna(0) > 0).astype(int)
+    else:
+        fcy = pd.Series(0, index=rain.index)
+
+    strata = pd.Series(
+        [f"rain{int(rain.loc[r])}_fcy{int(fcy.loc[r])}" for r in rain.index],
+        index=rain.index,
+        name="strata",
+    )
+    return strata
+
+
+def sample_races_stratified(
+    df: pd.DataFrame,
+    *,
+    rng: np.random.Generator,
+    max_races: int = 0,
+    sample_frac: float = 1.0,
+) -> pd.DataFrame:
+    """
+    Choose races (not rows), roughly preserving rain/FCY strata proportions.
+    """
+    race_ids = np.array(sorted(df["race_id"].unique()))
+    if len(race_ids) == 0:
+        return df
+
+    strata = _race_level_strata(df)  # index=race_id
+    # target count
+    n_target = len(race_ids)
+    if sample_frac < 1.0:
+        n_target = max(4, int(np.ceil(sample_frac * len(race_ids))))
+    if max_races and max_races > 0:
+        n_target = min(n_target, int(max_races))
+    n_target = min(n_target, len(race_ids))
+
+    # stratified allocate
+    by_stratum = {}
+    for r in race_ids:
+        s = strata.loc[r] if r in strata.index else "rain0_fcy0"
+        by_stratum.setdefault(s, []).append(r)
+
+    chosen = []
+    # proportional allocation
+    total = len(race_ids)
+    for s, rs in by_stratum.items():
+        k = int(np.round(n_target * (len(rs) / total)))
+        k = max(1, min(k, len(rs)))  # at least 1 if stratum exists
+        rs = np.array(rs)
+        rng.shuffle(rs)
+        chosen.extend(rs[:k].tolist())
+
+    chosen = np.array(sorted(set(chosen)))
+    # fix overshoot/undershoot
+    if len(chosen) > n_target:
+        rng.shuffle(chosen)
+        chosen = chosen[:n_target]
+    elif len(chosen) < n_target:
+        remaining = np.setdiff1d(race_ids, chosen)
+        rng.shuffle(remaining)
+        need = n_target - len(chosen)
+        chosen = np.concatenate([chosen, remaining[:need]])
+
+    return df[df["race_id"].isin(chosen)].copy()
 
 # -------------------------
 # Search spaces
@@ -108,6 +194,7 @@ def suggest_rf_params(trial: optuna.Trial) -> Dict[str, Any]:
         "max_features": max_features,
         "bootstrap": trial.suggest_categorical("bootstrap", [True, False]),
         "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
+        "max_samples": trial.suggest_float("max_samples", 0.5, 1.0),  # only if bootstrap True
     }
 
 
@@ -127,8 +214,21 @@ def suggest_xgb_params_common(trial: optuna.Trial, *, max_estimators: int) -> Di
         "reg_alpha": trial.suggest_float("reg_alpha", 0.0, 5.0),
         "gamma": trial.suggest_float("gamma", 0.0, 5.0),
         "tree_method": "hist",
+        "max_delta_step": trial.suggest_int("max_delta_step", 0, 5),
     }
 
+def suggest_ann_params(trial):
+    return {
+        "n_layers": trial.suggest_int("n_layers", 1, 3),
+        "units": trial.suggest_categorical("units", [64, 128, 256]),
+        "dropout": trial.suggest_float("dropout", 0.0, 0.5),
+        "l2": trial.suggest_float("l2", 1e-6, 1e-3, log=True),
+        "learning_rate": trial.suggest_float("learning_rate", 1e-4, 3e-3, log=True),
+        "batch_size": trial.suggest_categorical("batch_size", [128, 256, 512]),
+        "epochs": 60,
+        "patience": 6,
+        "activation": trial.suggest_categorical("activation", ["relu", "elu"]),
+    }
 
 ###tcn stuff
 
@@ -752,7 +852,7 @@ def main():
     ap.add_argument("--data_stage2", required=False)
     ap.add_argument("--stage2", action="store_true")
     ap.add_argument("--task", choices=["binary", "multiclass"], required=True)
-    ap.add_argument("--model", choices=["rf", "xgb", "tcn", "svm"], required=True)
+    ap.add_argument("--model", choices=["rf", "xgb", "svm", "ann", "tcn", "gru", "lstm", "tcn_gru"], required=True)
     ap.add_argument("--svm_kernel", choices=["linear", "rbf"], default="linear")
     ap.add_argument("--svm_calibrate_cv", type=int, default=3)
     ap.add_argument("--svm_max_rows_rbf", type=int, default=20000, help="Hard cap rows if svm_kernel=rbf (0 disables).")
@@ -791,12 +891,15 @@ def main():
         df = encode_y_compound(df, col="y_compound", out_col="y_compound_encoded")
         df = df.loc[~df["y_compound_encoded"].isna()].copy()
 
-        if args.max_races and args.max_races > 0:
-            keep_races = rng.choice(df["race_id"].unique(), size=min(args.max_races, df["race_id"].nunique()), replace=False)
-            df = df[df["race_id"].isin(keep_races)].copy()
+        df = sample_races_stratified(df, rng=rng, max_races=args.max_races, sample_frac=args.sample_frac)
+        # --- Extra safety for SVM RBF: cap via races, not rows (preserves stratification) ---
+        if args.model == "svm" and args.svm_kernel == "rbf" and args.svm_max_rows_rbf and args.svm_max_rows_rbf > 0:
+            if len(df) > args.svm_max_rows_rbf:
+                avg_rows_per_race = len(df) / max(1, df["race_id"].nunique())
+                approx_max_races = max(5, int(args.svm_max_rows_rbf / max(1.0, avg_rows_per_race)))
+                approx_max_races = min(approx_max_races, df["race_id"].nunique())
 
-        if args.sample_frac < 1.0:
-            df = df.sample(frac=args.sample_frac, random_state=args.seed).copy()
+                df = sample_races_stratified(df, rng=rng, max_races=approx_max_races, sample_frac=1.0)
 
         fold_bundle = make_race_group_folds(df, target_col="y_compound_encoded", n_splits=args.n_splits, seed=args.seed)
         folds = fold_bundle.folds
@@ -814,12 +917,15 @@ def main():
         df = load_stage1_dataset(args.data_stage1)
         df = df.loc[~df["race_id"].isin(HOLDOUT_RACE_IDS)].copy()
 
-        if args.max_races and args.max_races > 0:
-            keep_races = rng.choice(df["race_id"].unique(), size=min(args.max_races, df["race_id"].nunique()), replace=False)
-            df = df[df["race_id"].isin(keep_races)].copy()
+        df = sample_races_stratified(df, rng=rng, max_races=args.max_races, sample_frac=args.sample_frac)
+        # --- Extra safety for SVM RBF: cap via races, not rows (preserves stratification) ---
+        if args.model == "svm" and args.svm_kernel == "rbf" and args.svm_max_rows_rbf and args.svm_max_rows_rbf > 0:
+            if len(df) > args.svm_max_rows_rbf:
+                avg_rows_per_race = len(df) / max(1, df["race_id"].nunique())
+                approx_max_races = max(5, int(args.svm_max_rows_rbf / max(1.0, avg_rows_per_race)))
+                approx_max_races = min(approx_max_races, df["race_id"].nunique())
 
-        if args.sample_frac < 1.0:
-            df = df.sample(frac=args.sample_frac, random_state=args.seed).copy()
+                df = sample_races_stratified(df, rng=rng, max_races=approx_max_races, sample_frac=1.0)
 
         fold_bundle = make_race_group_folds(df, target_col="y_pit", n_splits=args.n_splits, seed=args.seed)
         folds = fold_bundle.folds
@@ -834,11 +940,9 @@ def main():
     # -------------------------
     pre_name = args.model  # routes inside make_preprocessor_for_model
     cached_folds = None
-    if args.model in {"rf", "xgb", "svm"}:
-        pre_name = "svm" if args.model == "svm" else args.model
-        print(f"[tune_optuna] Building cached folds with preprocessor='{pre_name}' ...", flush=True)
+    if args.model in {"rf", "xgb", "svm", "ann"}:
+        pre_name = "svm" if args.model in {"svm", "ann"} else args.model
         cached_folds = build_cached_folds(X, y, folds, pre_name=pre_name)
-        print(f"[tune_optuna] Cached {len(cached_folds)} folds.", flush=True)
 
 
     # -------------------------
@@ -999,25 +1103,6 @@ def main():
                 seed=args.seed,
             )
         elif args.model == "svm":
-            # Safety: RBF can explode runtime on large n
-            if args.svm_kernel == "rbf" and args.svm_max_rows_rbf and args.svm_max_rows_rbf > 0:
-                if len(df) > args.svm_max_rows_rbf:
-                    df = df.sample(n=args.svm_max_rows_rbf, random_state=args.seed).copy()
-                    # IMPORTANT: recompute folds, X, y, cached_folds after sampling
-                    if args.stage2:
-                        X, y = get_stage2_xy(df)
-                        fold_bundle = make_race_group_folds(df, target_col="y_compound_encoded", n_splits=args.n_splits, seed=args.seed)
-                        n_classes = len(COMPOUND_CLASSES)
-                    else:
-                        X, y = get_stage1_xy(df)
-                        fold_bundle = make_race_group_folds(df, target_col="y_pit", n_splits=args.n_splits, seed=args.seed)
-                        n_classes = None
-
-                    folds = fold_bundle.folds
-                    pre_name_local = "svm" if args.model == "svm" else args.model
-                    # or "xgb" if you used the fallback approach above
-                    cached_folds = build_cached_folds(X, y, folds, pre_name=pre_name_local)
-
             study.optimize(
                 lambda t: objective_svm(
                     t, cached_folds,
@@ -1119,3 +1204,26 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+"""
+commands to run:
+# shared knobs
+DATA=data/processed/output1.csv
+OUT=runs/tuning_coarse
+SEED=42
+RACES=60
+FOLDS=3
+TRIALS=200
+TIME=1200   # seconds
+
+python -m src.tune_optuna --data_stage1 $DATA --task binary --model rf  --n_splits $FOLDS --max_races $RACES --n_trials $TRIALS --timeout_sec $TIME --seed $SEED --outdir $OUT
+python -m src.tune_optuna --data_stage1 $DATA --task binary --model xgb --n_splits $FOLDS --max_races $RACES --n_trials $TRIALS --timeout_sec $TIME --seed $SEED --outdir $OUT --early_stopping_rounds 20 --max_estimators 1500
+python -m src.tune_optuna --data_stage1 $DATA --task binary --model svm --svm_kernel linear --n_splits $FOLDS --max_races $RACES --n_trials $TRIALS --timeout_sec $TIME --seed $SEED --outdir $OUT
+python -m src.tune_optuna --data_stage1 $DATA --task binary --model ann --n_splits $FOLDS --max_races $RACES --n_trials $TRIALS --timeout_sec $TIME --seed $SEED --outdir $OUT
+
+python -m src.tune_optuna --data_stage1 $DATA --task binary --model tcn      --n_splits $FOLDS --max_races $RACES --n_trials $TRIALS --timeout_sec $TIME --seed $SEED --outdir $OUT
+python -m src.tune_optuna --data_stage1 $DATA --task binary --model gru      --n_splits $FOLDS --max_races $RACES --n_trials $TRIALS --timeout_sec $TIME --seed $SEED --outdir $OUT
+python -m src.tune_optuna --data_stage1 $DATA --task binary --model lstm     --n_splits $FOLDS --max_races $RACES --n_trials $TRIALS --timeout_sec $TIME --seed $SEED --outdir $OUT
+python -m src.tune_optuna --data_stage1 $DATA --task binary --model tcn_gru  --n_splits $FOLDS --max_races $RACES --n_trials $TRIALS --timeout_sec $TIME --seed $SEED --outdir $OUT
+"""

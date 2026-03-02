@@ -1,0 +1,26 @@
+{
+  "study": "stage2_multiclass_svm",
+  "optimised_objective": "logloss",
+  "best_value_logloss_mean": 1.148206741777215,
+  "best_params": {
+    "kernel": "linear",
+    "class_weight": null,
+    "C": 0.0031860178260231125,
+    "tol": 0.00046621954613830583,
+    "max_iter": 6556,
+    "calib_method": "sigmoid",
+    "calib_cv": 3
+  },
+  "n_trials": 251,
+  "n_splits": 5,
+  "holdout_race_ids_excluded": [
+    2,
+    24,
+    53,
+    73,
+    75
+  ],
+  "sample_frac": 1.0,
+  "max_races": 80,
+  "early_stopping_rounds": 50
+}

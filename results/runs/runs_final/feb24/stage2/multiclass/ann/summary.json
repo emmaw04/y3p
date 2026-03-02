@@ -1,0 +1,13 @@
+{
+  "task": "multiclass",
+  "model": "ann",
+  "n_splits": 5,
+  "seed": 42,
+  "threshold": null,
+  "n_classes": 5,
+  "accuracy_mean": 0.3081775700934579,
+  "precision_macro_mean": 0.17010098902709783,
+  "recall_macro_mean": 0.19016524199565915,
+  "f1_macro_mean": 0.11420677257843073,
+  "logloss_mean": 1.704890757634777
+}

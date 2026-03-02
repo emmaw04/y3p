@@ -1,0 +1,27 @@
+{
+  "study": "stage2_multiclass_rf",
+  "optimised_objective": "logloss",
+  "best_value_logloss_mean": 1.0472202813157694,
+  "best_params": {
+    "n_estimators": 1155,
+    "max_depth": 26,
+    "min_samples_leaf": 8,
+    "min_samples_split": 56,
+    "max_features": 0.2233022065043174,
+    "max_samples": 0.5240069195243422,
+    "criterion": "gini",
+    "class_weight": null
+  },
+  "n_trials": 806,
+  "n_splits": 5,
+  "holdout_race_ids_excluded": [
+    2,
+    24,
+    53,
+    73,
+    75
+  ],
+  "sample_frac": 1.0,
+  "max_races": 80,
+  "early_stopping_rounds": 50
+}

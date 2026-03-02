@@ -385,6 +385,15 @@ def load_stage2_dataset(path: Union[str, Path], *, strict: bool = True) -> pd.Da
 
     return df
 
+def load_stage2_seq_from_stage1(path: Union[str, Path]) -> pd.DataFrame:
+    """
+    Use stage1 (all laps) but add y_compound labels for pit laps only.
+    Keeps ALL laps so sequences have context; labels are NaN except pit laps.
+    """
+    df = load_stage1_dataset(path)  # includes holdout exclusion already
+    df = add_pit_next_compound_labels_from_stage1(df, pit_col="y_pit", compound_col="current_compound", out_col="y_compound")
+    df = encode_y_compound(df, col="y_compound", out_col="y_compound_encoded")  # NaN where y_compound is NaN
+    return df
 
 # -----------------------------
 # Row IDs
@@ -458,6 +467,33 @@ def encode_y_compound(df: pd.DataFrame, col: str = "y_compound", out_col: str = 
     df2[out_col] = df2[col].map(COMPOUND_TO_INT)
     return df2
 
+def add_pit_next_compound_labels_from_stage1(
+    df: pd.DataFrame,
+    *,
+    pit_col: str = "y_pit",
+    compound_col: str = "current_compound",
+    out_col: str = "y_compound",
+) -> pd.DataFrame:
+    """
+    From lap-by-lap stage1 df, create y_compound ONLY on pit laps:
+      y_compound[t] = current_compound[t+1] for same (race_id, driver_id)
+    Non-pit laps -> NaN.
+    """
+    df2 = df.copy()
+
+    # Ensure sorted within each driver-race
+    df2 = df2.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort").reset_index(drop=True)
+
+    # Next lap compound within each time series
+    next_comp = df2.groupby(["race_id", "driver_id"], sort=False)[compound_col].shift(-1)
+
+    # Label only where pit happened
+    df2[out_col] = np.where(df2[pit_col].astype(int).to_numpy() == 1, next_comp, np.nan)
+
+    # Normalise to canonical strings (HARD/MEDIUM/...)
+    df2[out_col] = _normalize_compound_series(df2[out_col], allow_null=True)
+
+    return df2
 
 # -----------------------------
 # Feature type inference

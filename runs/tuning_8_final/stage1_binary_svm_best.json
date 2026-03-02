@@ -1,0 +1,26 @@
+{
+  "study": "stage1_binary_svm",
+  "optimised_objective": "logloss",
+  "best_value_logloss_mean": 0.1016707876124735,
+  "best_params": {
+    "kernel": "rbf",
+    "class_weight_mode": "custom",
+    "pos_weight": 9.670613024252122,
+    "C": 0.14045115752859447,
+    "gamma": 0.10631674963849828,
+    "calib_method": "sigmoid",
+    "calib_cv": 3
+  },
+  "n_trials": 449,
+  "n_splits": 5,
+  "holdout_race_ids_excluded": [
+    2,
+    24,
+    53,
+    73,
+    75
+  ],
+  "sample_frac": 1.0,
+  "max_races": 80,
+  "early_stopping_rounds": 50
+}

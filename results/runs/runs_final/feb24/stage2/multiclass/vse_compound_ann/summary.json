@@ -1,0 +1,13 @@
+{
+  "task": "multiclass",
+  "model": "vse_compound_ann",
+  "n_splits": 5,
+  "seed": 42,
+  "threshold": null,
+  "n_classes": 5,
+  "accuracy_mean": 0.6329439252336447,
+  "precision_macro_mean": 0.49201434093931934,
+  "recall_macro_mean": 0.4745521391371776,
+  "f1_macro_mean": 0.47967074990109665,
+  "logloss_mean": 0.895610181617186
+}
