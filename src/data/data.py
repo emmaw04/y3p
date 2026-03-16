@@ -9,21 +9,18 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import pandas as pd
 
+import warnings
 
-# -----------------------------
-# Label encoding for compounds
-# -----------------------------
+# encoding labels for compounds
 COMPOUND_CLASSES: Tuple[str, ...] = ("HARD", "MEDIUM", "SOFT", "INTERMEDIATE", "WET")
 COMPOUND_TO_INT: Dict[str, int] = {c: i for i, c in enumerate(COMPOUND_CLASSES)}
 INT_TO_COMPOUND: Dict[int, str] = {i: c for c, i in COMPOUND_TO_INT.items()}
 
-# -----------------------------
-# Holdout races (excluded from CV/train)
-# -----------------------------
+# holdout race IDs (for case studies)
 HOLDOUT_RACE_IDS: Tuple[int, ...] = (53, 73, 24, 75, 2)
 
 def _exclude_holdout_races(df: pd.DataFrame, race_ids: Sequence[int] = HOLDOUT_RACE_IDS) -> pd.DataFrame:
-    """Remove rows belonging to holdout races (for final lap-by-lap testing)."""
+    """remove rows belonging to holdout races"""
     if "race_id" not in df.columns:
         return df
     race_ids_set = set(int(r) for r in race_ids)
@@ -32,6 +29,7 @@ def _exclude_holdout_races(df: pd.DataFrame, race_ids: Sequence[int] = HOLDOUT_R
 # -----------------------------
 # Schema for each dataset
 # -----------------------------
+
 REQUIRED_STAGE1_COLUMNS: Tuple[str, ...] = (
     "race_id",
     "driver_id",
@@ -209,43 +207,53 @@ def build_feature_sequences(
 
 def _coerce_boolish_to_01(series: pd.Series, colname: str, *, allow_null: bool = True) -> pd.Series:
     s = series.replace({"": np.nan, "None": np.nan, "nan": np.nan})
-    # If already bool-like
-    if s.dtype == bool or str(s.dtype) == "boolean":
-        s = s.astype(int)
-        return s
 
-    # Map common string bools
-    if s.dtype == object:
-        def _map(v):
-            if v is None or (isinstance(v, float) and np.isnan(v)):
-                return np.nan
-            vv = str(v).strip().lower()
-            if vv in {"true", "1", "yes", "y", "t"}:
+    true_vals = {"true", "1", "yes", "y", "t"}
+    false_vals = {"false", "0", "no", "n", "f"}
+
+    def _map(v):
+        if pd.isna(v):
+            return np.nan
+        if isinstance(v, (bool, np.bool_)):
+            return int(v)
+        if isinstance(v, (int, np.integer, float, np.floating)) and not pd.isna(v):
+            if v in (0, 1):
+                return int(v)
+        if isinstance(v, str):
+            vv = v.strip().lower()
+            if vv in true_vals:
                 return 1
-            if vv in {"false", "0", "no", "n", "f"}:
+            if vv in false_vals:
                 return 0
-            return v
+        return "__INVALID__"
 
-        s = s.map(_map)
+    out = s.map(_map)
 
-    s = pd.to_numeric(s, errors="coerce")
+    invalid = out.eq("__INVALID__")
+    if invalid.any():
+        bad = sorted(series[invalid].dropna().astype(str).unique().tolist())
+        raise ValueError(f"{colname} contains invalid boolean-like values: {bad}")
 
-    vals = set(s.dropna().unique().tolist())
-    if not vals.issubset({0, 1}):
-        raise ValueError(f"{colname} must be 0/1 (or null). Found values: {sorted(vals)}")
+    out = out.astype("float")
+    if not allow_null and out.isna().any():
+        raise ValueError(f"{colname} has missing values; expected none.")
 
-    if not allow_null and s.isna().any():
-        bad_n = int(s.isna().sum())
-        raise ValueError(f"{colname} has {bad_n} missing values; expected none.")
-
-    return s
+    return out
 
 
-def load_stage1_dataset(path: Union[str, Path]) -> pd.DataFrame:
+def load_stage1_dataset(
+    path: Union[str, Path],
+    *,
+    exclude_holdouts: bool = True,
+) -> pd.DataFrame:
     """
-    Stage 1 dataset:
-      - target: y_pit (0/1)
-      - features include race context + fulfilled_second_compound
+    Load and validate the Stage 1 lap-level dataset.
+
+    Expected target:
+        y_pit in {0, 1}
+
+    By default, holdout races are excluded so this loader can be used directly
+    for training and cross-validation without leaking final test races.
     """
     df = _read_any(path)
 
@@ -253,74 +261,90 @@ def load_stage1_dataset(path: Union[str, Path]) -> pd.DataFrame:
     if missing:
         raise ValueError(f"Stage 1 dataset missing required columns: {missing}")
 
-    # y_pit integrity
+    # Core identifiers
+    for col in ["race_id", "driver_id", "lapno"]:
+        df[col] = pd.to_numeric(df[col], errors="raise").astype(int)
+
+    if exclude_holdouts:
+        df = _exclude_holdout_races(df)
+
+    # Target
     if df["y_pit"].isna().any():
-        bad_n = int(df["y_pit"].isna().sum())
-        raise ValueError(f"y_pit contains {bad_n} missing values; expected none.")
+        n_missing = int(df["y_pit"].isna().sum())
+        raise ValueError(f"y_pit contains {n_missing} missing values; expected none.")
+
     df["y_pit"] = pd.to_numeric(df["y_pit"], errors="raise").astype(int)
-    vals = set(df["y_pit"].unique().tolist())
-    if not vals.issubset({0, 1}):
-        raise ValueError(f"y_pit must be binary 0/1. Found values: {sorted(vals)}")
+    y_vals = set(df["y_pit"].unique().tolist())
+    if not y_vals.issubset({0, 1}):
+        raise ValueError(f"y_pit must be binary 0/1. Found values: {sorted(y_vals)}")
 
-    # categoricals / ids
-    df["race_id"] = pd.to_numeric(df["race_id"], errors="raise").astype(int)
-    df["driver_id"] = pd.to_numeric(df["driver_id"], errors="raise").astype(int)
-    df["lapno"] = pd.to_numeric(df["lapno"], errors="raise").astype(int)
-
-    # --- exclude holdout races ---
-    df = _exclude_holdout_races(df)
-
-    # fcy_status as categorical-like string
-    df["fcy_status"] = df["fcy_status"].astype(str).astype("category")
-
-    # current_compound
+    # Canonicalise categorical/string fields
     df["current_compound"] = _normalize_compound_series(df["current_compound"], allow_null=True)
 
-    # race_track
-    df["race_track"] = df["race_track"].replace({"": np.nan, "None": np.nan, "nan": np.nan})
-    df["race_track"] = df["race_track"].apply(lambda x: x.strip() if isinstance(x, str) else x)
+    df["race_track"] = (
+        df["race_track"]
+        .replace({"": np.nan, "None": np.nan, "nan": np.nan})
+        .apply(lambda x: x.strip() if isinstance(x, str) else x)
+    )
 
-    # bool-ish / binary
-    df["close_ahead"] = _coerce_boolish_to_01(df["close_ahead"], "close_ahead", allow_null=True)
-    df["rained_yet"] = _coerce_boolish_to_01(df["rained_yet"], "rained_yet", allow_null=True)
-    df["is_raining"] = _coerce_boolish_to_01(df["is_raining"], "is_raining", allow_null=True)
+    df["fcy_status"] = (
+        df["fcy_status"]
+        .replace({"": np.nan, "None": np.nan, "nan": np.nan})
+        .apply(lambda x: x.strip() if isinstance(x, str) else x)
+        .astype("category")
+    )
 
-    # tyre_change_pursuer (kept as 0/1 if possible)
-    df["tyre_change_pursuer"] = _coerce_boolish_to_01(df["tyre_change_pursuer"], "tyre_change_pursuer", allow_null=True)
+    # Boolean / binary fields
+    for col in ["close_ahead", "rained_yet", "is_raining", "tyre_change_pursuer"]:
+        df[col] = _coerce_boolish_to_01(df[col], col, allow_null=True)
 
-    # fulfilled_second_compound: treat as categorical/binary indicator
-    # If it's 0/1-ish, coerce; otherwise keep as cleaned string category
+    # fulfilled_second_compound may be binary or categorical
     try:
         df["fulfilled_second_compound"] = _coerce_boolish_to_01(
-            df["fulfilled_second_compound"], "fulfilled_second_compound", allow_null=True
+            df["fulfilled_second_compound"],
+            "fulfilled_second_compound",
+            allow_null=True,
         )
     except ValueError:
-        df["fulfilled_second_compound"] = df["fulfilled_second_compound"].replace({"": np.nan, "None": np.nan, "nan": np.nan})
-        df["fulfilled_second_compound"] = df["fulfilled_second_compound"].apply(
-            lambda x: x.strip().upper() if isinstance(x, str) else x
+        df["fulfilled_second_compound"] = (
+            df["fulfilled_second_compound"]
+            .replace({"": np.nan, "None": np.nan, "nan": np.nan})
+            .apply(lambda x: x.strip().upper() if isinstance(x, str) else x)
+            .astype("category")
         )
-        df["fulfilled_second_compound"] = df["fulfilled_second_compound"].astype("category")
 
-    # numeric-ish columns
-    for col in ["race_progress", "position", "pit_stops_so_far", "track_category", "lap_time", "interval", "tyre_age", "minutes_rain"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-
-    # ints where appropriate
-    for col in ["position", "pit_stops_so_far", "track_category"]:
+    # Numeric fields
+    numeric_cols = [
+        "race_progress",
+        "position",
+        "pit_stops_so_far",
+        "track_category",
+        "lap_time",
+        "interval",
+        "tyre_age",
+        "minutes_rain",
+    ]
+    for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     return df
 
 
-def load_stage2_dataset(path: Union[str, Path], *, strict: bool = True) -> pd.DataFrame:
+def load_stage2_dataset(
+    path: Union[str, Path],
+    *,
+    strict: bool = True,
+    exclude_holdouts: bool = True,
+) -> pd.DataFrame:
     """
-    Stage 2 dataset:
-      - target: y_compound (HARD/MEDIUM/SOFT/INTERMEDIATE/WET)
-      - used only for pit-stop events (you already built it like that)
+    Load and validate the Stage 2 pit-stop dataset.
 
-    strict=True:
-      - drop rows where y_compound is missing
-      - still validate that non-missing labels are in COMPOUND_CLASSES
+    Expected target:
+        y_compound in {"HARD", "MEDIUM", "SOFT", "INTERMEDIATE", "WET"}
+
+    If strict=True, rows with missing y_compound are dropped after normalisation.
+    By default, holdout races are excluded so this loader can be used directly
+    for training and cross-validation.
     """
     df = _read_any(path)
 
@@ -330,58 +354,65 @@ def load_stage2_dataset(path: Union[str, Path], *, strict: bool = True) -> pd.Da
 
     df["race_id"] = pd.to_numeric(df["race_id"], errors="raise").astype(int)
 
-    # --- NEW: exclude holdout races ---
-    df = _exclude_holdout_races(df)
+    if exclude_holdouts:
+        df = _exclude_holdout_races(df)
 
-    # --- NEW: normalise strings, then drop missing target rows if strict ---
-    # normalise first (turn "", "None", "nan" into NaN, uppercase strings)
+    # Target
     df["y_compound"] = _normalize_compound_series(df["y_compound"], allow_null=True)
 
     if strict:
         n_missing = int(df["y_compound"].isna().sum())
         if n_missing > 0:
-            # drop rows with missing target
             df = df.loc[~df["y_compound"].isna()].copy()
-            # optional: print a warning
-            print(f"[load_stage2_dataset] Dropped {n_missing} rows with missing y_compound.", flush=True)
+            warnings.warn(
+                f"load_stage2_dataset dropped {n_missing} rows with missing y_compound.",
+                stacklevel=2,
+            )
 
-    # after dropping, ensure remaining non-null values are valid classes
     non_null = df["y_compound"].dropna().unique().tolist()
     unknown = [c for c in non_null if c not in COMPOUND_TO_INT]
     if unknown:
         raise ValueError(
-            f"Compound column has unexpected values: {unknown}. "
+            f"y_compound contains unexpected values: {unknown}. "
             f"Expected subset of {list(COMPOUND_TO_INT.keys())}."
         )
 
-    # current_compound
+    # Canonicalise categorical/string fields
     df["current_compound"] = _normalize_compound_series(df["current_compound"], allow_null=True)
 
-    # race_track
-    df["race_track"] = df["race_track"].replace({"": np.nan, "None": np.nan, "nan": np.nan})
-    df["race_track"] = df["race_track"].apply(lambda x: x.strip() if isinstance(x, str) else x)
+    df["race_track"] = (
+        df["race_track"]
+        .replace({"": np.nan, "None": np.nan, "nan": np.nan})
+        .apply(lambda x: x.strip() if isinstance(x, str) else x)
+    )
 
-    # binary
-    df["rained_yet"] = _coerce_boolish_to_01(df["rained_yet"], "rained_yet", allow_null=True)
-    df["is_raining"] = _coerce_boolish_to_01(df["is_raining"], "is_raining", allow_null=True)
+    # Boolean / binary fields
+    for col in ["rained_yet", "is_raining"]:
+        df[col] = _coerce_boolish_to_01(df[col], col, allow_null=True)
 
-    # fulfilled_second_compound: same logic as stage1
+    # fulfilled_second_compound may be binary or categorical
     try:
         df["fulfilled_second_compound"] = _coerce_boolish_to_01(
-            df["fulfilled_second_compound"], "fulfilled_second_compound", allow_null=True
+            df["fulfilled_second_compound"],
+            "fulfilled_second_compound",
+            allow_null=True,
         )
     except ValueError:
-        df["fulfilled_second_compound"] = df["fulfilled_second_compound"].replace({"": np.nan, "None": np.nan, "nan": np.nan})
-        df["fulfilled_second_compound"] = df["fulfilled_second_compound"].apply(
-            lambda x: x.strip().upper() if isinstance(x, str) else x
+        df["fulfilled_second_compound"] = (
+            df["fulfilled_second_compound"]
+            .replace({"": np.nan, "None": np.nan, "nan": np.nan})
+            .apply(lambda x: x.strip().upper() if isinstance(x, str) else x)
+            .astype("category")
         )
-        df["fulfilled_second_compound"] = df["fulfilled_second_compound"].astype("category")
 
-    # numeric-ish
-    for col in ["race_progress", "pit_stops_so_far", "minutes_rain"]:
+    # Numeric fields
+    numeric_cols = [
+        "race_progress",
+        "pit_stops_so_far",
+        "minutes_rain",
+    ]
+    for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
-
-    df["pit_stops_so_far"] = pd.to_numeric(df["pit_stops_so_far"], errors="coerce")
 
     return df
 
