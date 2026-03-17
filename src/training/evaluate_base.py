@@ -847,20 +847,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
-python -m src.evaluate_base --data dataoutput.csv --task multiclass --model hybrid_vse --stage2
-
-
-python -m src.training.evaluate_base --data_stage2 data/processed/output2_pit_stops_left.csv --stage2 --task multiclass --model xgb --outdir results/runs/runs_final/feb24 --save_models
-python -m src.training.evaluate_base --data_stage2 data/processed/output2_pit_stops_left.csv --stage2 --task multiclass --model rf --outdir results/runs/runs_final/feb24 --save_models
-python -m src.training.evaluate_base --data_stage2 data/processed/output2_pit_stops_left.csv --stage2 --task multiclass --model vse_compound_ann --outdir results/runs/runs_final/feb24
-python -m src.training.evaluate_base --data_stage2 data/processed/output2_pit_stops_left.csv --stage2 --task multiclass --model svm --outdir results/runs/runs_final/feb24 --save_models
-
-python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --stage2 --task multiclass --model xgb --outdir results/runs/runs_final/feb24 --save_models
-python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --stage2 --task multiclass --model rf --outdir results/runs/runs_final/feb24 --save_models
-python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --stage2 --task multiclass --model vse_compound_ann --outdir results/runs/runs_final/feb24 --save_models
-python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --stage2 --task multiclass --model svm --outdir results/runs/runs_final/feb24 --save_models
-
-
-"""

@@ -862,11 +862,3 @@ def make_tcn_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
         verbose=1,
         random_state=cfg.random_state,
     )
-"""
-relevant commands for sequential models
-python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --task multiclass --model tcn --outdir results/runs/seq_multi
-python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --task multiclass --model gru --outdir results/runs/seq_multi
-python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --task multiclass --model lstm --outdir results/runs/seq_multi
-python -m src.training.evaluate_base --data_stage2 data/processed/output2.csv --task multiclass --model tcn_gru --outdir results/runs/seq_multi
-
-"""
