@@ -1,7 +1,0 @@
-2026-02-26 11:11:55.737660: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-2026-02-26 11:11:56.229186: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
-To enable the following instructions: AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
-2026-02-26 11:11:58.102065: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-[I 2026-02-26 11:11:59,457] Using an existing study with name 'stage1_binary_tcn' instead of creating a new one.
-  0%|          | 0/250 [00:00<?, ?it/s]/var/spool/slurmd/job1256297/slurm_script: line 37: 472688 Killed                  python -m src.utils.tune_8_optuna --data_stage1 data/processed/output1.csv --task binary --model tcn --n_splits 5 --max_races 80 --n_trials 250 --seed 42 --timeout_sec 170000 --outdir runs/tuning_8_final
-slurmstepd: error: Detected 1 oom-kill event(s) in StepId=1256297.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.

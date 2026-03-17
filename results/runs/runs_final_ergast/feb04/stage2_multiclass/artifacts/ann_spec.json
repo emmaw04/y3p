@@ -1,8 +1,0 @@
-{
-  "type": "keras_multiclass_ann",
-  "n_classes": 5,
-  "input_dim": 6,
-  "preprocessor": "ann_preprocessor.joblib",
-  "model": "ann_model.keras",
-  "uses_sparse_toarray": true
-}

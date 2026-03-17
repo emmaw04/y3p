@@ -1,3 +1,0 @@
-Job started on tiger-02 at Thu 26 Feb 11:11:54 GMT 2026
-CPUs: 16  MEM: 64000
-CMD: python -m src.utils.tune_8_optuna --data_stage1 data/processed/output1.csv --task binary --model tcn --n_splits 5 --max_races 80 --n_trials 250 --seed 42 --timeout_sec 170000 --outdir runs/tuning_8_final
