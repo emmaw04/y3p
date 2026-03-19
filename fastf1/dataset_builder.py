@@ -130,7 +130,7 @@ PIT_LOSS_BY_TRACK_S: dict[str, float] = {
     "United States Grand Prix": 24.023,
 }
 
-DEFAULT_PIT_LOSS_S = 23.113 #median of dictionary
+DEFAULT_PIT_LOSS_S = 23.113 #median of dictionary, added just in case
 
 
 def estimate_pit_loss_seconds(race_track: pd.Series, fcy_status: pd.Series) -> pd.Series:

@@ -1,25 +1,21 @@
 """
 build_f1_db.py
 
-single-script f1 database builder. reads fastf1 parquet exports and writes
-a fully-expanded sqlite database in one run, four sequential passes:
+single script f1 database builder. reads fastf1 parquet exports and writes
+a fully expanded sqlite database in one run, four sequential passes
 
-  pass 1: discover events; populate `races` and `drivers`.
-  pass 2: populate `starterfields`, `qualifyings`; collect retirement data.
-  pass 3: for every race: insert session row, weather samples, track-status
-            events, race-control messages, laps (all columns in one insert),
-            fcy phases; update speedtraps and driver car numbers.
-  pass 4: insert `retirements`, run validation, write audit csvs to monitor completeness of the database
+  pass 1 discover events, populate races and drivers
+  pass 2 populate starterfields, qualifyings, collect retirement data
+  pass 3 for every race insert session row, weather samples, track status, events, race control messages, laps, fcy phases, update speedtraps and driver car numbers
+  pass 4 insert retirements, run validation
 """
 
 import argparse
-import datetime
 import json
 import logging
 import os
 import re
 import sqlite3
-from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -27,15 +23,11 @@ import numpy as np
 import pandas as pd
 from thefuzz import process
 
-# ---------------------------------------------------------------------------
-# logging
-# ---------------------------------------------------------------------------
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# logging setup
+logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# full database schema  (defined once, created fresh each run)
-# ---------------------------------------------------------------------------
+# full database schema defined once and created fresh each run
 FULL_SCHEMA: Dict[str, str] = {
     "drivers": """
         CREATE TABLE IF NOT EXISTS drivers (
@@ -107,7 +99,7 @@ FULL_SCHEMA: Dict[str, str] = {
             compound           TEXT,
             tireage            INTEGER,
             nextcompound       TEXT,
-            -- pit timing (text = original timedelta string; _s = seconds; num = ms)
+            -- pit timing (text is original timedelta string while _s is seconds and num is ms)
             pitintime          TEXT,
             pitouttime         TEXT,
             pitintime_s        REAL,
@@ -134,7 +126,7 @@ FULL_SCHEMA: Dict[str, str] = {
             is_accurate        INTEGER,
             is_deleted         INTEGER,
             deleted_reason     TEXT,
-            -- fcy lap-progress fields (populated downstream if needed)
+            -- fcy lap progress fields (populated downstream if needed)
             startlapprog_vsc   REAL,
             endlapprog_vsc     REAL,
             age_vsc            REAL,
@@ -347,54 +339,16 @@ COMPOUND_ALLOCATIONS: Dict[int, Dict[str, str]] = {
     },
 }
 
-# 2018 absolute name -> a-code
-# take the 2018 
+# mapping 2018 absolute tyre compound names to simplified a codes (consistent with Heilmeier's database)
 _ABS_2018_TO_A: Dict[str, str] = {
     "SUPERHARD": "A1", "HARD": "A2", "MEDIUM": "A3",
     "SOFT": "A4", "SUPERSOFT": "A5", "ULTRASOFT": "A6", "HYPERSOFT": "A7",
 }
 
-# ---------------------------------------------------------------------------
-# missingdatatracker
-# ---------------------------------------------------------------------------
-class MissingDataTracker:
-    def __init__(self) -> None:
-        self.issues: List[Dict[str, Any]] = []
-
-    def add(self, season: int, location: str, session: str, filename: str, reason: str, path: Optional[Union[str, Path]] = None, severity: str = "WARNING") -> None:
-        self.issues.append({
-            "season": season, "grand_prix": location, "session": session,
-            "filename": filename, "reason": reason,
-            "path": str(path) if path is not None else "", "severity": severity,
-        })
-
-    def log_summary(self) -> None:
-        if not self.issues:
-            logger.info("missing-data report: no issues detected.")
-            return
-        for it in sorted(self.issues, key=lambda x: (str(x["season"]), x["grand_prix"], x["session"])):
-            logger.warning(
-                f"[{it['severity']}] {it['season']} | {it['grand_prix']} | {it['session']} | "
-                f"{it['filename']} -> {it['reason']}"
-                + (f" | path={it['path']}" if it["path"] else "")
-            )
-        logger.warning(f"total issues: {len(self.issues)}")
-
-    def write_csv(self, out_path: Union[str, Path]) -> None:
-        df = pd.DataFrame(self.issues) if self.issues else pd.DataFrame(
-            columns=["season", "grand_prix", "session", "filename", "reason", "path", "severity"]
-        )
-        Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(out_path, index=False)
-        logger.info(f"missing-data csv written to: {out_path}")
-
-
-# ---------------------------------------------------------------------------
-# general-purpose helpers
-# ---------------------------------------------------------------------------
+# general purpose helpers
 
 def pick_col(df: pd.DataFrame, candidates: Iterable[str]) -> Optional[str]:
-    """return the first matching column (case-insensitive) from candidates."""
+    """return the first matching column (case insensitive) from candidates."""
     if df is None or df.empty:
         return None
     lower_map = {c.lower(): c for c in df.columns}
@@ -405,11 +359,12 @@ def pick_col(df: pd.DataFrame, candidates: Iterable[str]) -> Optional[str]:
 
 
 def get_val(row: pd.Series, col: Optional[str]) -> Any:
+    """retrieve a value from a row safely if column exists."""
     return row.get(col) if col is not None else None
 
 
 def td_to_s(val: Any) -> Optional[float]:
-    """convert a timedelta-like value to seconds (float)."""
+    """convert a timedelta like value to seconds (float)."""
     if val is None or (isinstance(val, float) and np.isnan(val)):
         return None
     try:
@@ -422,7 +377,7 @@ def td_to_s(val: Any) -> Optional[float]:
 
 
 def time_to_ms(val: Any) -> Optional[int]:
-    """convert a timedelta-like or numeric value to integer milliseconds."""
+    """convert a timedelta like or numeric value to integer milliseconds."""
     if val is None:
         return None
     try:
@@ -437,52 +392,46 @@ def time_to_ms(val: Any) -> Optional[int]:
             return None
     try:
         x = float(val)
-        # heuristic: values > 1e6 are already ms
+        # heuristic assumes values greater than 1e6 are already ms
         return int(x) if x > 1e6 else int(x * 1000)
     except Exception:
         return None
 
 
-def _safe_read_parquet(
-    path: Path, tracker: MissingDataTracker,
-    season: int, location: str, session: str, filename_label: str,
-) -> Optional[pd.DataFrame]:
+def _safe_read_parquet(path: Path) -> Optional[pd.DataFrame]:
+    """safely read a parquet file and normalise column names to lowercase."""
     try:
         df = pd.read_parquet(path)
         df.columns = [str(c).lower() for c in df.columns]
         return df
-    except Exception as e:
-        tracker.add(season, location, session, filename_label,
-                    f"failed to read parquet: {type(e).__name__}: {e}",
-                    path=path, severity="ERROR")
+    except Exception:
         return None
 
 
-# ---------------------------------------------------------------------------
 # compound helpers
-# ---------------------------------------------------------------------------
 
 def get_compound_allocation(season: int, gp_name: str) -> Optional[str]:
+    """retrieve the tire compound allocation for a specific race event."""
     def _norm(n):
         return n.lower().replace("grand prix", "").replace("gp", "").strip()
 
     allocs = COMPOUND_ALLOCATIONS.get(season)
     if not allocs:
-        logger.warning(f"no compound allocations for season {season}.")
         return None
     norm = _norm(gp_name)
     for name, compounds in allocs.items():
         if _norm(name) == norm:
             return compounds.replace(" ", "")
+    
+    # fuzzy matching fallback for slight naming discrepancies
     best = process.extractOne(gp_name, list(allocs.keys()))
     if best and best[1] > 80:
-        logger.warning(f"fuzzy match '{gp_name}' -> '{best[0]}' (score {best[1]})")
         return allocs[best[0]].replace(" ", "")
-    logger.error(f"no compound allocation for '{gp_name}' in {season}.")
     return None
 
 
 def _parse_allocated_slicks(availablecompounds: str) -> List[str]:
+    """parse the available compound string into a list of individual codes."""
     if not availablecompounds:
         return []
     txt = str(availablecompounds).upper()
@@ -496,13 +445,16 @@ def _parse_allocated_slicks(availablecompounds: str) -> List[str]:
 
 
 def _build_relative_map(slicks: List[str]) -> Dict[str, str]:
+    """map absolute compound codes to relative hardness soft medium hard."""
     if len(slicks) != 3:
         return {}
-    ordered = sorted(slicks, key=lambda s: int(s[1:]))   # smaller number = harder
+    # sort by hardness where smaller number is harder
+    ordered = sorted(slicks, key=lambda s: int(s[1:]))
     return {ordered[0]: "HARD", ordered[1]: "MEDIUM", ordered[2]: "SOFT"}
 
 
 def _normalise_compound(raw: Any, rel_map: Dict[str, str]) -> Optional[str]:
+    """normalise compound names to standard types or relative hardness."""
     if raw is None or (isinstance(raw, float) and np.isnan(raw)):
         return None
     s = str(raw).strip().upper()
@@ -521,27 +473,26 @@ def _normalise_compound(raw: Any, rel_map: Dict[str, str]) -> Optional[str]:
 
 
 def _derive_availablecompounds_c(availablecompounds: str) -> Optional[str]:
-    """derive the c-range equivalent string from an a-range availablecompounds."""
+    """derive the c range equivalent string from an a range availablecompounds."""
     a_to_c = {"A2": "C1", "A3": "C2", "A4": "C3", "A6": "C4", "A7": "C5"}
     parts = [c.strip() for c in availablecompounds.split(",") if c.strip()]
     c_parts = [a_to_c[p] for p in parts if p in a_to_c]
     return ",".join(sorted(set(c_parts))) if c_parts else None
 
 
-# ---------------------------------------------------------------------------
-# gap / interval computation
-# ---------------------------------------------------------------------------
+# gap interval computation
 
 def compute_gap_interval_by_position(laps_df: pd.DataFrame) -> pd.DataFrame:
     """
-    computes gap (to leader) and interval (to car ahead) per lap based on
-    position order at lap completion.
+    computes gap to leader and interval to car ahead per lap based on
+    position order at lap completion
     """
     df = laps_df.copy()
     for col in ("lapnumber", "position", "laptime", "time", "lapstarttime"):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
+    # calculate end time of the lap to establish race order
     end_time = df.get("time", pd.Series(dtype=float))
     if end_time.isna().all() and "lapstarttime" in df.columns and "laptime" in df.columns:
         end_time = df["lapstarttime"] + df["laptime"]
@@ -552,13 +503,17 @@ def compute_gap_interval_by_position(laps_df: pd.DataFrame) -> pd.DataFrame:
     ).copy()
     tmp["lapnumber"] = tmp["lapnumber"].astype(int)
     tmp["position"] = tmp["position"].astype(int)
+    
+    # deduplicate positions to ensure stable sort
     tmp = (tmp.sort_values(["lapnumber", "position", "_end_s", "driver"])
               .drop_duplicates(subset=["lapnumber", "position"], keep="first")
               .sort_values(["lapnumber", "position"]))
 
+    # calculate gap to leader
     leader = tmp.groupby("lapnumber")["_end_s"].transform("min")
     tmp["gap_calc"] = tmp["_end_s"] - leader
 
+    # calculate interval to car ahead
     prev = tmp.groupby("lapnumber")["_end_s"].shift(1)
     tmp["interval_calc"] = tmp["_end_s"] - prev
     tmp.loc[tmp["position"] == 1, "interval_calc"] = 0.0
@@ -570,11 +525,10 @@ def compute_gap_interval_by_position(laps_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# ---------------------------------------------------------------------------
 # fcy phase helpers
-# ---------------------------------------------------------------------------
 
 def _extract_fcy_phases(track_status_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    """extract virtual safety car and safety car phases from track status data."""
     if track_status_df is None or track_status_df.empty:
         return []
     if not {"time", "status"}.issubset(track_status_df.columns):
@@ -615,6 +569,7 @@ def _extract_fcy_phases(track_status_df: pd.DataFrame) -> List[Dict[str, Any]]:
 
 
 def _phase_times_to_laps(phases: List[Dict[str, Any]], leader_laps_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    """map fcy phase timestamps to specific lap numbers based on leader progress."""
     if not phases or leader_laps_df is None or leader_laps_df.empty:
         return phases
     ll = leader_laps_df.sort_values("lapnumber")
@@ -635,40 +590,32 @@ def _phase_times_to_laps(phases: List[Dict[str, Any]], leader_laps_df: pd.DataFr
     return phases
 
 
-# ---------------------------------------------------------------------------
 # position deduplication
-# ---------------------------------------------------------------------------
 
 def _clean_positions(
-    df: pd.DataFrame, tracker: MissingDataTracker,
-    season: int, location: str, session: str, path: Path
+    df: pd.DataFrame,
+    season: int, location: str, session: str
 ) -> Optional[pd.DataFrame]:
+    """remove duplicate positions from qualifying results to ensure uniqueness."""
     if "position" not in df.columns:
-        tracker.add(season, location, session, "results.parquet",
-                    "missing 'position' column", path=path, severity="ERROR")
         return None
     out = df[pd.notna(df["position"])].copy()
     out["position"] = pd.to_numeric(out["position"], errors="coerce")
     out = out[pd.notna(out["position"])].copy()
     out["position"] = out["position"].astype(int)
     if out.duplicated(subset=["position"]).any():
-        logger.warning(f"{season} {location} {session}: duplicate positions; keeping first.")
+        logger.warning(f"{season} {location} {session}: duplicate positions; keeping first")
         out = out.sort_values("position").drop_duplicates(subset=["position"], keep="first")
     return out
 
 
-# ---------------------------------------------------------------------------
 # pit timing helpers
-# ---------------------------------------------------------------------------
 
 def _precompute_pit_timing(df: pd.DataFrame, col_pitin: Optional[str], col_pitout: Optional[str], group_key: Optional[str]) -> pd.DataFrame:
     """
-    add aligned pit-timing columns to df:
-      _pitintimenum_ms   : ms for pitintime on this lap
-      _pitouttimenum_ms  : ms for pitouttime on this lap (raw)
-      _pitouttimenum_aligned_ms : next-lap pitouttime shifted back to pitin lap
-      _pitstopduration_s : duration in seconds (aligned)
-      _pitouttime_next_val: raw next-lap pitouttime value (for string storage)
+    add aligned pit timing columns to the dataframe
+    we align the pit stop duration to the lap where the pit entry occurred
+    this simplifies analysis of the in lap
     """
     work = df.copy()
 
@@ -698,49 +645,66 @@ def _precompute_pit_timing(df: pd.DataFrame, col_pitin: Optional[str], col_pitou
             work[col_pitout].shift(-1) if col_pitout else pd.Series(np.nan, index=work.index)
         )
 
-    mask = work["_pitintimenum_ms"].notna() & work["_pitouttimenum_next_ms"].notna()
+    # a pit stop is only valid if the out time is after the in time
+    pitin = work["_pitintimenum_ms"]
+    pitout_same = work["_pitouttimenum_ms"]
+    pitout_next = work["_pitouttimenum_next_ms"]
+    
+    is_same_valid = pitin.notna() & pitout_same.notna() & (pitout_same > pitin)
+    
+    # calculate pit stop duration in seconds
     work["_pitstopduration_s"] = np.where(
-        mask,
-        (work["_pitouttimenum_next_ms"] - work["_pitintimenum_ms"]) / 1000.0,
-        np.nan,
+        is_same_valid,
+        (pitout_same - pitin) / 1000.0,
+        np.where(
+            pitin.notna() & pitout_next.notna(),
+            (pitout_next - pitin) / 1000.0,
+            np.nan,
+        )
     )
+    
+    # helper for lap insertion to determine which pit out belongs to the pit in on this lap
+    work["_pitout_aligned_ms"] = np.where(
+        is_same_valid,
+        pitout_same,
+        np.where(pitin.notna(), pitout_next, pitout_same)
+    )
+    work["_pitout_aligned_val"] = np.where(
+        is_same_valid,
+        work[col_pitout] if col_pitout else np.nan,
+        np.where(pitin.notna(), work["_pitouttime_next_val"], work[col_pitout] if col_pitout else np.nan)
+    )
+    
     return work
 
 
-# ---------------------------------------------------------------------------
 # database creation
-# ---------------------------------------------------------------------------
 
 def create_database(db_path: str) -> sqlite3.Connection:
+    """initialize the sqlite database with the full schema."""
     if os.path.exists(db_path):
         os.remove(db_path)
-        logger.info(f"removed existing database: {db_path}")
+        logger.info(f"removed existing database {db_path}")
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
     for name, sql in FULL_SCHEMA.items():
         cur.execute(sql)
-        logger.info(f"created table '{name}'.")
+        logger.info(f"created table {name}")
     for idx_sql in SCHEMA_INDICES:
         cur.execute(idx_sql)
     conn.commit()
-    logger.info("schema created.")
+    logger.info("schema created")
     return conn
 
 
-# ---------------------------------------------------------------------------
 # main processing
-# ---------------------------------------------------------------------------
 
-def process_sessions(
-    input_dir: str,
-    conn: sqlite3.Connection,
-    tracker: MissingDataTracker,
-    anomalies: List[Dict[str, Any]],
-) -> None:
+def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
+    """main processing loop iterating through all seasons and events."""
     cur = conn.cursor()
 
-    driver_cache: Dict[str, int] = {}        # abbreviation -> driver_id
-    race_cache: Dict[Tuple[int, str], int] = {}        # (season, location) -> race_id
+    driver_cache: Dict[str, int] = {}
+    race_cache: Dict[Tuple[int, str], int] = {}
     next_driver_id = 1
     next_race_id = 1
     next_session_id = 1
@@ -750,12 +714,10 @@ def process_sessions(
         [p for p in Path(input_dir).iterdir() if p.is_dir() and p.name.isdigit()]
     )
     if not season_dirs:
-        logger.warning(f"no season directories found under: {input_dir}")
+        logger.warning(f"no season directories found under {input_dir}")
 
-    # -----------------------------------------------------------------------
-    # pass 1 – discover races and drivers
-    # -----------------------------------------------------------------------
-    logger.info("=== pass 1: races + drivers ===")
+    # pass 1 discover races and drivers
+    logger.info("=== pass 1 races and drivers ===")
 
     for season_dir in season_dirs:
         season = int(season_dir.name)
@@ -764,33 +726,26 @@ def process_sessions(
             race_session_dir = gp_dir / "Race"
 
             if not race_session_dir.is_dir():
-                tracker.add(season, location, "Race", "(session folder)",
-                            "missing race session folder", path=race_session_dir)
                 continue
 
             results_path = race_session_dir / "results.parquet"
             if not results_path.exists():
-                tracker.add(season, location, "Race", "results.parquet",
-                            "missing (event skipped)", path=results_path)
                 continue
 
-            results_df = _safe_read_parquet(results_path, tracker, season, location, "Race", "results.parquet")
+            results_df = _safe_read_parquet(results_path)
             if results_df is None:
                 continue
 
-            # ---- races row ----
+            # populate race details
             if (season, location) not in race_cache:
                 race_date = f"{season}-01-01"
                 laps_path = race_session_dir / "laps.parquet"
                 if laps_path.exists():
-                    ldf = _safe_read_parquet(laps_path, tracker, season, location, "Race", "laps.parquet")
+                    ldf = _safe_read_parquet(laps_path)
                     if ldf is not None and "lapstartdate" in ldf.columns and not ldf.empty:
                         v = ldf["lapstartdate"].iloc[0]
                         if pd.notna(v):
                             race_date = pd.to_datetime(v).strftime("%Y-%m-%d")
-                else:
-                    tracker.add(season, location, "Race", "laps.parquet",
-                                "missing (race date fallback used)", path=laps_path)
 
                 dry = get_compound_allocation(season, location)
                 avail = f"{dry},I,W" if dry else "A1,A2,A3,I,W"
@@ -800,9 +755,6 @@ def process_sessions(
                 if "position" in results_df.columns and "laps" in results_df.columns:
                     w = results_df[results_df["position"] == 1]
                     nolaps = int(w["laps"].iloc[0]) if not w.empty else 0
-                else:
-                    tracker.add(season, location, "Race", "results.parquet",
-                                "missing 'position'/'laps'; nolaps=0", path=results_path)
 
                 cur.execute(
                     """INSERT INTO races
@@ -815,11 +767,11 @@ def process_sessions(
                 race_cache[(season, location)] = next_race_id
                 next_race_id += 1
 
-            # ---- driver rows ----
+            # populate driver details
             sources = [results_df]
             q_res = gp_dir / "Qualifying" / "results.parquet"
             if q_res.exists():
-                qdf = _safe_read_parquet(q_res, tracker, season, location, "Qualifying", "results.parquet")
+                qdf = _safe_read_parquet(q_res)
                 if qdf is not None:
                     sources.append(qdf)
 
@@ -841,12 +793,10 @@ def process_sessions(
                     next_driver_id += 1
 
     conn.commit()
-    logger.info(f"pass 1 done: {len(race_cache)} races, {len(driver_cache)} drivers.")
+    logger.info(f"pass 1 done {len(race_cache)} races {len(driver_cache)} drivers")
 
-    # -----------------------------------------------------------------------
-    # pass 2 – starterfields, qualifyings, collect retirement data
-    # -----------------------------------------------------------------------
-    logger.info("=== pass 2: starterfields + qualifyings ===")
+    # pass 2 starterfields and qualifyings
+    logger.info("=== pass 2 starterfields and qualifyings ===")
 
     retirements_data: Dict[Tuple[int, int], Dict[str, int]] = {}
 
@@ -868,10 +818,10 @@ def process_sessions(
             if race_id is None:
                 continue
 
-            # starterfields
+            # insert starterfield data
             results_path = gp_dir / "Race" / "results.parquet"
             if results_path.exists():
-                rdf = _safe_read_parquet(results_path, tracker, season, location, "Race", "results.parquet")
+                rdf = _safe_read_parquet(results_path)
                 if rdf is not None:
                     for _, row in rdf.iterrows():
                         abbr = row.get("abbreviation")
@@ -887,6 +837,7 @@ def process_sessions(
                              row.get("gridposition"), row.get("status"),
                              row.get("position"), row.get("laps"), None),
                         )
+                        # track retirement reasons
                         status = str(row.get("status", "")).lower()
                         if "finished" not in status and "+" not in status:
                             key = (season, did)
@@ -896,16 +847,13 @@ def process_sessions(
                                 retirements_data[key]["accidents"] += 1
                             else:
                                 retirements_data[key]["failures"] += 1
-            else:
-                tracker.add(season, location, "Race", "results.parquet",
-                            "missing (starterfields skipped)", path=results_path)
 
-            # qualifyings
+            # insert qualifying data
             q_path = gp_dir / "Qualifying" / "results.parquet"
             if q_path.exists():
-                qdf = _safe_read_parquet(q_path, tracker, season, location, "Qualifying", "results.parquet")
+                qdf = _safe_read_parquet(q_path)
                 if qdf is not None:
-                    qdf = _clean_positions(qdf, tracker, season, location, "Qualifying", q_path)
+                    qdf = _clean_positions(qdf, season, location, "Qualifying")
                     if qdf is not None:
                         for _, row in qdf.iterrows():
                             did = driver_cache.get(row.get("abbreviation"))
@@ -919,24 +867,15 @@ def process_sessions(
                                  _to_s(row.get("q1")), _to_s(row.get("q2")),
                                  _to_s(row.get("q3")), None),
                             )
-            else:
-                tracker.add(season, location, "Qualifying", "results.parquet",
-                            "missing (qualifyings skipped)", path=q_path)
 
     conn.commit()
-    logger.info("pass 2 done.")
+    logger.info("pass 2 done")
 
-    # -----------------------------------------------------------------------
-    # pass 3 – sessions, weather, track-status, rcm, laps (all columns), fcy
-    # -----------------------------------------------------------------------
-    logger.info("=== pass 3: sessions, telemetry tables, laps, fcy ===")
+    # pass 3 sessions telemetry and laps
+    logger.info("=== pass 3 sessions, telemetry tables, laps, fcy ===")
 
-    # driver lookup by car number (updated as we process laps)
+    # build a fast lookup for driver ids using car numbers
     driver_by_carno: Dict[int, int] = {}
-    cur.execute("SELECT id, carno FROM drivers WHERE carno IS NOT NULL")
-    for row in cur.fetchall():
-        driver_by_carno[row[0]] = row[1]  # actually want carno->id
-    # rebuild correctly
     cur.execute("SELECT id, carno FROM drivers WHERE carno IS NOT NULL")
     driver_by_carno = {row[1]: row[0] for row in cur.fetchall()}
 
@@ -950,13 +889,11 @@ def process_sessions(
 
             race_dir = gp_dir / "Race"
             if not race_dir.is_dir():
-                tracker.add(season, location, "Race", "(session folder)",
-                            "missing (laps/fcy/weather skipped)", path=race_dir)
                 continue
 
             logger.info(f"  processing {season} {location} (race_id={race_id})")
 
-            # ---- insert session row ----
+            # create session entry
             cur.execute(
                 """INSERT OR IGNORE INTO sessions
                    (id, race_id, session_code, session_name) VALUES (?,?,'R','Race')""",
@@ -965,13 +902,13 @@ def process_sessions(
             session_id = next_session_id
             next_session_id += 1
 
-            # ---- weather ----
+            # process weather data
             wet_race = 0
             for fn in ("weather_data.parquet", "weather.parquet", "weatherdata.parquet"):
                 wp = race_dir / fn
                 if not wp.exists():
                     continue
-                wdf = _safe_read_parquet(wp, tracker, season, location, "Race", fn)
+                wdf = _safe_read_parquet(wp)
                 if wdf is None:
                     break
 
@@ -1028,22 +965,16 @@ def process_sessions(
                            VALUES (?,?,?,?,?,?,?,?,?,?)""",
                         rows_w,
                     )
-                    logger.info(f"    weather: {len(rows_w)} rows from {fn}")
-                else:
-                    anomalies.append({"issue": "weather_0_rows", "race_id": race_id,
-                                      "season": season, "location": location})
-                break  # stop after first found weather file
-            else:
-                tracker.add(season, location, "Race", "weather_data.parquet",
-                            "no weather parquet found", path=race_dir)
+                    logger.info(f"    weather {len(rows_w)} rows from {fn}")
+                break
 
             cur.execute("UPDATE races SET wet_race=? WHERE id=?", (wet_race, race_id))
 
-            # ---- track-status events ----
+            # process track status events
             ts_path = race_dir / "track_status.parquet"
             ts_df = None
             if ts_path.exists():
-                ts_df = _safe_read_parquet(ts_path, tracker, season, location, "Race", "track_status.parquet")
+                ts_df = _safe_read_parquet(ts_path)
                 if ts_df is not None:
                     col_t  = pick_col(ts_df, ["time", "Time"])
                     col_d  = pick_col(ts_df, ["date", "Date"])
@@ -1066,16 +997,12 @@ def process_sessions(
                                VALUES (?,?,?,?,?)""",
                             rows_ts,
                         )
-                        logger.info(f"    track-status events: {len(rows_ts)}")
-            else:
-                tracker.add(season, location, "Race", "track_status.parquet",
-                            "missing", path=ts_path)
+                        logger.info(f"    track status events {len(rows_ts)}")
 
-            # ---- race-control messages ----
+            # process race control messages
             rcm_path = race_dir / "race_control_messages.parquet"
             if rcm_path.exists():
-                rcm_df = _safe_read_parquet(rcm_path, tracker, season, location,
-                                            "Race", "race_control_messages.parquet")
+                rcm_df = _safe_read_parquet(rcm_path)
                 if rcm_df is not None:
                     col_utc    = pick_col(rcm_df, ["utc", "Utc"])
                     col_t      = pick_col(rcm_df, ["time", "Time"])
@@ -1111,40 +1038,31 @@ def process_sessions(
                                VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                             rows_rcm,
                         )
-                        logger.info(f"    rcm: {len(rows_rcm)} messages")
-            else:
-                tracker.add(season, location, "Race", "race_control_messages.parquet",
-                            "missing", path=rcm_path)
+                        logger.info(f"    rcm {len(rows_rcm)} messages")
 
-            # ---- laps (single insert with all columns) ----
+            # process laps with full detail
             laps_path = race_dir / "laps.parquet"
             if not laps_path.exists():
-                tracker.add(season, location, "Race", "laps.parquet",
-                            "missing (laps table cannot be populated)", path=laps_path)
                 conn.commit()
                 continue
 
-            laps_df = _safe_read_parquet(laps_path, tracker, season, location, "Race", "laps.parquet")
+            laps_df = _safe_read_parquet(laps_path)
             if laps_df is None:
                 conn.commit()
                 continue
 
-            # required columns
             req = {"driver", "lapnumber", "position", "laptime"}
             if not req.issubset(laps_df.columns):
-                tracker.add(season, location, "Race", "laps.parquet",
-                            f"missing columns: {req - set(laps_df.columns)}",
-                            path=laps_path, severity="ERROR")
                 conn.commit()
                 continue
 
-            # get compound info for this race
+            # derive compound info
             cur.execute("SELECT availablecompounds FROM races WHERE id=?", (race_id,))
             avail_row = cur.fetchone()
             avail_str = avail_row[0] if avail_row else None
             rel_map = _build_relative_map(_parse_allocated_slicks(avail_str or ""))
 
-            # identify key columns (case-insensitive)
+            # identify columns by scanning for possible case variations
             col_dn       = pick_col(laps_df, ["drivernumber", "DriverNumber"])
             col_driver   = pick_col(laps_df, ["driver"])
             col_lapno    = pick_col(laps_df, ["lapnumber"])
@@ -1174,40 +1092,40 @@ def process_sessions(
 
             group_key = col_dn or col_driver
 
-            # convert time columns used for gap/interval computation to seconds
+            # ensure time columns are in seconds
             for col in (col_laptime, col_time, col_lstart):
                 if col and col in laps_df.columns:
                     laps_df[col] = laps_df[col].apply(td_to_s)
 
-            # numeric position
+            # clean up position data
             laps_df[col_pos] = pd.to_numeric(laps_df[col_pos], errors="coerce")
             laps_df = laps_df[laps_df[col_pos].notna()].copy()
             laps_df[col_pos] = laps_df[col_pos].astype(int)
 
-            # compound normalisation
+            # normalize tyre compound names
             laps_df["_compound_rel"] = laps_df[col_compound].apply(
                 lambda x: _normalise_compound(x, rel_map)
             ) if col_compound else None
 
-            # racetime (cumulative laptime per driver)
+            # calculate cumulative racetime
             laps_df = laps_df.sort_values([col_driver, col_lapno])
             laps_df["_racetime"] = laps_df.groupby(col_driver)[col_laptime].cumsum()
 
-            # next compound (compound after a pit stop, on the same lap as the pit-in)
+            # determine the tire compound used after the pit stop
             laps_df["_nextcompound"] = laps_df.groupby(col_driver)["_compound_rel"].shift(-1)
             laps_df["_nextcompound"] = laps_df["_nextcompound"].where(
                 laps_df[col_pitin].notna() if col_pitin else pd.Series(False, index=laps_df.index),
                 other=None,
             )
 
-            # gap / interval
+            # compute gaps and intervals
             laps_df = laps_df.rename(columns={col_driver: "driver", col_lapno: "lapnumber"})
             laps_df = compute_gap_interval_by_position(laps_df)
 
-            # pit timing (aligned to pit-in lap for duration)
+            # align pit stop timings
             laps_df = _precompute_pit_timing(laps_df, col_pitin, col_pitout, group_key)
 
-            # ---- update drivers.carno from this parquet ----
+            # update driver car numbers if we find newer info
             if col_dn and col_driver:
                 updates = []
                 for _, dr in laps_df[[col_dn, "driver"]].drop_duplicates().iterrows():
@@ -1229,13 +1147,10 @@ def process_sessions(
                 if updates:
                     cur.executemany("UPDATE drivers SET carno=? WHERE id=?", updates)
 
-            # ---- single insert per lap ----
+            # insert laps
             laps_inserted = 0
-            missing_driver_codes: set = set()
-
             for _, lap in laps_df.iterrows():
                 drv = lap.get("driver")
-                # resolve driver_id: try abbreviation first, then car number
                 did = driver_cache.get(str(drv))
                 if did is None and col_dn:
                     dn_val = lap.get(col_dn)
@@ -1245,7 +1160,6 @@ def process_sessions(
                         except Exception:
                             pass
                 if did is None:
-                    missing_driver_codes.add(str(drv))
                     continue
 
                 lapno = lap.get("lapnumber")
@@ -1253,20 +1167,20 @@ def process_sessions(
                 if pd.isna(lapno) or pd.isna(pos):
                     continue
 
-                # --- pit timing ---
+                # extract pit timing fields
                 pitin_raw      = lap.get(col_pitin) if col_pitin else None
                 pitin_ms       = lap.get("_pitintimenum_ms")
-                pitout_next_ms = lap.get("_pitouttimenum_next_ms")
-                pitout_str     = lap.get("_pitouttime_next_val")
+                pitout_ms      = lap.get("_pitout_aligned_ms")
+                pitout_val     = lap.get("_pitout_aligned_val")
                 pitdur         = lap.get("_pitstopduration_s")
 
                 pitin_str  = str(pitin_raw)  if (pitin_raw  is not None and pd.notna(pitin_raw))  else None
-                pitout_str = str(pitout_str)  if (pitout_str is not None and pd.notna(pitout_str)) else None
+                pitout_str = str(pitout_val) if (pitout_val is not None and pd.notna(pitout_val)) else None
                 pitin_s    = (pitin_ms  / 1000.0) if pitin_ms  is not None and pd.notna(pitin_ms)  else None
-                pitout_s   = (pitout_next_ms / 1000.0) if pitout_next_ms is not None and pd.notna(pitout_next_ms) else None
+                pitout_s   = (pitout_ms / 1000.0) if pitout_ms is not None and pd.notna(pitout_ms) else None
                 pitdur     = float(pitdur) if pitdur is not None and pd.notna(pitdur) else None
 
-                # --- sector times ---
+                # extract sector times
                 s1  = td_to_s(lap.get(col_s1))  if col_s1  else None
                 s2  = td_to_s(lap.get(col_s2))  if col_s2  else None
                 s3  = td_to_s(lap.get(col_s3))  if col_s3  else None
@@ -1274,7 +1188,7 @@ def process_sessions(
                 s2s = time_to_ms(lap.get(col_s2s)) if col_s2s else None
                 s3s = time_to_ms(lap.get(col_s3s)) if col_s3s else None
 
-                # --- flags ---
+                # flags
                 pb_v  = lap.get(col_pb)  if col_pb  else None
                 acc_v = lap.get(col_acc) if col_acc else None
                 del_v = lap.get(col_del) if col_del else None
@@ -1312,7 +1226,7 @@ def process_sessions(
                             # pit
                             pitin_str, pitout_str, pitin_s, pitout_s,
                             int(pitin_ms) if pitin_ms is not None and pd.notna(pitin_ms) else None,
-                            int(pitout_next_ms) if pitout_next_ms is not None and pd.notna(pitout_next_ms) else None,
+                            int(pitout_ms) if pitout_ms is not None and pd.notna(pitout_ms) else None,
                             pitdur,
                             # sectors
                             s1, s2, s3, s1s, s2s, s3s,
@@ -1331,22 +1245,54 @@ def process_sessions(
                     )
                     laps_inserted += 1
                 except sqlite3.IntegrityError:
-                    # duplicate pk (race_id, lapno, position) — log and skip
-                    anomalies.append({
-                        "issue": "laps_pk_conflict",
-                        "race_id": race_id, "season": season, "location": location,
-                        "lapno": int(lapno), "position": int(pos),
-                    })
+                    pass
 
-            if laps_inserted == 0:
-                tracker.add(season, location, "Race", "laps.parquet",
-                            f"0 laps inserted; unresolved drivers: "
-                            f"{', '.join(sorted(missing_driver_codes)[:10])}",
-                            path=laps_path, severity="ERROR")
-            else:
-                logger.info(f"    laps inserted: {laps_inserted}")
+            if laps_inserted > 0:
+                logger.info(f"    laps inserted {laps_inserted}")
 
-            # ---- speedtrap update ----
+                # calculate track length using car telemetry integration if available
+                track_len = None
+                meta_path = race_dir / "session_metadata.json"
+                if meta_path.exists():
+                    try:
+                        with open(meta_path, 'r') as f:
+                            meta = json.load(f)
+                            track_len = meta.get('track_length')
+                    except Exception:
+                        pass
+                
+                if track_len:
+                    cur.execute("UPDATE races SET tracklength=? WHERE id=?", (track_len, race_id))
+                    logger.info(f"    track length from metadata {track_len:.2f}m")
+                else:
+                    # fallback to integrating speed over time for an accurate lap
+                    accurate_laps = laps_df[laps_df[col_acc] == 1] if col_acc else laps_df
+                    if not accurate_laps.empty:
+                        sample_lap = accurate_laps[accurate_laps['lapnumber'] > 5].head(1)
+                        if sample_lap.empty:
+                            sample_lap = accurate_laps.head(1)
+                        
+                        sl = sample_lap.iloc[0]
+                        carno = sl.get(col_dn) if col_dn else None
+                        if carno is not None and pd.notna(carno):
+                            car_path = race_dir / f"car_data_{int(carno)}.parquet"
+                            if car_path.exists():
+                                car_df = _safe_read_parquet(car_path)
+                                if car_df is not None and "sessiontime" in car_df.columns and "speed" in car_df.columns:
+                                    start_t = sl.get(col_lstart)
+                                    end_t = sl.get(col_time)
+                                    if start_t is not None and end_t is not None:
+                                        car_df['t_s'] = car_df['sessiontime'].apply(td_to_s)
+                                        lap_car = car_df[(car_df['t_s'] >= start_t) & (car_df['t_s'] <= end_t)].sort_values('t_s')
+                                        if len(lap_car) > 1:
+                                            lap_car['dt'] = lap_car['t_s'].diff()
+                                            lap_car['ds'] = (lap_car['speed'] / 3.6) * lap_car['dt']
+                                            track_len = lap_car['ds'].sum()
+                                            if track_len > 1000:
+                                                cur.execute("UPDATE races SET tracklength=? WHERE id=?", (track_len, race_id))
+                                                logger.info(f"    determined track length {track_len:.2f}m")
+
+            # update speedtrap data in starterfields
             if col_spst and col_spst in laps_df.columns:
                 st_df = laps_df.groupby("driver")[col_spst].max().reset_index()
                 for _, r in st_df.iterrows():
@@ -1359,7 +1305,7 @@ def process_sessions(
                             (sv, race_id, did),
                         )
 
-            # ---- fcy phases ----
+            # extract fcy phases from track status
             if ts_df is not None:
                 phases = _extract_fcy_phases(ts_df)
                 leader_df = laps_df[laps_df[col_pos if col_pos in laps_df.columns else "position"] == 1][
@@ -1379,12 +1325,10 @@ def process_sessions(
 
             conn.commit()
 
-    logger.info("pass 3 done.")
+    logger.info("pass 3 done")
 
-    # -----------------------------------------------------------------------
-    # pass 4 – retirements, validation, audit
-    # -----------------------------------------------------------------------
-    logger.info("=== pass 4: retirements + validation ===")
+    # pass 4 retirements and validation
+    logger.info("=== pass 4 retirements and validation ===")
 
     for (season, did), counts in retirements_data.items():
         if counts["accidents"] > 0 or counts["failures"] > 0:
@@ -1397,88 +1341,33 @@ def process_sessions(
 
     for table in FULL_SCHEMA:
         count = cur.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-        logger.info(f"  {table}: {count} rows")
-
-    tracker.log_summary()
+        logger.info(f"  {table} {count} rows")
 
 
-# ---------------------------------------------------------------------------
-# audit csv export
-# ---------------------------------------------------------------------------
-
-def export_audit_csvs(db_path: str, report_dir: Path, anomalies: List[Dict[str, Any]]) -> None:
-    try:
-        conn = sqlite3.connect(db_path)
-
-        pd.read_sql_query(
-            "SELECT race_id, driver_id, lapno, position, pitintimenum, pitouttimenum, pitstopduration "
-            "FROM laps WHERE pitstopduration IS NOT NULL AND pitstopduration < 0 "
-            "ORDER BY race_id, driver_id, lapno", conn
-        ).to_csv(report_dir / "audit_negative_pitstopduration.csv", index=False)
-
-        pd.read_sql_query(
-            "SELECT race_id, driver_id, lapno, position, pitintimenum, pitouttimenum, pitstopduration "
-            "FROM laps WHERE pitstopduration IS NOT NULL AND pitstopduration > 180 "
-            "ORDER BY race_id, driver_id, lapno", conn
-        ).to_csv(report_dir / "audit_huge_pitstopduration.csv", index=False)
-
-        pd.read_sql_query(
-            "SELECT "
-            "SUM(CASE WHEN sector1time IS NULL THEN 1 ELSE 0 END) AS sector1_nulls, "
-            "SUM(CASE WHEN sector2time IS NULL THEN 1 ELSE 0 END) AS sector2_nulls, "
-            "SUM(CASE WHEN sector3time IS NULL THEN 1 ELSE 0 END) AS sector3_nulls, "
-            "SUM(CASE WHEN speed_i1_kph IS NULL THEN 1 ELSE 0 END) AS spi1_nulls, "
-            "SUM(CASE WHEN pitstopduration IS NULL THEN 1 ELSE 0 END) AS pitdur_nulls, "
-            "COUNT(*) AS total_laps FROM laps", conn
-        ).to_csv(report_dir / "audit_null_summary.csv", index=False)
-
-        conn.close()
-        pd.DataFrame(anomalies).to_csv(report_dir / "anomalies.csv", index=False)
-        logger.info(f"audit csvs written to: {report_dir.resolve()}")
-    except Exception as e:
-        logger.error(f"failed to write audit csvs: {e}")
-
-
-# ---------------------------------------------------------------------------
 # entry point
-# ---------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="build the full expanded f1 sqlite database from fastf1 parquet exports."
+        description="build the full expanded f1 sqlite database from fastf1 parquet exports"
     )
-    parser.add_argument("--input",        required=True, help="root directory of fastf1 parquet exports.")
-    parser.add_argument("--output",       required=True, help="output sqlite database path.")
-    parser.add_argument("--missing-report", default=None, help="csv path for missing-data report.")
-    parser.add_argument("--report-dir",   default="build_reports",
-                        help="directory for audit csvs (default: build_reports/).")
+    parser.add_argument("--input",  required=True, help="root directory of fastf1 parquet exports")
+    parser.add_argument("--output", required=True, help="output sqlite database path")
     args = parser.parse_args()
 
-    report_dir = Path(args.report_dir)
-    report_dir.mkdir(parents=True, exist_ok=True)
-
-    missing_report = args.missing_report or str(
-        Path(args.output).with_suffix("") + "_missing_report.csv"
-    )
-
-    tracker  = MissingDataTracker()
-    anomalies: List[Dict[str, Any]] = []
-    conn     = create_database(args.output)
+    conn = create_database(args.output)
 
     try:
-        process_sessions(args.input, conn, tracker, anomalies)
+        process_sessions(args.input, conn)
         conn.commit()
-        logger.info("all data committed.")
+        logger.info("all data committed")
     except Exception as e:
-        logger.error(f"unexpected error: {e}", exc_info=True)
+        logger.error(f"unexpected error {e}", exc_info=True)
         conn.rollback()
     finally:
         conn.close()
-        logger.info("connection closed.")
-
-    tracker.write_csv(missing_report)
-    export_audit_csvs(args.output, report_dir, anomalies)
-    logger.info("done.")
+        logger.info("connection closed")
+    
+    logger.info("done")
 
 
 if __name__ == "__main__":

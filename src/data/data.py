@@ -453,6 +453,9 @@ def make_race_group_folds(
     seed: int = 42,
     balance_labels: bool = True,
 ) -> FoldBundle:
+    """
+    aggregates laps by the race they belong to
+    """
     y_raw = df[target_col].to_numpy()
 
     n_classes = None
