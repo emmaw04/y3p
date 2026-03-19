@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from joblib import dump
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
