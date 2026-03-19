@@ -1,0 +1,15 @@
+{
+  "study": "multiclass_tcn",
+  "best_logloss": 1.0979495812830589,
+  "best_params": {
+    "learning_rate": 0.0003574712922600243,
+    "batch_size": 256,
+    "filters": 32,
+    "kernel_size": 3,
+    "dropout": 0.26242177333881367,
+    "focal_gamma": 2.0,
+    "focal_alpha": 0.5,
+    "pooling": "last"
+  },
+  "n_trials": 2
+}

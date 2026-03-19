@@ -1,0 +1,13 @@
+{
+  "study": "multiclass_rf",
+  "best_logloss": 0.9359579043683921,
+  "best_params": {
+    "n_estimators": 1450,
+    "max_depth": 26,
+    "min_samples_leaf": 7,
+    "min_samples_split": 16,
+    "max_features": 0.14895436219799207,
+    "class_weight": null
+  },
+  "n_trials": 50
+}

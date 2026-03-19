@@ -71,11 +71,13 @@ def _compile_binary_seq_model(
     *,
     learning_rate: float = 1e-3,
     use_focal: bool = False,
+    focal_gamma: float = 1.0,
+    focal_alpha: float = 0.5,
 ) -> "keras.Model":
     """compiles a binary sequence model with the metrics used in stage 1"""
 
     if use_focal:
-        loss = keras.losses.BinaryFocalCrossentropy(gamma=1.0, alpha=0.5)
+        loss = keras.losses.BinaryFocalCrossentropy(gamma=focal_gamma, alpha=focal_alpha)
     else:
         loss = "binary_crossentropy"
 
@@ -242,7 +244,17 @@ def get_stage1_tabular_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
 
 # stage 1 sequential
 
-def _build_tcn_binary(seq_len: int, n_features: int) -> "keras.Model":
+def _build_tcn_binary(
+    seq_len: int,
+    n_features: int,
+    filters: int = 64,
+    kernel_size: int = 3,
+    dropout: float = 0.10879485872574356,
+    pooling: str = "gap",
+    learning_rate: float = 0.00011662890273931399,
+    focal_gamma: float = 1.0,
+    focal_alpha: float = 0.5,
+) -> "keras.Model":
     """builds the binary tcn
 
     this is a causal conv front end followed by residual tcn blocks
@@ -251,20 +263,24 @@ def _build_tcn_binary(seq_len: int, n_features: int) -> "keras.Model":
 
     x_in = layers.Input(shape=(seq_len, n_features))
 
-    x = layers.Conv1D(64, 3, padding="causal", dilation_rate=1)(x_in)
+    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
     x = layers.LayerNormalization()(x)
     x = layers.Activation("relu")(x)
 
     for d in [1, 2, 4, 8]:
         x = _tcn_residual_block(
             x,
-            filters=64,
-            kernel_size=3,
+            filters=filters,
+            kernel_size=kernel_size,
             dilation=d,
-            dropout=0.10879485872574356,
+            dropout=dropout,
         )
 
-    x = layers.GlobalAveragePooling1D()(x)
+    if pooling == "gap":
+        x = layers.GlobalAveragePooling1D()(x)
+    elif pooling == "last":
+        x = layers.Lambda(lambda z: z[:, -1, :])(x)
+        
     x = layers.Dense(64, activation="relu")(x)
     x = layers.Dropout(0.2)(x)
     y_out = layers.Dense(1, activation="sigmoid")(x)
@@ -272,12 +288,23 @@ def _build_tcn_binary(seq_len: int, n_features: int) -> "keras.Model":
     model = keras.Model(x_in, y_out)
     return _compile_binary_seq_model(
         model,
-        learning_rate=0.00011662890273931399,
+        learning_rate=learning_rate,
         use_focal=True,
+        focal_gamma=focal_gamma,
+        focal_alpha=focal_alpha,
     )
 
 
-def _build_tcn_gru_binary(seq_len: int, n_features: int) -> "keras.Model":
+def _build_tcn_gru_binary(
+    seq_len: int,
+    n_features: int,
+    filters: int = 64,
+    kernel_size: int = 3,
+    dropout: float = 0.15,
+    rnn_units: int = 32,
+    rnn_dropout: float = 0.2,
+    learning_rate: float = 1e-3,
+) -> "keras.Model":
     """builds the binary tcn gru model
 
     this starts with tcn style conv blocks then hands the sequence to a gru head
@@ -285,23 +312,23 @@ def _build_tcn_gru_binary(seq_len: int, n_features: int) -> "keras.Model":
 
     x_in = layers.Input(shape=(seq_len, n_features))
 
-    x = layers.Conv1D(64, 3, padding="causal", dilation_rate=1)(x_in)
+    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
     x = layers.LayerNormalization()(x)
     x = layers.Activation("relu")(x)
 
     for d in [1, 2, 4, 8]:
         x = _tcn_residual_block(
             x,
-            filters=64,
-            kernel_size=3,
+            filters=filters,
+            kernel_size=kernel_size,
             dilation=d,
-            dropout=0.15,
+            dropout=dropout,
         )
 
     x = layers.GRU(
-        32,
+        rnn_units,
         return_sequences=False,
-        dropout=0.2,
+        dropout=rnn_dropout,
         recurrent_dropout=0.0,
         kernel_regularizer=keras.regularizers.l2(5e-4),
     )(x)
@@ -310,10 +337,16 @@ def _build_tcn_gru_binary(seq_len: int, n_features: int) -> "keras.Model":
     x = layers.Dropout(0.2)(x)
     y_out = layers.Dense(1, activation="sigmoid")(x)
 
-    return _compile_binary_seq_model(keras.Model(x_in, y_out))
+    return _compile_binary_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
 
-def _build_lstm_binary(seq_len: int, n_features: int) -> "keras.Model":
+def _build_lstm_binary(
+    seq_len: int,
+    n_features: int,
+    rnn_units: int = 64,
+    rnn_dropout: float = 0.2,
+    learning_rate: float = 1e-3,
+) -> "keras.Model":
     """builds the binary lstm
 
     this is a stacked lstm with pooling and a small dense output head
@@ -322,16 +355,16 @@ def _build_lstm_binary(seq_len: int, n_features: int) -> "keras.Model":
     x_in = layers.Input(shape=(seq_len, n_features))
 
     x = layers.LSTM(
-        64,
+        rnn_units,
         return_sequences=True,
-        dropout=0.2,
+        dropout=rnn_dropout,
         recurrent_dropout=0.0,
         kernel_regularizer=keras.regularizers.l2(5e-4),
     )(x_in)
     x = layers.LSTM(
-        32,
+        rnn_units // 2,
         return_sequences=True,
-        dropout=0.2,
+        dropout=rnn_dropout,
         recurrent_dropout=0.0,
         kernel_regularizer=keras.regularizers.l2(5e-4),
     )(x)
@@ -342,10 +375,16 @@ def _build_lstm_binary(seq_len: int, n_features: int) -> "keras.Model":
     x = layers.Dropout(0.2)(x)
     y_out = layers.Dense(1, activation="sigmoid")(x)
 
-    return _compile_binary_seq_model(keras.Model(x_in, y_out))
+    return _compile_binary_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
 
-def _build_gru_binary(seq_len: int, n_features: int) -> "keras.Model":
+def _build_gru_binary(
+    seq_len: int,
+    n_features: int,
+    rnn_units: int = 64,
+    rnn_dropout: float = 0.2,
+    learning_rate: float = 1e-3,
+) -> "keras.Model":
     """builds the binary gru
 
     this is the same general idea as the lstm model but using gru layers
@@ -354,16 +393,16 @@ def _build_gru_binary(seq_len: int, n_features: int) -> "keras.Model":
     x_in = layers.Input(shape=(seq_len, n_features))
 
     x = layers.GRU(
-        64,
+        rnn_units,
         return_sequences=True,
-        dropout=0.2,
+        dropout=rnn_dropout,
         recurrent_dropout=0.0,
         kernel_regularizer=keras.regularizers.l2(5e-4),
     )(x_in)
     x = layers.GRU(
-        32,
+        rnn_units // 2,
         return_sequences=True,
-        dropout=0.2,
+        dropout=rnn_dropout,
         recurrent_dropout=0.0,
         kernel_regularizer=keras.regularizers.l2(5e-4),
     )(x)
@@ -374,7 +413,7 @@ def _build_gru_binary(seq_len: int, n_features: int) -> "keras.Model":
     x = layers.Dropout(0.2)(x)
     y_out = layers.Dense(1, activation="sigmoid")(x)
 
-    return _compile_binary_seq_model(keras.Model(x_in, y_out))
+    return _compile_binary_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
 
 def make_tcn_binary(cfg: ModelConfig, *, seq_len: int = 12) -> BaseEstimator:
@@ -418,7 +457,13 @@ def get_stage1_sequential_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
 
 # stage 1 four lap hybrid
 
-def _build_vse_hybrid_binary(seq_len: int, n_features: int) -> "keras.Model":
+def _build_vse_hybrid_binary(
+    seq_len: int,
+    n_features: int,
+    rnn_units: int = 32,
+    rnn_dropout: float = 0.2,
+    learning_rate: float = 1e-3,
+) -> "keras.Model":
     """
     builds the four lap hybrid model as taken from Heilmeier et al.'s proposed VSE model
     uses a time distributed feed forward network to extract a probability per lap,
@@ -433,12 +478,12 @@ def _build_vse_hybrid_binary(seq_len: int, n_features: int) -> "keras.Model":
     x = layers.TimeDistributed(layers.Dense(1, activation="sigmoid"))(x)
 
     # lstm head processes the sequence of single-lap probabilities
-    x = layers.LSTM(32, return_sequences=False, dropout=0.2, recurrent_dropout=0.0)(x)
+    x = layers.LSTM(rnn_units, return_sequences=False, dropout=rnn_dropout, recurrent_dropout=0.0)(x)
     x = layers.Dense(32, activation="relu")(x)
     x = layers.Dropout(0.2)(x)
     y_out = layers.Dense(1, activation="sigmoid")(x)
 
-    return _compile_binary_seq_model(keras.Model(x_in, y_out))
+    return _compile_binary_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
 def make_hybrid_vse_binary(cfg: ModelConfig) -> BaseEstimator:
     """returns the single end-to-end hybrid sequence model for stage 1"""
@@ -555,57 +600,77 @@ def get_stage2_tabular_models(cfg: ModelConfig, *, n_classes: int) -> Dict[str, 
 
 # stage 2 sequential
 
-def _build_tcn_multiclass(seq_len: int, n_features: int, n_classes: int) -> "keras.Model":
+def _build_tcn_multiclass(
+    seq_len: int,
+    n_features: int,
+    n_classes: int,
+    filters: int = 64,
+    kernel_size: int = 3,
+    dropout: float = 0.12,
+    pooling: str = "gap",
+    learning_rate: float = 1e-4,
+) -> "keras.Model":
     """builds the multiclass tcn for stage 2"""
 
     x_in = layers.Input(shape=(seq_len, n_features))
 
-    x = layers.Conv1D(64, 3, padding="causal", dilation_rate=1)(x_in)
+    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
     x = layers.LayerNormalization()(x)
     x = layers.Activation("relu")(x)
 
     for d in [1, 2, 4, 8]:
         x = _tcn_residual_block(
             x,
-            filters=64,
-            kernel_size=3,
+            filters=filters,
+            kernel_size=kernel_size,
             dilation=d,
-            dropout=0.12,
+            dropout=dropout,
         )
 
-    x = layers.GlobalAveragePooling1D()(x)
+    if pooling == "gap":
+        x = layers.GlobalAveragePooling1D()(x)
+    elif pooling == "last":
+        x = layers.Lambda(lambda z: z[:, -1, :])(x)
+        
     x = layers.Dense(64, activation="relu")(x)
     x = layers.Dropout(0.2)(x)
     y_out = layers.Dense(n_classes, activation="softmax")(x)
 
-    return _compile_multiclass_seq_model(
-        keras.Model(x_in, y_out),
-        learning_rate=1e-4,
-    )
+    return _compile_multiclass_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
 
-def _build_tcn_gru_multiclass(seq_len: int, n_features: int, n_classes: int) -> "keras.Model":
+def _build_tcn_gru_multiclass(
+    seq_len: int,
+    n_features: int,
+    n_classes: int,
+    filters: int = 64,
+    kernel_size: int = 3,
+    dropout: float = 0.15,
+    rnn_units: int = 32,
+    rnn_dropout: float = 0.2,
+    learning_rate: float = 1e-3,
+) -> "keras.Model":
     """builds the multiclass tcn gru model for stage 2"""
 
     x_in = layers.Input(shape=(seq_len, n_features))
 
-    x = layers.Conv1D(64, 3, padding="causal", dilation_rate=1)(x_in)
+    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
     x = layers.LayerNormalization()(x)
     x = layers.Activation("relu")(x)
 
     for d in [1, 2, 4, 8]:
         x = _tcn_residual_block(
             x,
-            filters=64,
-            kernel_size=3,
+            filters=filters,
+            kernel_size=kernel_size,
             dilation=d,
-            dropout=0.15,
+            dropout=dropout,
         )
 
     x = layers.GRU(
-        32,
+        rnn_units,
         return_sequences=False,
-        dropout=0.2,
+        dropout=rnn_dropout,
         recurrent_dropout=0.0,
         kernel_regularizer=keras.regularizers.l2(5e-4),
     )(x)
@@ -614,25 +679,32 @@ def _build_tcn_gru_multiclass(seq_len: int, n_features: int, n_classes: int) -> 
     x = layers.Dropout(0.2)(x)
     y_out = layers.Dense(n_classes, activation="softmax")(x)
 
-    return _compile_multiclass_seq_model(keras.Model(x_in, y_out))
+    return _compile_multiclass_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
 
-def _build_lstm_multiclass(seq_len: int, n_features: int, n_classes: int) -> "keras.Model":
+def _build_lstm_multiclass(
+    seq_len: int,
+    n_features: int,
+    n_classes: int,
+    rnn_units: int = 64,
+    rnn_dropout: float = 0.2,
+    learning_rate: float = 1e-3,
+) -> "keras.Model":
     """builds the multiclass lstm for stage 2"""
 
     x_in = layers.Input(shape=(seq_len, n_features))
 
     x = layers.LSTM(
-        64,
+        rnn_units,
         return_sequences=True,
-        dropout=0.2,
+        dropout=rnn_dropout,
         recurrent_dropout=0.0,
         kernel_regularizer=keras.regularizers.l2(5e-4),
     )(x_in)
     x = layers.LSTM(
-        32,
+        rnn_units // 2,
         return_sequences=True,
-        dropout=0.2,
+        dropout=rnn_dropout,
         recurrent_dropout=0.0,
         kernel_regularizer=keras.regularizers.l2(5e-4),
     )(x)
@@ -643,25 +715,32 @@ def _build_lstm_multiclass(seq_len: int, n_features: int, n_classes: int) -> "ke
     x = layers.Dropout(0.2)(x)
     y_out = layers.Dense(n_classes, activation="softmax")(x)
 
-    return _compile_multiclass_seq_model(keras.Model(x_in, y_out))
+    return _compile_multiclass_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
 
-def _build_gru_multiclass(seq_len: int, n_features: int, n_classes: int) -> "keras.Model":
+def _build_gru_multiclass(
+    seq_len: int,
+    n_features: int,
+    n_classes: int,
+    rnn_units: int = 64,
+    rnn_dropout: float = 0.2,
+    learning_rate: float = 1e-3,
+) -> "keras.Model":
     """builds the multiclass gru for stage 2"""
 
     x_in = layers.Input(shape=(seq_len, n_features))
 
     x = layers.GRU(
-        64,
+        rnn_units,
         return_sequences=True,
-        dropout=0.2,
+        dropout=rnn_dropout,
         recurrent_dropout=0.0,
         kernel_regularizer=keras.regularizers.l2(5e-4),
     )(x_in)
     x = layers.GRU(
-        32,
+        rnn_units // 2,
         return_sequences=True,
-        dropout=0.2,
+        dropout=rnn_dropout,
         recurrent_dropout=0.0,
         kernel_regularizer=keras.regularizers.l2(5e-4),
     )(x)
@@ -672,7 +751,7 @@ def _build_gru_multiclass(seq_len: int, n_features: int, n_classes: int) -> "ker
     x = layers.Dropout(0.2)(x)
     y_out = layers.Dense(n_classes, activation="softmax")(x)
 
-    return _compile_multiclass_seq_model(keras.Model(x_in, y_out))
+    return _compile_multiclass_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
 
 def make_tcn_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:

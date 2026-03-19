@@ -1,0 +1,16 @@
+{
+  "study": "multiclass_xgb",
+  "best_logloss": 0.9224643232067491,
+  "best_params": {
+    "n_estimators": 1824,
+    "learning_rate": 0.017791573535481876,
+    "max_depth": 6,
+    "min_child_weight": 4,
+    "subsample": 0.9559080140619566,
+    "colsample_bytree": 0.4009346693423519,
+    "gamma": 0.07343780806334,
+    "reg_alpha": 0.04766916451540554,
+    "reg_lambda": 1.7686046976966665
+  },
+  "n_trials": 50
+}

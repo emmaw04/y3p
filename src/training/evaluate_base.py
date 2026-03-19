@@ -89,12 +89,10 @@ def run_tabular_cv(x, y, task: str, model_name: str, outdir: Path):
     
     if task == "binary":
         metric_keys = ["accuracy", "precision", "recall", "f1", "roc_auc", "pr_auc", "logloss"]
-        oof_pred = np.zeros(len(y), dtype=float)
         k_classes = 2
     else:
         k_classes = len(COMPOUND_CLASSES)
         metric_keys = ["accuracy", "precision_macro", "recall_macro", "f1_macro", "logloss"]
-        oof_pred = np.zeros((len(y), k_classes), dtype=float)
         
     fold_metrics = []
     
@@ -116,7 +114,6 @@ def run_tabular_cv(x, y, task: str, model_name: str, outdir: Path):
         
         if task == "binary":
             proba = pipe.predict_proba(x_va)[:, 1]
-            oof_pred[va_idx] = proba
             m = compute_binary_metrics(y_va.to_numpy(), proba)
         else:
             proba_fold = pipe.predict_proba(x_va)
@@ -127,17 +124,13 @@ def run_tabular_cv(x, y, task: str, model_name: str, outdir: Path):
             for j, cls in enumerate(classes_seen):
                 proba_full[:, int(cls)] = proba_fold[:, j]
                 
-            oof_pred[va_idx, :] = proba_full
             m = compute_multiclass_metrics(y_va.to_numpy(), proba_full)
             
         row = {"fold": fold, "n_valid": len(va_idx), **m}
         fold_metrics.append(row)
         
-        dump(pipe, outdir / f"pipeline_fold_{fold}.joblib")
         print(f"fold {fold} done: " + " ".join(f"{k} {row[k]:.4f}" for k in metric_keys))
         
-    np.save(outdir / "oof_pred.npy", oof_pred)
-    
     return {
         "task": task,
         "model": model_name,
@@ -176,11 +169,9 @@ def run_seq_cv(df, task: str, model_name: str, outdir: Path):
     if task == "binary":
         k_classes = 2
         metric_keys = ["accuracy", "precision", "recall", "f1", "roc_auc", "pr_auc", "logloss"]
-        oof_pred = np.full(len(df), np.nan, dtype=float)
     else:
         k_classes = len(COMPOUND_CLASSES)
         metric_keys = ["accuracy", "precision_macro", "recall_macro", "f1_macro", "logloss"]
-        oof_pred = np.full((len(df), k_classes), np.nan, dtype=float)
 
     fold_metrics = []
 
@@ -214,7 +205,6 @@ def run_seq_cv(df, task: str, model_name: str, outdir: Path):
 
         x_seq_tr, y_seq_tr = x_seq[tr_mask], y_seq[tr_mask]
         x_seq_va, y_seq_va = x_seq[va_mask], y_seq[va_mask]
-        idx_last_va = idx_last[va_mask]
 
         if len(y_seq_tr) == 0 or len(y_seq_va) == 0:
             print(f"skipping fold {fold} as there are no valid sequences")
@@ -228,7 +218,6 @@ def run_seq_cv(df, task: str, model_name: str, outdir: Path):
             model.fit(x_seq_tr, y_seq_tr, class_weight={0: 1.0, 1: pos_w})
             
             proba = model.predict_proba(x_seq_va)[:, 1]
-            oof_pred[idx_last_va] = proba
             m = compute_binary_metrics(y_seq_va, proba)
         else:
             model = get_stage2_sequential_models(cfg, n_classes=k_classes)[model_name]
@@ -242,18 +231,13 @@ def run_seq_cv(df, task: str, model_name: str, outdir: Path):
             model.fit(x_seq_tr, y_seq_tr, class_weight=class_w)
             
             proba = model.predict_proba(x_seq_va)
-            oof_pred[idx_last_va, :] = proba
             m = compute_multiclass_metrics(y_seq_va, proba)
 
         row = {"fold": fold, "n_valid": len(y_seq_va), **m}
         fold_metrics.append(row)
         
-        dump(pre, outdir / f"pre_fold_{fold}.joblib")
-        model.model_.save(outdir / f"model_fold_{fold}.keras")
         print(f"fold {fold} done: " + " ".join(f"{k} {row[k]:.4f}" for k in metric_keys))
 
-    np.save(outdir / "oof_pred.npy", oof_pred)
-    
     return {
         "task": task,
         "model": model_name,
@@ -292,9 +276,6 @@ def main():
         if not args.data_stage2:
             raise ValueError("need --data_stage2 for the multiclass task")
             
-        # track classes for reference
-        (outdir / "classes.json").write_text(json.dumps({"classes": list(COMPOUND_CLASSES)}, indent=2))
-        
         df = load_stage2_dataset(args.data_stage2, strict=True)
         if args.model.lower() in seq_models:
             df = encode_y_compound(df, col="y_compound", out_col="y_compound_encoded")

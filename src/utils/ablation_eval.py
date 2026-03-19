@@ -409,7 +409,7 @@ def build_stage1_feature_groups(cols: List[str]) -> Tuple[Dict[str, List[str]], 
         "G_traffic_proximity": [c for c in ["position", "interval", "close_ahead"] if c in colset],
         "G_undercut_defence": undercut_defence,
         "G_undercut_window": undercut_window,
-        "G_weather": [c for c in "is_wet_race", "is_raining", "minutes_rain"] if c in colset],
+        "G_weather": [[c for c in "is_wet_race", "is_raining", "minutes_rain"] if c in colset],
     }
 
     # remove empty groups
