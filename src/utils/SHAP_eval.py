@@ -58,7 +58,7 @@ def add_context_flags(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     out["wet_race"] = out.groupby("race_id")["is_raining"].transform("max").astype(int)
     out["raining_now"] = (out["is_raining"].astype(int) == 1).astype(int)
-    out["ever_rained"] = (out["rained_yet"].astype(int) == 1).astype(int)
+    out["ever_rained"] = (out["is_wet_race"].astype(int) == 1).astype(int)
     out["fcy_now"] = (out["fcy_status"].astype(int) > 0).astype(int)
 
     # optional: phase bins (tune cutoffs)
@@ -162,7 +162,7 @@ RAW_GROUPS: Dict[str, List[str]] = {
     "G_traffic": ["position", "interval", "close_ahead"],
     "G_strategy_history": ["pit_stops_so_far", "tyre_change_pursuer"],
     "G_pace": ["lap_time"],
-    "G_weather": ["rained_yet", "is_raining", "minutes_rain"],
+    "G_weather": ["is_wet_race", "is_raining", "minutes_rain"],
 }
 
 

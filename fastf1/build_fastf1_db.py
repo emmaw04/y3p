@@ -107,6 +107,7 @@ FULL_SCHEMA: Dict[str, str] = {
             pitintimenum       INTEGER,
             pitouttimenum      INTEGER,
             pitstopduration    REAL,
+            pit_in_elapsed     REAL,
             -- sector times (seconds)
             sector1time        REAL,
             sector2time        REAL,
@@ -233,7 +234,7 @@ SCHEMA_INDICES: List[str] = [
 
 # manually collected compound allocations for each weekend
 COMPOUND_ALLOCATIONS: Dict[int, Dict[str, str]] = {
-    2018: {
+    2018: { #
         "Australian Grand Prix": "A4,A5,A6", "Bahrain Grand Prix": "A3,A4,A5",
         "Chinese Grand Prix": "A3,A4,A6", "Azerbaijan Grand Prix": "A4,A5,A6",
         "Spanish Grand Prix": "A3,A4,A5", "Monaco Grand Prix": "A5,A6,A7",
@@ -1180,6 +1181,12 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                 pitout_s   = (pitout_ms / 1000.0) if pitout_ms is not None and pd.notna(pitout_ms) else None
                 pitdur     = float(pitdur) if pitdur is not None and pd.notna(pitdur) else None
 
+                # calculate pit_in_elapsed
+                lap_start_s = lap.get(col_lstart) if col_lstart else None
+                pit_in_elapsed = None
+                if pitin_s is not None and lap_start_s is not None and pd.notna(lap_start_s):
+                    pit_in_elapsed = pitin_s - float(lap_start_s)
+
                 # extract sector times
                 s1  = td_to_s(lap.get(col_s1))  if col_s1  else None
                 s2  = td_to_s(lap.get(col_s2))  if col_s2  else None
@@ -1204,7 +1211,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                             laptime, racetime, gap, interval,
                             compound, tireage, nextcompound,
                             pitintime, pitouttime, pitintime_s, pitouttime_s,
-                            pitintimenum, pitouttimenum, pitstopduration,
+                            pitintimenum, pitouttimenum, pitstopduration, pit_in_elapsed,
                             sector1time, sector2time, sector3time,
                             sector1session_ms, sector2session_ms, sector3session_ms,
                             speed_i1_kph, speed_i2_kph, speed_fl_kph, speed_st_kph,
@@ -1212,7 +1219,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                             is_personal_best, is_accurate, is_deleted, deleted_reason)
                            VALUES
                            (?,?,?,?,  ?,?,?,?,  ?,?,?,
-                            ?,?,?,?,  ?,?,?,
+                            ?,?,?,?,  ?,?,?,?,
                             ?,?,?,  ?,?,?,
                             ?,?,?,?,  ?,
                             ?,?,?,?)""",
@@ -1227,7 +1234,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                             pitin_str, pitout_str, pitin_s, pitout_s,
                             int(pitin_ms) if pitin_ms is not None and pd.notna(pitin_ms) else None,
                             int(pitout_ms) if pitout_ms is not None and pd.notna(pitout_ms) else None,
-                            pitdur,
+                            pitdur, pit_in_elapsed,
                             # sectors
                             s1, s2, s3, s1s, s2s, s3s,
                             # speeds
@@ -1250,47 +1257,9 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
             if laps_inserted > 0:
                 logger.info(f"    laps inserted {laps_inserted}")
 
-                # calculate track length using car telemetry integration if available
-                track_len = None
-                meta_path = race_dir / "session_metadata.json"
-                if meta_path.exists():
-                    try:
-                        with open(meta_path, 'r') as f:
-                            meta = json.load(f)
-                            track_len = meta.get('track_length')
-                    except Exception:
-                        pass
-                
-                if track_len:
-                    cur.execute("UPDATE races SET tracklength=? WHERE id=?", (track_len, race_id))
-                    logger.info(f"    track length from metadata {track_len:.2f}m")
-                else:
-                    # fallback to integrating speed over time for an accurate lap
-                    accurate_laps = laps_df[laps_df[col_acc] == 1] if col_acc else laps_df
-                    if not accurate_laps.empty:
-                        sample_lap = accurate_laps[accurate_laps['lapnumber'] > 5].head(1)
-                        if sample_lap.empty:
-                            sample_lap = accurate_laps.head(1)
-                        
-                        sl = sample_lap.iloc[0]
-                        carno = sl.get(col_dn) if col_dn else None
-                        if carno is not None and pd.notna(carno):
-                            car_path = race_dir / f"car_data_{int(carno)}.parquet"
-                            if car_path.exists():
-                                car_df = _safe_read_parquet(car_path)
-                                if car_df is not None and "sessiontime" in car_df.columns and "speed" in car_df.columns:
-                                    start_t = sl.get(col_lstart)
-                                    end_t = sl.get(col_time)
-                                    if start_t is not None and end_t is not None:
-                                        car_df['t_s'] = car_df['sessiontime'].apply(td_to_s)
-                                        lap_car = car_df[(car_df['t_s'] >= start_t) & (car_df['t_s'] <= end_t)].sort_values('t_s')
-                                        if len(lap_car) > 1:
-                                            lap_car['dt'] = lap_car['t_s'].diff()
-                                            lap_car['ds'] = (lap_car['speed'] / 3.6) * lap_car['dt']
-                                            track_len = lap_car['ds'].sum()
-                                            if track_len > 1000:
-                                                cur.execute("UPDATE races SET tracklength=? WHERE id=?", (track_len, race_id))
-                                                logger.info(f"    determined track length {track_len:.2f}m")
+                # track length is no longer calculated or retrieved; explicitly kept as None
+                # previously this section attempted to load from metadata or integrate speed telemetry
+                pass
 
             # update speedtrap data in starterfields
             if col_spst and col_spst in laps_df.columns:

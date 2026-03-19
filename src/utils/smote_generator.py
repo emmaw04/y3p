@@ -18,7 +18,7 @@ from typing import Optional
 # -----------------------
 # Config
 # -----------------------
-DATA_PATH = "data/processed/output2.csv"
+DATA_PATH = "data/processed/dataset2.csv"
 OUTDIR = "data/processed/SMOTE"
 N_SPLITS = 5
 SEED = 42
@@ -55,7 +55,7 @@ groups_all = df[group].values
 X_feat_all = X_all.drop(columns=[group])
 
 # Define categorical vs numeric
-cat_cols = ["current_compound", "race_track", "fulfilled_second_compound", "rained_yet", "is_raining"]
+cat_cols = ["current_compound", "race_track", "fulfilled_second_compound", "is_wet_race", "is_raining"]
 num_cols = [c for c in X_feat_all.columns if c not in cat_cols]
 
 # Preprocess: numeric impute+scale; categorical impute+ordinal encode (needed for SMOTENC)

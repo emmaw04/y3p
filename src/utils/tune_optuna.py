@@ -101,8 +101,8 @@ def _race_level_strata(df: pd.DataFrame) -> pd.Series:
         return col in df.columns
 
     # rain flag
-    if _has("rained_yet"):
-        rain = df.groupby("race_id")["rained_yet"].max().fillna(0).astype(int)
+    if _has("is_wet_race"):
+        rain = df.groupby("race_id")["is_wet_race"].max().fillna(0).astype(int)
     elif _has("is_raining"):
         rain = df.groupby("race_id")["is_raining"].max().fillna(0).astype(int)
     elif _has("minutes_rain"):

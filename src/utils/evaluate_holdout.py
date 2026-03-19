@@ -248,7 +248,7 @@ def main():
     # Build base features -> meta features
     # -----------------------
     # After dfh is created (and sorted), before X_raw = _ensure_columns(...)
-    for c in ["rained_yet", "is_raining", "minutes_rain"]:
+    for c in ["is_wet_race", "is_raining", "minutes_rain"]:
         if c in dfh.columns:
             dfh[c] = pd.to_numeric(dfh[c], errors="coerce").fillna(0.0)
         else:

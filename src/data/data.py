@@ -31,8 +31,14 @@ CATEGORICAL_FEATURES: set[str] = {
     "tyre_change_pursuer",
     "fulfilled_second_compound",
     "close_ahead",
-    "rained_yet",
+    "is_wet_race",
     "is_raining",
+    "gap_behind_s_missing",
+    "tyre_age_diff_to_ahead_missing",
+    "rejoin_gap_ahead_est_s_missing",
+    "rejoin_gap_behind_est_s_missing",
+    "tyre_age_missing",
+    #"pit_stops_left",
 }
 
 def _exclude_holdout_races(
@@ -256,12 +262,21 @@ def load_stage1_dataset(
         "lap_time",
         "interval",
         "tyre_age",
+        "gap_behind_s",
+        "n_cars_within_5s_ahead",
+        "tyre_age_diff_to_ahead",
+        "rejoin_gap_ahead_est_s",
+        "rejoin_gap_behind_est_s",
         "minutes_rain",
         "close_ahead",
-        "rained_yet",
+        "is_wet_race",
         "is_raining",
-        "tyre_change_pursuer",
         "fulfilled_second_compound",
+        "gap_behind_s_missing",
+        "tyre_age_diff_to_ahead_missing",
+        "rejoin_gap_ahead_est_s_missing",
+        "rejoin_gap_behind_est_s_missing",
+        "tyre_age_missing",
     ]
     for col in numeric_cols:
         if col in df.columns:
@@ -303,9 +318,18 @@ def load_stage2_dataset(
         "race_progress",
         "pit_stops_so_far",
         "minutes_rain",
-        "rained_yet",
+        "is_wet_race",
         "is_raining",
         "fulfilled_second_compound",
+        "gap_behind_s",
+        "n_cars_within_5s_ahead",
+        "tyre_age_diff_to_ahead",
+        "rejoin_gap_ahead_est_s",
+        "rejoin_gap_behind_est_s",
+        "gap_behind_s_missing",
+        "tyre_age_diff_to_ahead_missing",
+        "rejoin_gap_ahead_est_s_missing",
+        "rejoin_gap_behind_est_s_missing",
     ]
     for col in numeric_cols:
         if col in df.columns:
