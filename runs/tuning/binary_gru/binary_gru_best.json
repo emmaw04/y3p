@@ -1,0 +1,20 @@
+{
+  "study": "binary_gru",
+  "best_logloss": 0.1683747084181506,
+  "best_metrics": {
+    "accuracy": 0.9290369551924462,
+    "precision": 0.22805583999312073,
+    "recall": 0.6599089866732194,
+    "f1": 0.3321836061722686,
+    "roc_auc": 0.9034009835413397,
+    "pr_auc": 0.34969716383570276,
+    "logloss": 0.1683747084181506
+  },
+  "best_params": {
+    "learning_rate": 0.0009731654271003453,
+    "batch_size": 32,
+    "rnn_units": 64,
+    "rnn_dropout": 0.010142639375770673
+  },
+  "n_trials": 100
+}

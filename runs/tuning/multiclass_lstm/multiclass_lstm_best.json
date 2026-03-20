@@ -1,0 +1,20 @@
+{
+  "study": "multiclass_lstm",
+  "best_logloss": 1.039798821867223,
+  "best_metrics": {
+    "accuracy": 0.5780188774583658,
+    "precision": 0.438937984489037,
+    "recall": 0.45902278983202416,
+    "f1": 0.43752460708760055,
+    "roc_auc": 0.8157481399079957,
+    "pr_auc": 0.48642201995029594,
+    "logloss": 1.039798821867223
+  },
+  "best_params": {
+    "learning_rate": 0.0008962278983461516,
+    "batch_size": 32,
+    "rnn_units": 32,
+    "rnn_dropout": 0.25791781440280437
+  },
+  "n_trials": 50
+}

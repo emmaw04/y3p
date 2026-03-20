@@ -1,0 +1,24 @@
+{
+  "study": "binary_tcn",
+  "best_logloss": 0.1384832421294889,
+  "best_metrics": {
+    "accuracy": 0.9405033003489779,
+    "precision": 0.24230253236094135,
+    "recall": 0.5886863441726075,
+    "f1": 0.34168463420501705,
+    "roc_auc": 0.8898535740860567,
+    "pr_auc": 0.349724529980043,
+    "logloss": 0.1384832421294889
+  },
+  "best_params": {
+    "learning_rate": 0.0009484229044417891,
+    "batch_size": 128,
+    "filters": 64,
+    "kernel_size": 4,
+    "dropout": 0.15117968234330592,
+    "pooling": "last",
+    "focal_gamma": 1.0,
+    "focal_alpha": 0.75
+  },
+  "n_trials": 100
+}

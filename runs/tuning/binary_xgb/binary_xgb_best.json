@@ -1,0 +1,26 @@
+{
+  "study": "binary_xgb",
+  "best_logloss": 0.14511727548399017,
+  "best_metrics": {
+    "accuracy": 0.9422567596174674,
+    "precision": 0.23432403325089676,
+    "recall": 0.5232101299715557,
+    "f1": 0.3201930135183937,
+    "roc_auc": 0.895264623953766,
+    "pr_auc": 0.3100511201893922,
+    "logloss": 0.14511727548399017
+  },
+  "best_params": {
+    "n_estimators": 469,
+    "learning_rate": 0.10934656142438419,
+    "max_depth": 6,
+    "min_child_weight": 2,
+    "subsample": 0.8406507528138978,
+    "colsample_bytree": 0.7318670875985085,
+    "gamma": 0.8808306415506197,
+    "reg_alpha": 0.00888399485712417,
+    "reg_lambda": 0.2707713602235789,
+    "max_bin": 256
+  },
+  "n_trials": 100
+}

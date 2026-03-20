@@ -1,0 +1,127 @@
+Job: tune-binary-gru
+Repo: /dcs/23/u5514578/cs310/y3p
+PWD: /dcs/23/u5514578/cs310/y3p
+Python: /dcs/23/u5514578/cs310/y3p/venv/bin/python
+src import OK
+Task=binary Model=gru DataFile=data/processed/dataset1.csv NTrials=100
+Running on tiger-02
+[I 2026-03-20 01:28:25,630] Trial 0 finished with value: 0.3650525301148151 and parameters: {'learning_rate': 0.0003071057367777374, 'batch_size': 32, 'rnn_units': 16, 'rnn_dropout': 0.3464704583099741}. Best is trial 0 with value: 0.3650525301148151.
+[I 2026-03-20 01:35:32,837] Trial 1 finished with value: 0.24176335502575091 and parameters: {'learning_rate': 0.0006054365855469249, 'batch_size': 128, 'rnn_units': 16, 'rnn_dropout': 0.07336180394137352}. Best is trial 1 with value: 0.24176335502575091.
+[I 2026-03-20 02:03:46,000] Trial 2 finished with value: 0.28246057089014964 and parameters: {'learning_rate': 0.0002487873441981445, 'batch_size': 32, 'rnn_units': 16, 'rnn_dropout': 0.1465447373174767}. Best is trial 1 with value: 0.24176335502575091.
+[I 2026-03-20 02:27:24,157] Trial 3 finished with value: 0.20779499378779498 and parameters: {'learning_rate': 0.0003920673972242139, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.06820964947491662}. Best is trial 3 with value: 0.20779499378779498.
+[I 2026-03-20 02:41:24,503] Trial 4 finished with value: 0.33288025218049466 and parameters: {'learning_rate': 0.00012151617026673395, 'batch_size': 64, 'rnn_units': 64, 'rnn_dropout': 0.17606099749584053}. Best is trial 3 with value: 0.20779499378779498.
+[I 2026-03-20 02:48:54,721] Trial 5 finished with value: 0.36582050945768935 and parameters: {'learning_rate': 0.00014413697528610416, 'batch_size': 128, 'rnn_units': 32, 'rnn_dropout': 0.20802720847112433}. Best is trial 3 with value: 0.20779499378779498.
+[I 2026-03-20 03:02:27,407] Trial 6 finished with value: 0.35687213507251986 and parameters: {'learning_rate': 0.0005143828405076933, 'batch_size': 64, 'rnn_units': 16, 'rnn_dropout': 0.36874969400924673}. Best is trial 3 with value: 0.20779499378779498.
+[I 2026-03-20 03:13:00,922] Trial 7 finished with value: 0.30943136165504825 and parameters: {'learning_rate': 0.00013035611225128884, 'batch_size': 128, 'rnn_units': 64, 'rnn_dropout': 0.1427013306774357}. Best is trial 3 with value: 0.20779499378779498.
+[I 2026-03-20 03:22:38,728] Trial 8 finished with value: 0.2691185863600491 and parameters: {'learning_rate': 0.00023200867504756837, 'batch_size': 128, 'rnn_units': 32, 'rnn_dropout': 0.07948627261366897}. Best is trial 3 with value: 0.20779499378779498.
+[I 2026-03-20 03:44:39,056] Trial 9 finished with value: 0.33740753853423067 and parameters: {'learning_rate': 0.0001016680374002288, 'batch_size': 32, 'rnn_units': 16, 'rnn_dropout': 0.04634762381005189}. Best is trial 3 with value: 0.20779499378779498.
+[I 2026-03-20 04:03:31,610] Trial 10 finished with value: 0.1705872373615597 and parameters: {'learning_rate': 0.0015839470836995267, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.007184750245927851}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 04:22:42,296] Trial 11 finished with value: 0.18568635936244796 and parameters: {'learning_rate': 0.0015292769564027608, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.004717591768151938}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 04:24:45,095] Trial 12 pruned. 
+[I 2026-03-20 04:43:07,327] Trial 13 finished with value: 0.19740687475298066 and parameters: {'learning_rate': 0.001735840365068579, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.004362225095548361}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 05:05:28,603] Trial 14 finished with value: 0.251195773506535 and parameters: {'learning_rate': 0.0009873895661272653, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.25834257628129653}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 05:17:47,155] Trial 15 finished with value: 0.21045691840542852 and parameters: {'learning_rate': 0.0010182067851532178, 'batch_size': 64, 'rnn_units': 64, 'rnn_dropout': 0.11118076268311952}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 05:38:34,290] Trial 16 finished with value: 0.2546036363319305 and parameters: {'learning_rate': 0.0010099416769827796, 'batch_size': 32, 'rnn_units': 32, 'rnn_dropout': 0.2706657623735775}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 05:54:02,220] Trial 17 finished with value: 0.20826192306739494 and parameters: {'learning_rate': 0.0013372953249207802, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.031998238966448066}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 06:13:53,366] Trial 18 finished with value: 0.21385230374455594 and parameters: {'learning_rate': 0.0007257425897945209, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.12401489084224054}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 06:24:36,098] Trial 19 finished with value: 0.23724078720987377 and parameters: {'learning_rate': 0.001942045595178741, 'batch_size': 64, 'rnn_units': 64, 'rnn_dropout': 0.2164471047401318}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 06:28:25,890] Trial 20 pruned. 
+[I 2026-03-20 06:45:19,401] Trial 21 finished with value: 0.19848736285816243 and parameters: {'learning_rate': 0.0014975235428647826, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.0008057439171646405}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 07:04:10,966] Trial 22 finished with value: 0.1818500329108636 and parameters: {'learning_rate': 0.0007326432858065938, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.030440716239844835}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 07:18:51,704] Trial 23 finished with value: 0.2029227019084196 and parameters: {'learning_rate': 0.0007454170873871039, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.03969611081319936}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 07:39:55,186] Trial 24 finished with value: 0.19713768309583446 and parameters: {'learning_rate': 0.0008483709558640316, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.08505214517212303}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 07:42:11,563] Trial 25 pruned. 
+[I 2026-03-20 08:06:07,239] Trial 26 finished with value: 0.2062603820637196 and parameters: {'learning_rate': 0.00043458029981160496, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.10136212335231538}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 08:08:42,087] Trial 27 pruned. 
+[I 2026-03-20 08:10:40,625] Trial 28 pruned. 
+[I 2026-03-20 08:13:13,589] Trial 29 pruned. 
+[I 2026-03-20 08:33:01,030] Trial 30 finished with value: 0.2754883548612879 and parameters: {'learning_rate': 0.00033756441838483486, 'batch_size': 32, 'rnn_units': 16, 'rnn_dropout': 0.024301865214872098}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 08:36:49,650] Trial 31 pruned. 
+[I 2026-03-20 08:59:41,382] Trial 32 finished with value: 0.1910855544346673 and parameters: {'learning_rate': 0.0008803911706670793, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.09690152854670166}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 09:21:12,715] Trial 33 finished with value: 0.1894645588272182 and parameters: {'learning_rate': 0.0011236102602518725, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.06136269472117332}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 09:41:19,070] Trial 34 finished with value: 0.18241502257798212 and parameters: {'learning_rate': 0.001149899803441217, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.05743440428206925}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 09:44:26,146] Trial 35 pruned. 
+[I 2026-03-20 09:54:05,244] Trial 36 finished with value: 0.2082917008928527 and parameters: {'learning_rate': 0.0014939602496111834, 'batch_size': 128, 'rnn_units': 64, 'rnn_dropout': 0.12916516617628032}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 09:56:15,597] Trial 37 pruned. 
+[I 2026-03-20 10:00:41,757] Trial 38 pruned. 
+[I 2026-03-20 10:14:21,967] Trial 39 finished with value: 0.22516440504164517 and parameters: {'learning_rate': 0.0016673674239245375, 'batch_size': 64, 'rnn_units': 64, 'rnn_dropout': 0.16014788242686903}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 10:16:22,015] Trial 40 pruned. 
+[I 2026-03-20 10:36:48,472] Trial 41 finished with value: 0.19502327495213057 and parameters: {'learning_rate': 0.0010943263181186745, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.05420693808623026}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 10:41:07,024] Trial 42 pruned. 
+[I 2026-03-20 10:58:26,306] Trial 43 finished with value: 0.17403568185818902 and parameters: {'learning_rate': 0.0012895386138389309, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.020930509564891793}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 11:22:58,970] Trial 44 finished with value: 0.19077142222588842 and parameters: {'learning_rate': 0.001334216450821328, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.024736274330424537}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 11:25:02,492] Trial 45 pruned. 
+[I 2026-03-20 11:46:41,991] Trial 46 finished with value: 0.19216012832119736 and parameters: {'learning_rate': 0.0013205465691070064, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.0481722860343514}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 11:49:19,254] Trial 47 pruned. 
+[I 2026-03-20 12:00:18,727] Trial 48 finished with value: 0.19462462362929478 and parameters: {'learning_rate': 0.0004926096492495621, 'batch_size': 128, 'rnn_units': 64, 'rnn_dropout': 0.04001087692676227}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 12:15:40,434] Trial 49 finished with value: 0.19202391389129816 and parameters: {'learning_rate': 0.0009265079439553417, 'batch_size': 64, 'rnn_units': 64, 'rnn_dropout': 0.07370987564500348}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 12:35:24,772] Trial 50 finished with value: 0.21622303691746195 and parameters: {'learning_rate': 0.0018178341682917065, 'batch_size': 32, 'rnn_units': 32, 'rnn_dropout': 0.09307574903893606}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 12:40:12,217] Trial 51 pruned. 
+[I 2026-03-20 12:42:24,824] Trial 52 pruned. 
+[I 2026-03-20 12:44:30,574] Trial 53 pruned. 
+[I 2026-03-20 13:06:39,319] Trial 54 finished with value: 0.20426048688559867 and parameters: {'learning_rate': 0.001232476302502135, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.11372686217910494}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 13:24:32,363] Trial 55 finished with value: 0.18849777958692543 and parameters: {'learning_rate': 0.0008025404795089265, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.03303932457781239}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 13:42:09,234] Trial 56 finished with value: 0.1826641460321001 and parameters: {'learning_rate': 0.0008271063021224212, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.0288971619561705}. Best is trial 10 with value: 0.1705872373615597.
+[I 2026-03-20 14:00:51,177] Trial 57 finished with value: 0.1683747084181506 and parameters: {'learning_rate': 0.0009731654271003453, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.010142639375770673}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 14:03:56,696] Trial 58 pruned. 
+[I 2026-03-20 14:20:43,733] Trial 59 finished with value: 0.19414097753950071 and parameters: {'learning_rate': 0.0009520257379140479, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.01433904150056441}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 14:22:55,250] Trial 60 pruned. 
+[I 2026-03-20 14:28:14,653] Trial 61 pruned. 
+[I 2026-03-20 14:58:45,324] Trial 62 finished with value: 0.19111596554712676 and parameters: {'learning_rate': 0.00017398933359237363, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.030459699705589156}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 15:16:20,226] Trial 63 finished with value: 0.22127491764520632 and parameters: {'learning_rate': 0.0009861413181911705, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.00013004701608352546}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 15:18:25,460] Trial 64 pruned. 
+[I 2026-03-20 15:21:44,106] Trial 65 pruned. 
+[I 2026-03-20 15:44:31,824] Trial 66 finished with value: 0.19028684197017678 and parameters: {'learning_rate': 0.001253923142883154, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.017040162587492115}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 15:51:38,009] Trial 67 finished with value: 0.21462112797929195 and parameters: {'learning_rate': 0.0010238931240088378, 'batch_size': 128, 'rnn_units': 16, 'rnn_dropout': 0.04916314825852722}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 15:53:42,994] Trial 68 pruned. 
+[I 2026-03-20 16:16:14,732] Trial 69 finished with value: 0.20276918636716018 and parameters: {'learning_rate': 0.001557531200867612, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.08354464338792883}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 16:39:07,817] Trial 70 finished with value: 0.18254545161563046 and parameters: {'learning_rate': 0.00040104224953189715, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.07146080042732902}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 16:44:29,081] Trial 71 pruned. 
+[I 2026-03-20 17:05:50,709] Trial 72 finished with value: 0.18643283627249307 and parameters: {'learning_rate': 0.00042752524915933563, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.06919770412025637}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 17:09:24,971] Trial 73 pruned. 
+[I 2026-03-20 17:14:09,394] Trial 74 pruned. 
+[I 2026-03-20 17:17:48,137] Trial 75 pruned. 
+[I 2026-03-20 17:21:43,742] Trial 76 pruned. 
+[I 2026-03-20 17:26:02,086] Trial 77 pruned. 
+[I 2026-03-20 17:47:03,258] Trial 78 finished with value: 0.17568063688652025 and parameters: {'learning_rate': 0.0006689784331003312, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.07622130428395561}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 18:11:06,234] Trial 79 finished with value: 0.26220724248521343 and parameters: {'learning_rate': 0.0005694441883059711, 'batch_size': 32, 'rnn_units': 16, 'rnn_dropout': 0.10502234775077433}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 18:13:37,982] Trial 80 pruned. 
+[I 2026-03-20 18:36:33,296] Trial 81 finished with value: 0.1905573135637025 and parameters: {'learning_rate': 0.0007625788111830561, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.07333014538636182}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 18:56:52,771] Trial 82 finished with value: 0.18365721721141784 and parameters: {'learning_rate': 0.0008967090612615737, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.054270170704037106}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 19:01:05,827] Trial 83 pruned. 
+[I 2026-03-20 19:25:48,595] Trial 84 finished with value: 0.19628466621980992 and parameters: {'learning_rate': 0.0007900169466425235, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.05771123293869643}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 19:43:42,225] Trial 85 finished with value: 0.18314410749154533 and parameters: {'learning_rate': 0.0004698410578327712, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.04572877724896353}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 20:09:02,398] Trial 86 finished with value: 0.17910046098376223 and parameters: {'learning_rate': 0.00046683000948381033, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.06562768836100782}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 20:13:39,803] Trial 87 pruned. 
+[I 2026-03-20 20:19:38,327] Trial 88 pruned. 
+[I 2026-03-20 20:39:46,610] Trial 89 finished with value: 0.20030863151930425 and parameters: {'learning_rate': 0.000634154022290721, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.06600795861731212}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 20:43:56,454] Trial 90 pruned. 
+[I 2026-03-20 20:47:53,442] Trial 91 pruned. 
+[I 2026-03-20 20:52:02,618] Trial 92 pruned. 
+[I 2026-03-20 20:56:19,588] Trial 93 pruned. 
+[I 2026-03-20 21:00:49,874] Trial 94 pruned. 
+[I 2026-03-20 21:14:48,933] Trial 95 finished with value: 0.1975027823576478 and parameters: {'learning_rate': 0.0005406995443536924, 'batch_size': 64, 'rnn_units': 64, 'rnn_dropout': 0.07451250486439932}. Best is trial 57 with value: 0.1683747084181506.
+[I 2026-03-20 21:16:45,506] Trial 96 pruned. 
+[I 2026-03-20 21:20:59,849] Trial 97 pruned. 
+[I 2026-03-20 21:22:34,700] Trial 98 pruned. 
+[I 2026-03-20 21:48:30,376] Trial 99 finished with value: 0.1840821321550209 and parameters: {'learning_rate': 0.00030874287675787434, 'batch_size': 32, 'rnn_units': 64, 'rnn_dropout': 0.034712406451364815}. Best is trial 57 with value: 0.1683747084181506.
+{
+  "study": "binary_gru",
+  "best_logloss": 0.1683747084181506,
+  "best_metrics": {
+    "accuracy": 0.9290369551924462,
+    "precision": 0.22805583999312073,
+    "recall": 0.6599089866732194,
+    "f1": 0.3321836061722686,
+    "roc_auc": 0.9034009835413397,
+    "pr_auc": 0.34969716383570276,
+    "logloss": 0.1683747084181506
+  },
+  "best_params": {
+    "learning_rate": 0.0009731654271003453,
+    "batch_size": 32,
+    "rnn_units": 64,
+    "rnn_dropout": 0.010142639375770673
+  },
+  "n_trials": 100
+}

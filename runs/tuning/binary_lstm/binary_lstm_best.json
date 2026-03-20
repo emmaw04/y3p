@@ -1,0 +1,20 @@
+{
+  "study": "binary_lstm",
+  "best_logloss": 0.1655811271490127,
+  "best_metrics": {
+    "accuracy": 0.9312483378124684,
+    "precision": 0.22721234104840998,
+    "recall": 0.6618719184397819,
+    "f1": 0.33541174936012796,
+    "roc_auc": 0.9031032282402751,
+    "pr_auc": 0.38428528060604383,
+    "logloss": 0.1655811271490127
+  },
+  "best_params": {
+    "learning_rate": 0.0007454170873871039,
+    "batch_size": 32,
+    "rnn_units": 64,
+    "rnn_dropout": 0.03852451305608232
+  },
+  "n_trials": 100
+}

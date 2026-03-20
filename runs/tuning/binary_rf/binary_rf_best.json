@@ -1,0 +1,22 @@
+{
+  "study": "binary_rf",
+  "best_logloss": 0.0938971101636744,
+  "best_metrics": {
+    "accuracy": 0.9742459688271927,
+    "precision": 0.7512493354598617,
+    "recall": 0.03062433040163145,
+    "f1": 0.05856406033651653,
+    "roc_auc": 0.8720906259979586,
+    "pr_auc": 0.2402905636625301,
+    "logloss": 0.0938971101636744
+  },
+  "best_params": {
+    "n_estimators": 841,
+    "max_depth": 14,
+    "min_samples_leaf": 5,
+    "min_samples_split": 8,
+    "max_features": 0.3,
+    "class_weight": null
+  },
+  "n_trials": 100
+}

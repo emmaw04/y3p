@@ -28,7 +28,7 @@ from sklearn.metrics import (
 from sklearn.svm import SVC
 from sklearn.calibration import CalibratedClassifierCV
 from xgboost import XGBClassifier
-
+from sklearn.preprocessing import label_binarize
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -62,7 +62,15 @@ from src.models.models import (
 def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> dict[str, float]:
     """unified metric computation for both binary and multiclass tasks"""
     if is_binary:
-        proba_pos = proba[:, 1] if proba.ndim == 2 else proba.reshape(-1)
+        proba = np.asarray(proba)
+
+        if proba.ndim == 2 and proba.shape[1] == 2:
+            proba_pos = proba[:, 1]
+        elif proba.ndim == 2 and proba.shape[1] == 1:
+            proba_pos = proba.reshape(-1)
+        else:
+            proba_pos = proba.reshape(-1)
+
         y_pred = (proba_pos >= 0.5).astype(int)
         return {
             "accuracy": float(accuracy_score(y_true, y_pred)),
@@ -74,21 +82,43 @@ def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> d
             "logloss": float(log_loss(y_true, proba_pos, labels=[0, 1])),
         }
     else:
-        # ensure rows sum to exactly 1.0 to prevent sklearn warnings
         eps = 1e-15
         proba_norm = np.clip(proba, eps, 1.0)
         proba_norm = proba_norm / proba_norm.sum(axis=1, keepdims=True)
-        
+
         y_pred = np.argmax(proba_norm, axis=1)
         labels = np.arange(proba_norm.shape[1])
+
+        y_bin = label_binarize(y_true, classes=labels)
+
+        try:
+            roc_auc = float(roc_auc_score(y_bin, proba_norm, average="macro", multi_class="ovr"))
+        except ValueError:
+            roc_auc = float("nan")
+
+        pr_aucs = []
+        for c in range(proba_norm.shape[1]):
+            if np.unique(y_bin[:, c]).size > 1:
+                pr_aucs.append(average_precision_score(y_bin[:, c], proba_norm[:, c]))
+        pr_auc = float(np.mean(pr_aucs)) if pr_aucs else float("nan")
+
         return {
             "accuracy": float(accuracy_score(y_true, y_pred)),
-            "precision_macro": float(precision_score(y_true, y_pred, average="macro", zero_division=0)),
-            "recall_macro": float(recall_score(y_true, y_pred, average="macro", zero_division=0)),
-            "f1_macro": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
+            "precision": float(precision_score(y_true, y_pred, average="macro", zero_division=0)),
+            "recall": float(recall_score(y_true, y_pred, average="macro", zero_division=0)),
+            "f1": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
+            "roc_auc": roc_auc,
+            "pr_auc": pr_auc,
             "logloss": float(log_loss(y_true, proba_norm, labels=labels)),
         }
 
+
+def mean_metric_dict(metric_dicts: list[dict[str, float]]) -> dict[str, float]:
+    keys = metric_dicts[0].keys()
+    return {
+        k: float(np.nanmean([m[k] for m in metric_dicts]))
+        for k in keys
+    }
 
 def suggest_rf_params(trial: optuna.Trial) -> dict[str, Any]:
     return {
@@ -106,24 +136,24 @@ def suggest_rf_params(trial: optuna.Trial) -> dict[str, Any]:
 def suggest_xgb_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
     params = {
         "tree_method": "hist",
-        "n_estimators": trial.suggest_int("n_estimators", 200, 1200),
-        "learning_rate": trial.suggest_float("learning_rate", 0.02, 0.15, log=True),
-        "max_depth": trial.suggest_int("max_depth", 3, 8),
-        "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
-        "subsample": trial.suggest_float("subsample", 0.6, 1.0),
-        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
-        "gamma": trial.suggest_float("gamma", 0.0, 5.0),
-        "reg_alpha": trial.suggest_float("reg_alpha", 1e-4, 1.0, log=True),
-        "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 20.0, log=True),
+        "n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "learning_rate": trial.suggest_float("learning_rate", 0.03, 0.12, log=True),
+        "max_depth": trial.suggest_int("max_depth", 3, 6),
+        "min_child_weight": trial.suggest_int("min_child_weight", 1, 8),
+        "subsample": trial.suggest_float("subsample", 0.7, 1.0),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
+        "gamma": trial.suggest_float("gamma", 0.0, 2.0),
+        "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 0.5, log=True),
+        "reg_lambda": trial.suggest_float("reg_lambda", 1e-2, 10.0, log=True),
+        "max_bin": trial.suggest_categorical("max_bin", [128, 256]),
     }
-    
     if is_binary:
         params["objective"] = "binary:logistic"
         params["eval_metric"] = "logloss"
     else:
         params["objective"] = "multi:softprob"
         params["eval_metric"] = "mlogloss"
-        
+
     return params
 
 
@@ -205,6 +235,7 @@ def objective_tabular(trial: optuna.Trial, cached_folds: list, model_name: str, 
         raise ValueError(f"unsupported tabular model: {model_name}")
 
     losses = []
+    fold_metrics = []
 
     for fold, (xt_tr, y_tr, xt_va, y_va, _, _) in enumerate(cached_folds):
         if model_name == "rf":
@@ -262,12 +293,15 @@ def objective_tabular(trial: optuna.Trial, cached_folds: list, model_name: str, 
 
         m = compute_metrics(y_va, proba, is_binary)
         losses.append(m["logloss"])
+        fold_metrics.append(m)
 
         trial.report(float(np.mean(losses)), step=fold)
         if trial.should_prune():
             raise optuna.TrialPruned()
 
-    return float(np.mean(losses))
+    mean_metrics = mean_metric_dict(fold_metrics)
+    trial.set_user_attr("cv_metrics", mean_metrics)
+    return mean_metrics["logloss"]
 
 
 def suggest_seq_params(trial: optuna.Trial, model_name: str, is_binary: bool) -> dict[str, Any]:
@@ -344,6 +378,7 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
     tf.keras.utils.set_random_seed(seed)
     
     losses = []
+    fold_metrics = []
     
     for fold, (x_tr, y_tr, x_va, y_va, _, _) in enumerate(cached_folds):
         if not is_binary:
@@ -353,7 +388,17 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
             x_va, y_va = x_va[valid_va], y_va[valid_va]
             
         if len(y_tr) == 0 or len(y_va) == 0:
-            losses.append(1.0)
+            m = {
+                "accuracy": float("nan"),
+                "precision": float("nan"),
+                "recall": float("nan"),
+                "f1": float("nan"),
+                "roc_auc": float("nan"),
+                "pr_auc": float("nan"),
+                "logloss": 1.0,
+            }
+            losses.append(m["logloss"])
+            fold_metrics.append(m)
             continue
             
         seq_len = x_tr.shape[1]
@@ -402,6 +447,7 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
         proba = model.predict(x_va, batch_size=params["batch_size"], verbose=0)
         m = compute_metrics(y_va, proba, is_binary)
         losses.append(m["logloss"])
+        fold_metrics.append(m)
         
         trial.report(float(np.mean(losses)), step=fold)
         if trial.should_prune():
@@ -409,7 +455,9 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
             
         tf.keras.backend.clear_session()
         
-    return float(np.mean(losses))
+    mean_metrics = mean_metric_dict(fold_metrics)
+    trial.set_user_attr("cv_metrics", mean_metrics)
+    return mean_metrics["logloss"]
 
 
 def main():
@@ -482,6 +530,7 @@ def main():
     best_obj = {
         "study": study_name,
         "best_logloss": float(study.best_value),
+        "best_metrics": study.best_trial.user_attrs.get("cv_metrics", {}),
         "best_params": study.best_params,
         "n_trials": len(study.trials)
     }
@@ -497,17 +546,15 @@ if __name__ == "__main__":
 """
 commands to run:
 
-binary
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model ann --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model rf --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model xgb --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model svm --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model tcn --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model tcn_gru --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model gru --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model lstm --n_trials 50
+python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model ann --n_trials 100
+python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model rf --n_trials 100
+python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model xgb --n_trials 100
+python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model svm --n_trials 100
+python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model tcn --n_trials 100
+python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model tcn_gru --n_trials 100
+python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model gru --n_trials 100
+python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model lstm --n_trials 100
 
-multiclass
 python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model ann --n_trials 50
 python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model rf --n_trials 50
 python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model xgb --n_trials 50

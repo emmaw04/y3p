@@ -1,0 +1,22 @@
+{
+  "study": "multiclass_tcn",
+  "best_logloss": 1.0654317935310353,
+  "best_metrics": {
+    "accuracy": 0.5747061566103092,
+    "precision": 0.4403361278382009,
+    "recall": 0.4726864898975391,
+    "f1": 0.4434156393515757,
+    "roc_auc": 0.7998487148069959,
+    "pr_auc": 0.4890342203932603,
+    "logloss": 1.0654317935310353
+  },
+  "best_params": {
+    "learning_rate": 0.0012208142144753873,
+    "batch_size": 128,
+    "filters": 32,
+    "kernel_size": 3,
+    "dropout": 0.3189536660208673,
+    "pooling": "last"
+  },
+  "n_trials": 50
+}

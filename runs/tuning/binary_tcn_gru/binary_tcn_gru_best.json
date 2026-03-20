@@ -1,0 +1,23 @@
+{
+  "study": "binary_tcn_gru",
+  "best_logloss": 0.1624196122898814,
+  "best_metrics": {
+    "accuracy": 0.9295341228633571,
+    "precision": 0.22835249985042666,
+    "recall": 0.6822693639657731,
+    "f1": 0.34175816905659034,
+    "roc_auc": 0.9034479721052568,
+    "pr_auc": 0.3781832369481836,
+    "logloss": 0.1624196122898814
+  },
+  "best_params": {
+    "learning_rate": 0.0014409354395782717,
+    "batch_size": 128,
+    "filters": 64,
+    "kernel_size": 2,
+    "dropout": 0.0444341795866854,
+    "rnn_units": 16,
+    "rnn_dropout": 0.2741761381775658
+  },
+  "n_trials": 100
+}

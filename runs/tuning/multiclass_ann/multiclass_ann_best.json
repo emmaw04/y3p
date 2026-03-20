@@ -1,0 +1,22 @@
+{
+  "study": "multiclass_ann",
+  "best_logloss": 1.1022143303485046,
+  "best_metrics": {
+    "accuracy": 0.5337290119144038,
+    "precision": 0.4196384845430484,
+    "recall": 0.3966800101972799,
+    "f1": 0.3773666053228587,
+    "roc_auc": 0.7619170255198385,
+    "pr_auc": 0.4067030796459784,
+    "logloss": 1.1022143303485046
+  },
+  "best_params": {
+    "n_layers": 1,
+    "hidden_units": 32,
+    "dropout": 0.2696839799381978,
+    "l2": 1.161257222624932e-05,
+    "learning_rate": 0.0014153610406428582,
+    "batch_size": 64
+  },
+  "n_trials": 50
+}
