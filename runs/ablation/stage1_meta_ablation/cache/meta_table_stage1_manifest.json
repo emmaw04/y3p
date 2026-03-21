@@ -1,0 +1,18 @@
+{
+  "data_path": "data/processed/dataset1.csv",
+  "stage": 1,
+  "n_rows": 96916,
+  "n_races": 165,
+  "n_splits": 5,
+  "seed": 42,
+  "seq_len": 8,
+  "holdout_race_ids": [
+    53,
+    73,
+    24,
+    75,
+    2,
+    64,
+    139
+  ]
+}
