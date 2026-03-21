@@ -62,3 +62,65 @@ Running on tiger-02
 [I 2026-03-20 23:10:40,935] Trial 54 pruned. 
 [I 2026-03-20 23:17:01,668] Trial 55 pruned. 
 [I 2026-03-20 23:22:56,730] Trial 56 pruned. 
+[I 2026-03-20 23:30:26,839] Trial 57 pruned. 
+[I 2026-03-20 23:34:23,423] Trial 58 pruned. 
+[I 2026-03-20 23:41:02,443] Trial 59 pruned. 
+[I 2026-03-20 23:47:12,307] Trial 60 pruned. 
+[I 2026-03-21 00:12:16,053] Trial 61 finished with value: 0.09931153831213427 and parameters: {'C': 0.13430182096064153, 'gamma': 0.08074369428740316, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 00:20:56,600] Trial 62 pruned. 
+[I 2026-03-21 00:42:29,962] Trial 63 finished with value: 0.09925983452482093 and parameters: {'C': 0.392379419167378, 'gamma': 0.04596655270832041, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 00:48:10,538] Trial 64 pruned. 
+[I 2026-03-21 01:12:56,821] Trial 65 finished with value: 0.09897434912238216 and parameters: {'C': 0.13700408767181269, 'gamma': 0.057208801264584774, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 01:41:23,891] Trial 66 finished with value: 0.0992257230488272 and parameters: {'C': 0.054148320660758885, 'gamma': 0.06066848037247416, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 01:42:24,265] Trial 67 pruned. 
+[I 2026-03-21 01:46:22,017] Trial 68 pruned. 
+[I 2026-03-21 02:11:55,097] Trial 69 finished with value: 0.09928738151062509 and parameters: {'C': 0.10354069760771481, 'gamma': 0.08163953147202861, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 02:37:20,090] Trial 70 finished with value: 0.09891150934806464 and parameters: {'C': 0.16521762718601107, 'gamma': 0.03303321569112579, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 03:03:02,615] Trial 71 finished with value: 0.0989570039784983 and parameters: {'C': 0.15486051997512715, 'gamma': 0.029546195772621037, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 03:28:16,028] Trial 72 finished with value: 0.09891204910900254 and parameters: {'C': 0.17588868608105723, 'gamma': 0.03284922693444622, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 03:51:10,385] Trial 73 finished with value: 0.09911830030929392 and parameters: {'C': 0.34940279425013393, 'gamma': 0.032342248786471454, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 03:59:10,631] Trial 74 pruned. 
+[I 2026-03-21 04:05:01,943] Trial 75 pruned. 
+[I 2026-03-21 04:10:01,349] Trial 76 pruned. 
+[I 2026-03-21 04:15:52,288] Trial 77 pruned. 
+[I 2026-03-21 04:20:31,970] Trial 78 pruned. 
+[I 2026-03-21 04:21:00,477] Trial 79 pruned. 
+[I 2026-03-21 04:26:45,540] Trial 80 pruned. 
+[I 2026-03-21 04:52:50,763] Trial 81 finished with value: 0.0989323596749086 and parameters: {'C': 0.13712548622511725, 'gamma': 0.032025485577869765, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 05:18:14,713] Trial 82 finished with value: 0.09891934186431693 and parameters: {'C': 0.1662461890518565, 'gamma': 0.031934009323660854, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 05:42:03,571] Trial 83 finished with value: 0.09894207786659821 and parameters: {'C': 0.1951393080758662, 'gamma': 0.04502112070632031, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 06:04:34,160] Trial 84 finished with value: 0.09911787430405375 and parameters: {'C': 0.33304602341393563, 'gamma': 0.03711109375583603, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 06:09:59,045] Trial 85 pruned. 
+[I 2026-03-21 06:34:22,100] Trial 86 finished with value: 0.09894845468481234 and parameters: {'C': 0.1582670308259359, 'gamma': 0.05228886375355789, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 07:01:16,989] Trial 87 finished with value: 0.0991184344666464 and parameters: {'C': 0.07498070634202811, 'gamma': 0.06656067803237234, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 07:20:40,784] Trial 88 pruned. 
+[I 2026-03-21 07:26:45,246] Trial 89 pruned. 
+[I 2026-03-21 07:31:57,182] Trial 90 pruned. 
+[I 2026-03-21 07:55:46,787] Trial 91 finished with value: 0.09896515068231422 and parameters: {'C': 0.2003080511109589, 'gamma': 0.04691620439002445, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 08:21:38,726] Trial 92 finished with value: 0.09888624666065464 and parameters: {'C': 0.11728340136419312, 'gamma': 0.04185479457577169, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 08:26:59,701] Trial 93 pruned. 
+[I 2026-03-21 08:32:39,150] Trial 94 pruned. 
+[I 2026-03-21 08:59:12,911] Trial 95 finished with value: 0.09904958732013136 and parameters: {'C': 0.0831450996161213, 'gamma': 0.06252031972067369, 'class_weight': 'balanced'}. Best is trial 32 with value: 0.09887328890897443.
+[I 2026-03-21 09:00:24,071] Trial 96 pruned. 
+[I 2026-03-21 09:20:13,728] Trial 97 pruned. 
+[I 2026-03-21 09:26:26,496] Trial 98 pruned. 
+[I 2026-03-21 09:31:53,531] Trial 99 pruned. 
+{
+  "study": "binary_svm",
+  "best_logloss": 0.09887328890897443,
+  "best_metrics": {
+    "accuracy": 0.9736881305311847,
+    "precision": 0.4,
+    "recall": 0.0008060979596392891,
+    "f1": 0.0016088941830454634,
+    "roc_auc": 0.8531801047680887,
+    "pr_auc": 0.14836217399246296,
+    "logloss": 0.09887328890897443
+  },
+  "best_params": {
+    "C": 0.1506884593067545,
+    "gamma": 0.04233624238517596,
+    "class_weight": "balanced"
+  },
+  "n_trials": 100
+}

@@ -1,0 +1,23 @@
+{
+  "study": "binary_meta_mlp",
+  "best_logloss": 0.08002605589433967,
+  "best_metrics": {
+    "accuracy": 0.975690710710315,
+    "precision": 0.7195106581343017,
+    "recall": 0.14283341358070517,
+    "f1": 0.2255832890200959,
+    "roc_auc": 0.9075942528209782,
+    "pr_auc": 0.3953802786333191,
+    "logloss": 0.08002605589433967
+  },
+  "best_params": {
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "alpha": 0.0014750765684701768,
+    "learning_rate_init": 0.013743140045520868,
+    "batch_size": 128
+  },
+  "n_trials": 100
+}

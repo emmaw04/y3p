@@ -1,0 +1,22 @@
+{
+  "study": "multiclass_meta_mlp",
+  "best_logloss": 0.956101282798046,
+  "best_metrics": {
+    "accuracy": 0.6070125322621771,
+    "precision": 0.4964968162694463,
+    "recall": 0.48093004021214014,
+    "f1": 0.45977091571776835,
+    "roc_auc": 0.8460650326499669,
+    "pr_auc": 0.5412853127268457,
+    "logloss": 0.956101282798046
+  },
+  "best_params": {
+    "hidden_layer_sizes": [
+      32
+    ],
+    "alpha": 0.0005053944133370265,
+    "learning_rate_init": 0.00033361078666799233,
+    "batch_size": 32
+  },
+  "n_trials": 50
+}

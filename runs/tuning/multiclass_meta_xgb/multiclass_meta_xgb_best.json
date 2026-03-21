@@ -1,0 +1,25 @@
+{
+  "study": "multiclass_meta_xgb",
+  "best_logloss": 0.9459806274915442,
+  "best_metrics": {
+    "accuracy": 0.5971218965551024,
+    "precision": 0.48965535636584984,
+    "recall": 0.45818529171052524,
+    "f1": 0.4485616680311898,
+    "roc_auc": 0.8518800566490704,
+    "pr_auc": 0.5598307403997036,
+    "logloss": 0.9459806274915442
+  },
+  "best_params": {
+    "n_estimators": 338,
+    "max_depth": 3,
+    "learning_rate": 0.05720671296025396,
+    "subsample": 0.962183523136069,
+    "colsample_bytree": 0.7031882165929242,
+    "reg_alpha": 1.2022222899804231,
+    "reg_lambda": 0.015654414442086057,
+    "min_child_weight": 1,
+    "gamma": 4.655392345755547
+  },
+  "n_trials": 50
+}

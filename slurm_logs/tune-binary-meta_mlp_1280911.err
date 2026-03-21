@@ -1,0 +1,1028 @@
+2026-03-21 00:12:11.331810: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-03-21 00:12:11.366277: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-03-21 00:12:12.861891: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+[I 2026-03-21 00:12:13,919] A new study created in memory with name: binary_meta_mlp
+2026-03-21 00:32:00.023051: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: UNKNOWN ERROR (303)
+2026-03-21 00:32:00.227874: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 00:32:05.390527: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 00:32:41.008202: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_14}}
+2026-03-21 00:32:47.705709: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 00:33:58.048148: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_14}}
+2026-03-21 00:55:37.680184: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 00:56:05.686322: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_14}}
+2026-03-21 00:56:12.419994: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 00:57:23.012701: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_14}}
+2026-03-21 01:19:22.463406: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 01:20:42.682855: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_14}}
+2026-03-21 01:20:49.560047: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 01:21:48.601770: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_14}}
+2026-03-21 01:44:29.984778: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 01:44:57.927842: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_14}}
+2026-03-21 01:45:04.859652: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 01:45:52.786088: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_14}}
+2026-03-21 02:06:57.730598: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 02:08:03.325244: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_14}}
+2026-03-21 02:08:10.356422: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_15}}
+2026-03-21 02:08:52.597367: E tensorflow/core/framework/node_def_util.cc:680] NodeDef mentions attribute use_unbounded_threadpool which is not in the op definition: Op<name=MapDataset; signature=input_dataset:variant, other_arguments: -> handle:variant; attr=f:func; attr=Targuments:list(type),min=0; attr=output_types:list(type),min=1; attr=output_shapes:list(shape),min=1; attr=use_inter_op_parallelism:bool,default=true; attr=preserve_cardinality:bool,default=false; attr=force_synchronous:bool,default=false; attr=metadata:string,default=""> This may be expected if your graph generating binary is newer  than this binary. Unknown attributes will be ignored. NodeDef: {{node ParallelMapDatasetV2/_14}}
+  0%|          | 0/100 [00:00<?, ?it/s]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                         0%|          | 0/100 [00:16<?, ?it/s]Best trial: 0. Best value: 0.0840782:   0%|          | 0/100 [00:16<?, ?it/s]Best trial: 0. Best value: 0.0840782:   1%|          | 1/100 [00:16<27:35, 16.72s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                     Best trial: 0. Best value: 0.0840782:   1%|          | 1/100 [00:25<27:35, 16.72s/it]Best trial: 1. Best value: 0.0827849:   1%|          | 1/100 [00:25<27:35, 16.72s/it]Best trial: 1. Best value: 0.0827849:   2%|▏         | 2/100 [00:25<19:22, 11.86s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                     Best trial: 1. Best value: 0.0827849:   2%|▏         | 2/100 [00:41<19:22, 11.86s/it]Best trial: 2. Best value: 0.082102:   2%|▏         | 2/100 [00:41<19:22, 11.86s/it] Best trial: 2. Best value: 0.082102:   3%|▎         | 3/100 [00:41<22:18, 13.80s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                    Best trial: 2. Best value: 0.082102:   3%|▎         | 3/100 [00:46<22:18, 13.80s/it]Best trial: 2. Best value: 0.082102:   3%|▎         | 3/100 [00:46<22:18, 13.80s/it]Best trial: 2. Best value: 0.082102:   4%|▍         | 4/100 [00:46<16:26, 10.27s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                    Best trial: 2. Best value: 0.082102:   4%|▍         | 4/100 [00:57<16:26, 10.27s/it]Best trial: 4. Best value: 0.0816845:   4%|▍         | 4/100 [00:57<16:26, 10.27s/it]Best trial: 4. Best value: 0.0816845:   5%|▌         | 5/100 [00:57<16:50, 10.63s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                     Best trial: 4. Best value: 0.0816845:   5%|▌         | 5/100 [01:13<16:50, 10.63s/it]Best trial: 4. Best value: 0.0816845:   5%|▌         | 5/100 [01:13<16:50, 10.63s/it]Best trial: 4. Best value: 0.0816845:   6%|▌         | 6/100 [01:13<19:46, 12.62s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                     Best trial: 4. Best value: 0.0816845:   6%|▌         | 6/100 [01:36<19:46, 12.62s/it]Best trial: 4. Best value: 0.0816845:   6%|▌         | 6/100 [01:36<19:46, 12.62s/it]Best trial: 4. Best value: 0.0816845:   7%|▋         | 7/100 [01:36<24:45, 15.98s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                     Best trial: 4. Best value: 0.0816845:   7%|▋         | 7/100 [01:46<24:45, 15.98s/it]Best trial: 4. Best value: 0.0816845:   7%|▋         | 7/100 [01:46<24:45, 15.98s/it]Best trial: 4. Best value: 0.0816845:   8%|▊         | 8/100 [01:46<21:37, 14.11s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                     Best trial: 4. Best value: 0.0816845:   8%|▊         | 8/100 [01:57<21:37, 14.11s/it]Best trial: 4. Best value: 0.0816845:   8%|▊         | 8/100 [01:57<21:37, 14.11s/it]Best trial: 4. Best value: 0.0816845:   9%|▉         | 9/100 [01:57<19:50, 13.08s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                     Best trial: 4. Best value: 0.0816845:   9%|▉         | 9/100 [02:08<19:50, 13.08s/it]Best trial: 4. Best value: 0.0816845:   9%|▉         | 9/100 [02:08<19:50, 13.08s/it]Best trial: 4. Best value: 0.0816845:  10%|█         | 10/100 [02:08<18:38, 12.43s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                      Best trial: 4. Best value: 0.0816845:  10%|█         | 10/100 [02:10<18:38, 12.43s/it]Best trial: 4. Best value: 0.0816845:  10%|█         | 10/100 [02:10<18:38, 12.43s/it]Best trial: 4. Best value: 0.0816845:  11%|█         | 11/100 [02:10<13:49,  9.32s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                      Best trial: 4. Best value: 0.0816845:  11%|█         | 11/100 [02:23<13:49,  9.32s/it]Best trial: 4. Best value: 0.0816845:  11%|█         | 11/100 [02:23<13:49,  9.32s/it]Best trial: 4. Best value: 0.0816845:  12%|█▏        | 12/100 [02:23<15:07, 10.32s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                      Best trial: 4. Best value: 0.0816845:  12%|█▏        | 12/100 [02:25<15:07, 10.32s/it]Best trial: 4. Best value: 0.0816845:  12%|█▏        | 12/100 [02:25<15:07, 10.32s/it]Best trial: 4. Best value: 0.0816845:  13%|█▎        | 13/100 [02:25<11:12,  7.73s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                      Best trial: 4. Best value: 0.0816845:  13%|█▎        | 13/100 [02:28<11:12,  7.73s/it]Best trial: 4. Best value: 0.0816845:  13%|█▎        | 13/100 [02:28<11:12,  7.73s/it]Best trial: 4. Best value: 0.0816845:  14%|█▍        | 14/100 [02:28<08:58,  6.26s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                      Best trial: 4. Best value: 0.0816845:  14%|█▍        | 14/100 [02:32<08:58,  6.26s/it]Best trial: 4. Best value: 0.0816845:  14%|█▍        | 14/100 [02:32<08:58,  6.26s/it]Best trial: 4. Best value: 0.0816845:  15%|█▌        | 15/100 [02:32<08:07,  5.74s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                      Best trial: 4. Best value: 0.0816845:  15%|█▌        | 15/100 [02:34<08:07,  5.74s/it]Best trial: 4. Best value: 0.0816845:  15%|█▌        | 15/100 [02:34<08:07,  5.74s/it]Best trial: 4. Best value: 0.0816845:  16%|█▌        | 16/100 [02:34<06:32,  4.68s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                      Best trial: 4. Best value: 0.0816845:  16%|█▌        | 16/100 [02:38<06:32,  4.68s/it]Best trial: 4. Best value: 0.0816845:  16%|█▌        | 16/100 [02:38<06:32,  4.68s/it]Best trial: 4. Best value: 0.0816845:  17%|█▋        | 17/100 [02:38<06:12,  4.49s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                      Best trial: 4. Best value: 0.0816845:  17%|█▋        | 17/100 [02:40<06:12,  4.49s/it]Best trial: 4. Best value: 0.0816845:  17%|█▋        | 17/100 [02:40<06:12,  4.49s/it]Best trial: 4. Best value: 0.0816845:  18%|█▊        | 18/100 [02:40<04:49,  3.53s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                      Best trial: 4. Best value: 0.0816845:  18%|█▊        | 18/100 [02:46<04:49,  3.53s/it]Best trial: 18. Best value: 0.0816392:  18%|█▊        | 18/100 [02:46<04:49,  3.53s/it]Best trial: 18. Best value: 0.0816392:  19%|█▉        | 19/100 [02:46<06:02,  4.48s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 18. Best value: 0.0816392:  19%|█▉        | 19/100 [02:55<06:02,  4.48s/it]Best trial: 19. Best value: 0.0809191:  19%|█▉        | 19/100 [02:55<06:02,  4.48s/it]Best trial: 19. Best value: 0.0809191:  20%|██        | 20/100 [02:55<07:30,  5.64s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 19. Best value: 0.0809191:  20%|██        | 20/100 [02:58<07:30,  5.64s/it]Best trial: 19. Best value: 0.0809191:  20%|██        | 20/100 [02:58<07:30,  5.64s/it]Best trial: 19. Best value: 0.0809191:  21%|██        | 21/100 [02:58<06:16,  4.77s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 19. Best value: 0.0809191:  21%|██        | 21/100 [02:59<06:16,  4.77s/it]Best trial: 19. Best value: 0.0809191:  21%|██        | 21/100 [02:59<06:16,  4.77s/it]Best trial: 19. Best value: 0.0809191:  22%|██▏       | 22/100 [02:59<04:45,  3.66s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 19. Best value: 0.0809191:  22%|██▏       | 22/100 [03:05<04:45,  3.66s/it]Best trial: 22. Best value: 0.0808218:  22%|██▏       | 22/100 [03:05<04:45,  3.66s/it]Best trial: 22. Best value: 0.0808218:  23%|██▎       | 23/100 [03:05<05:55,  4.62s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 22. Best value: 0.0808218:  23%|██▎       | 23/100 [03:14<05:55,  4.62s/it]Best trial: 22. Best value: 0.0808218:  23%|██▎       | 23/100 [03:14<05:55,  4.62s/it]Best trial: 22. Best value: 0.0808218:  24%|██▍       | 24/100 [03:14<07:11,  5.68s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 22. Best value: 0.0808218:  24%|██▍       | 24/100 [03:15<07:11,  5.68s/it]Best trial: 22. Best value: 0.0808218:  24%|██▍       | 24/100 [03:15<07:11,  5.68s/it]Best trial: 22. Best value: 0.0808218:  25%|██▌       | 25/100 [03:15<05:31,  4.42s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 22. Best value: 0.0808218:  25%|██▌       | 25/100 [03:18<05:31,  4.42s/it]Best trial: 22. Best value: 0.0808218:  25%|██▌       | 25/100 [03:18<05:31,  4.42s/it]Best trial: 22. Best value: 0.0808218:  26%|██▌       | 26/100 [03:18<04:49,  3.91s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 22. Best value: 0.0808218:  26%|██▌       | 26/100 [03:19<04:49,  3.91s/it]Best trial: 22. Best value: 0.0808218:  26%|██▌       | 26/100 [03:19<04:49,  3.91s/it]Best trial: 22. Best value: 0.0808218:  27%|██▋       | 27/100 [03:19<03:52,  3.18s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 22. Best value: 0.0808218:  27%|██▋       | 27/100 [03:34<03:52,  3.18s/it]Best trial: 22. Best value: 0.0808218:  27%|██▋       | 27/100 [03:34<03:52,  3.18s/it]Best trial: 22. Best value: 0.0808218:  28%|██▊       | 28/100 [03:34<08:00,  6.68s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 22. Best value: 0.0808218:  28%|██▊       | 28/100 [03:52<08:00,  6.68s/it]Best trial: 22. Best value: 0.0808218:  28%|██▊       | 28/100 [03:52<08:00,  6.68s/it]Best trial: 22. Best value: 0.0808218:  29%|██▉       | 29/100 [03:52<11:48,  9.98s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 22. Best value: 0.0808218:  29%|██▉       | 29/100 [04:29<11:48,  9.98s/it]Best trial: 29. Best value: 0.0805008:  29%|██▉       | 29/100 [04:29<11:48,  9.98s/it]Best trial: 29. Best value: 0.0805008:  30%|███       | 30/100 [04:29<21:13, 18.19s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  30%|███       | 30/100 [04:41<21:13, 18.19s/it]Best trial: 29. Best value: 0.0805008:  30%|███       | 30/100 [04:41<21:13, 18.19s/it]Best trial: 29. Best value: 0.0805008:  31%|███       | 31/100 [04:41<18:50, 16.38s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  31%|███       | 31/100 [04:47<18:50, 16.38s/it]Best trial: 29. Best value: 0.0805008:  31%|███       | 31/100 [04:47<18:50, 16.38s/it]Best trial: 29. Best value: 0.0805008:  32%|███▏      | 32/100 [04:47<14:47, 13.05s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  32%|███▏      | 32/100 [05:19<14:47, 13.05s/it]Best trial: 29. Best value: 0.0805008:  32%|███▏      | 32/100 [05:19<14:47, 13.05s/it]Best trial: 29. Best value: 0.0805008:  33%|███▎      | 33/100 [05:19<21:07, 18.92s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  33%|███▎      | 33/100 [05:38<21:07, 18.92s/it]Best trial: 29. Best value: 0.0805008:  33%|███▎      | 33/100 [05:38<21:07, 18.92s/it]Best trial: 29. Best value: 0.0805008:  34%|███▍      | 34/100 [05:38<20:39, 18.79s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  34%|███▍      | 34/100 [05:52<20:39, 18.79s/it]Best trial: 29. Best value: 0.0805008:  34%|███▍      | 34/100 [05:52<20:39, 18.79s/it]Best trial: 29. Best value: 0.0805008:  35%|███▌      | 35/100 [05:52<18:57, 17.51s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  35%|███▌      | 35/100 [05:58<18:57, 17.51s/it]Best trial: 29. Best value: 0.0805008:  35%|███▌      | 35/100 [05:58<18:57, 17.51s/it]Best trial: 29. Best value: 0.0805008:  36%|███▌      | 36/100 [05:58<14:51, 13.94s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  36%|███▌      | 36/100 [06:13<14:51, 13.94s/it]Best trial: 29. Best value: 0.0805008:  36%|███▌      | 36/100 [06:13<14:51, 13.94s/it]Best trial: 29. Best value: 0.0805008:  37%|███▋      | 37/100 [06:13<15:10, 14.45s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  37%|███▋      | 37/100 [06:15<15:10, 14.45s/it]Best trial: 29. Best value: 0.0805008:  37%|███▋      | 37/100 [06:15<15:10, 14.45s/it]Best trial: 29. Best value: 0.0805008:  38%|███▊      | 38/100 [06:15<10:54, 10.55s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  38%|███▊      | 38/100 [07:07<10:54, 10.55s/it]Best trial: 29. Best value: 0.0805008:  38%|███▊      | 38/100 [07:07<10:54, 10.55s/it]Best trial: 29. Best value: 0.0805008:  39%|███▉      | 39/100 [07:07<23:28, 23.09s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  39%|███▉      | 39/100 [07:09<23:28, 23.09s/it]Best trial: 29. Best value: 0.0805008:  39%|███▉      | 39/100 [07:09<23:28, 23.09s/it]Best trial: 29. Best value: 0.0805008:  40%|████      | 40/100 [07:09<16:47, 16.80s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  40%|████      | 40/100 [07:18<16:47, 16.80s/it]Best trial: 29. Best value: 0.0805008:  40%|████      | 40/100 [07:18<16:47, 16.80s/it]Best trial: 29. Best value: 0.0805008:  41%|████      | 41/100 [07:18<14:06, 14.35s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  41%|████      | 41/100 [07:23<14:06, 14.35s/it]Best trial: 29. Best value: 0.0805008:  41%|████      | 41/100 [07:23<14:06, 14.35s/it]Best trial: 29. Best value: 0.0805008:  42%|████▏     | 42/100 [07:23<11:17, 11.68s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  42%|████▏     | 42/100 [07:42<11:17, 11.68s/it]Best trial: 29. Best value: 0.0805008:  42%|████▏     | 42/100 [07:42<11:17, 11.68s/it]Best trial: 29. Best value: 0.0805008:  43%|████▎     | 43/100 [07:42<12:56, 13.62s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  43%|████▎     | 43/100 [07:55<12:56, 13.62s/it]Best trial: 29. Best value: 0.0805008:  43%|████▎     | 43/100 [07:55<12:56, 13.62s/it]Best trial: 29. Best value: 0.0805008:  44%|████▍     | 44/100 [07:55<12:43, 13.63s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  44%|████▍     | 44/100 [08:15<12:43, 13.63s/it]Best trial: 29. Best value: 0.0805008:  44%|████▍     | 44/100 [08:15<12:43, 13.63s/it]Best trial: 29. Best value: 0.0805008:  45%|████▌     | 45/100 [08:15<14:16, 15.57s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  45%|████▌     | 45/100 [08:18<14:16, 15.57s/it]Best trial: 29. Best value: 0.0805008:  45%|████▌     | 45/100 [08:18<14:16, 15.57s/it]Best trial: 29. Best value: 0.0805008:  46%|████▌     | 46/100 [08:18<10:24, 11.57s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  46%|████▌     | 46/100 [08:30<10:24, 11.57s/it]Best trial: 29. Best value: 0.0805008:  46%|████▌     | 46/100 [08:30<10:24, 11.57s/it]Best trial: 29. Best value: 0.0805008:  47%|████▋     | 47/100 [08:30<10:26, 11.82s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  47%|████▋     | 47/100 [08:33<10:26, 11.82s/it]Best trial: 29. Best value: 0.0805008:  47%|████▋     | 47/100 [08:33<10:26, 11.82s/it]Best trial: 29. Best value: 0.0805008:  48%|████▊     | 48/100 [08:33<07:59,  9.21s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  48%|████▊     | 48/100 [08:38<07:59,  9.21s/it]Best trial: 29. Best value: 0.0805008:  48%|████▊     | 48/100 [08:38<07:59,  9.21s/it]Best trial: 29. Best value: 0.0805008:  49%|████▉     | 49/100 [08:38<06:49,  8.03s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  49%|████▉     | 49/100 [08:40<06:49,  8.03s/it]Best trial: 29. Best value: 0.0805008:  49%|████▉     | 49/100 [08:40<06:49,  8.03s/it]Best trial: 29. Best value: 0.0805008:  50%|█████     | 50/100 [08:40<05:10,  6.21s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  50%|█████     | 50/100 [08:42<05:10,  6.21s/it]Best trial: 29. Best value: 0.0805008:  50%|█████     | 50/100 [08:42<05:10,  6.21s/it]Best trial: 29. Best value: 0.0805008:  51%|█████     | 51/100 [08:42<03:49,  4.69s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  51%|█████     | 51/100 [08:58<03:49,  4.69s/it]Best trial: 29. Best value: 0.0805008:  51%|█████     | 51/100 [08:58<03:49,  4.69s/it]Best trial: 29. Best value: 0.0805008:  52%|█████▏    | 52/100 [08:58<06:31,  8.16s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  52%|█████▏    | 52/100 [09:14<06:31,  8.16s/it]Best trial: 29. Best value: 0.0805008:  52%|█████▏    | 52/100 [09:14<06:31,  8.16s/it]Best trial: 29. Best value: 0.0805008:  53%|█████▎    | 53/100 [09:14<08:21, 10.66s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  53%|█████▎    | 53/100 [09:36<08:21, 10.66s/it]Best trial: 29. Best value: 0.0805008:  53%|█████▎    | 53/100 [09:36<08:21, 10.66s/it]Best trial: 29. Best value: 0.0805008:  54%|█████▍    | 54/100 [09:36<10:48, 14.10s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 29. Best value: 0.0805008:  54%|█████▍    | 54/100 [09:49<10:48, 14.10s/it]Best trial: 54. Best value: 0.0801724:  54%|█████▍    | 54/100 [09:49<10:48, 14.10s/it]Best trial: 54. Best value: 0.0801724:  55%|█████▌    | 55/100 [09:49<10:20, 13.79s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 54. Best value: 0.0801724:  55%|█████▌    | 55/100 [09:52<10:20, 13.79s/it]Best trial: 54. Best value: 0.0801724:  55%|█████▌    | 55/100 [09:52<10:20, 13.79s/it]Best trial: 54. Best value: 0.0801724:  56%|█████▌    | 56/100 [09:52<07:32, 10.29s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 54. Best value: 0.0801724:  56%|█████▌    | 56/100 [09:53<07:32, 10.29s/it]Best trial: 54. Best value: 0.0801724:  56%|█████▌    | 56/100 [09:53<07:32, 10.29s/it]Best trial: 54. Best value: 0.0801724:  57%|█████▋    | 57/100 [09:53<05:34,  7.77s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 54. Best value: 0.0801724:  57%|█████▋    | 57/100 [10:09<05:34,  7.77s/it]Best trial: 54. Best value: 0.0801724:  57%|█████▋    | 57/100 [10:09<05:34,  7.77s/it]Best trial: 54. Best value: 0.0801724:  58%|█████▊    | 58/100 [10:09<06:58,  9.97s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 54. Best value: 0.0801724:  58%|█████▊    | 58/100 [10:13<06:58,  9.97s/it]Best trial: 54. Best value: 0.0801724:  58%|█████▊    | 58/100 [10:13<06:58,  9.97s/it]Best trial: 54. Best value: 0.0801724:  59%|█████▉    | 59/100 [10:13<05:41,  8.33s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 54. Best value: 0.0801724:  59%|█████▉    | 59/100 [10:14<05:41,  8.33s/it]Best trial: 54. Best value: 0.0801724:  59%|█████▉    | 59/100 [10:14<05:41,  8.33s/it]Best trial: 54. Best value: 0.0801724:  60%|██████    | 60/100 [10:14<04:06,  6.17s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 54. Best value: 0.0801724:  60%|██████    | 60/100 [10:19<04:06,  6.17s/it]Best trial: 54. Best value: 0.0801724:  60%|██████    | 60/100 [10:19<04:06,  6.17s/it]Best trial: 54. Best value: 0.0801724:  61%|██████    | 61/100 [10:19<03:48,  5.86s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 54. Best value: 0.0801724:  61%|██████    | 61/100 [10:36<03:48,  5.86s/it]Best trial: 61. Best value: 0.0801059:  61%|██████    | 61/100 [10:36<03:48,  5.86s/it]Best trial: 61. Best value: 0.0801059:  62%|██████▏   | 62/100 [10:36<05:49,  9.21s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  62%|██████▏   | 62/100 [10:39<05:49,  9.21s/it]Best trial: 61. Best value: 0.0801059:  62%|██████▏   | 62/100 [10:39<05:49,  9.21s/it]Best trial: 61. Best value: 0.0801059:  63%|██████▎   | 63/100 [10:39<04:29,  7.29s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  63%|██████▎   | 63/100 [11:03<04:29,  7.29s/it]Best trial: 61. Best value: 0.0801059:  63%|██████▎   | 63/100 [11:03<04:29,  7.29s/it]Best trial: 61. Best value: 0.0801059:  64%|██████▍   | 64/100 [11:03<07:16, 12.13s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  64%|██████▍   | 64/100 [11:20<07:16, 12.13s/it]Best trial: 61. Best value: 0.0801059:  64%|██████▍   | 64/100 [11:20<07:16, 12.13s/it]Best trial: 61. Best value: 0.0801059:  65%|██████▌   | 65/100 [11:20<07:55, 13.59s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  65%|██████▌   | 65/100 [11:22<07:55, 13.59s/it]Best trial: 61. Best value: 0.0801059:  65%|██████▌   | 65/100 [11:22<07:55, 13.59s/it]Best trial: 61. Best value: 0.0801059:  66%|██████▌   | 66/100 [11:22<05:48, 10.24s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  66%|██████▌   | 66/100 [11:40<05:48, 10.24s/it]Best trial: 61. Best value: 0.0801059:  66%|██████▌   | 66/100 [11:40<05:48, 10.24s/it]Best trial: 61. Best value: 0.0801059:  67%|██████▋   | 67/100 [11:40<06:59, 12.70s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  67%|██████▋   | 67/100 [11:42<06:59, 12.70s/it]Best trial: 61. Best value: 0.0801059:  67%|██████▋   | 67/100 [11:42<06:59, 12.70s/it]Best trial: 61. Best value: 0.0801059:  68%|██████▊   | 68/100 [11:42<05:01,  9.42s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  68%|██████▊   | 68/100 [11:48<05:01,  9.42s/it]Best trial: 61. Best value: 0.0801059:  68%|██████▊   | 68/100 [11:48<05:01,  9.42s/it]Best trial: 61. Best value: 0.0801059:  69%|██████▉   | 69/100 [11:48<04:13,  8.18s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  69%|██████▉   | 69/100 [11:49<04:13,  8.18s/it]Best trial: 61. Best value: 0.0801059:  69%|██████▉   | 69/100 [11:49<04:13,  8.18s/it]Best trial: 61. Best value: 0.0801059:  70%|███████   | 70/100 [11:49<03:06,  6.23s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  70%|███████   | 70/100 [11:51<03:06,  6.23s/it]Best trial: 61. Best value: 0.0801059:  70%|███████   | 70/100 [11:51<03:06,  6.23s/it]Best trial: 61. Best value: 0.0801059:  71%|███████   | 71/100 [11:51<02:23,  4.96s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  71%|███████   | 71/100 [12:08<02:23,  4.96s/it]Best trial: 61. Best value: 0.0801059:  71%|███████   | 71/100 [12:08<02:23,  4.96s/it]Best trial: 61. Best value: 0.0801059:  72%|███████▏  | 72/100 [12:08<03:57,  8.50s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 61. Best value: 0.0801059:  72%|███████▏  | 72/100 [12:22<03:57,  8.50s/it]Best trial: 72. Best value: 0.0800261:  72%|███████▏  | 72/100 [12:22<03:57,  8.50s/it]Best trial: 72. Best value: 0.0800261:  73%|███████▎  | 73/100 [12:22<04:30, 10.03s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  73%|███████▎  | 73/100 [12:39<04:30, 10.03s/it]Best trial: 72. Best value: 0.0800261:  73%|███████▎  | 73/100 [12:39<04:30, 10.03s/it]Best trial: 72. Best value: 0.0800261:  74%|███████▍  | 74/100 [12:39<05:16, 12.17s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  74%|███████▍  | 74/100 [12:46<05:16, 12.17s/it]Best trial: 72. Best value: 0.0800261:  74%|███████▍  | 74/100 [12:46<05:16, 12.17s/it]Best trial: 72. Best value: 0.0800261:  75%|███████▌  | 75/100 [12:46<04:26, 10.66s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  75%|███████▌  | 75/100 [13:07<04:26, 10.66s/it]Best trial: 72. Best value: 0.0800261:  75%|███████▌  | 75/100 [13:07<04:26, 10.66s/it]Best trial: 72. Best value: 0.0800261:  76%|███████▌  | 76/100 [13:07<05:31, 13.83s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  76%|███████▌  | 76/100 [13:09<05:31, 13.83s/it]Best trial: 72. Best value: 0.0800261:  76%|███████▌  | 76/100 [13:09<05:31, 13.83s/it]Best trial: 72. Best value: 0.0800261:  77%|███████▋  | 77/100 [13:09<03:54, 10.21s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  77%|███████▋  | 77/100 [13:12<03:54, 10.21s/it]Best trial: 72. Best value: 0.0800261:  77%|███████▋  | 77/100 [13:12<03:54, 10.21s/it]Best trial: 72. Best value: 0.0800261:  78%|███████▊  | 78/100 [13:12<02:55,  8.00s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  78%|███████▊  | 78/100 [13:14<02:55,  8.00s/it]Best trial: 72. Best value: 0.0800261:  78%|███████▊  | 78/100 [13:14<02:55,  8.00s/it]Best trial: 72. Best value: 0.0800261:  79%|███████▉  | 79/100 [13:14<02:13,  6.35s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  79%|███████▉  | 79/100 [13:32<02:13,  6.35s/it]Best trial: 72. Best value: 0.0800261:  79%|███████▉  | 79/100 [13:32<02:13,  6.35s/it]Best trial: 72. Best value: 0.0800261:  80%|████████  | 80/100 [13:32<03:14,  9.71s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  80%|████████  | 80/100 [13:34<03:14,  9.71s/it]Best trial: 72. Best value: 0.0800261:  80%|████████  | 80/100 [13:34<03:14,  9.71s/it]Best trial: 72. Best value: 0.0800261:  81%|████████  | 81/100 [13:34<02:24,  7.62s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  81%|████████  | 81/100 [13:54<02:24,  7.62s/it]Best trial: 72. Best value: 0.0800261:  81%|████████  | 81/100 [13:54<02:24,  7.62s/it]Best trial: 72. Best value: 0.0800261:  82%|████████▏ | 82/100 [13:54<03:19, 11.09s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  82%|████████▏ | 82/100 [14:10<03:19, 11.09s/it]Best trial: 72. Best value: 0.0800261:  82%|████████▏ | 82/100 [14:10<03:19, 11.09s/it]Best trial: 72. Best value: 0.0800261:  83%|████████▎ | 83/100 [14:10<03:37, 12.76s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  83%|████████▎ | 83/100 [14:14<03:37, 12.76s/it]Best trial: 72. Best value: 0.0800261:  83%|████████▎ | 83/100 [14:14<03:37, 12.76s/it]Best trial: 72. Best value: 0.0800261:  84%|████████▍ | 84/100 [14:14<02:38,  9.89s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  84%|████████▍ | 84/100 [14:29<02:38,  9.89s/it]Best trial: 72. Best value: 0.0800261:  84%|████████▍ | 84/100 [14:29<02:38,  9.89s/it]Best trial: 72. Best value: 0.0800261:  85%|████████▌ | 85/100 [14:29<02:55, 11.68s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  85%|████████▌ | 85/100 [14:32<02:55, 11.68s/it]Best trial: 72. Best value: 0.0800261:  85%|████████▌ | 85/100 [14:32<02:55, 11.68s/it]Best trial: 72. Best value: 0.0800261:  86%|████████▌ | 86/100 [14:32<02:04,  8.89s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  86%|████████▌ | 86/100 [14:40<02:04,  8.89s/it]Best trial: 72. Best value: 0.0800261:  86%|████████▌ | 86/100 [14:40<02:04,  8.89s/it]Best trial: 72. Best value: 0.0800261:  87%|████████▋ | 87/100 [14:40<01:55,  8.85s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  87%|████████▋ | 87/100 [14:48<01:55,  8.85s/it]Best trial: 72. Best value: 0.0800261:  87%|████████▋ | 87/100 [14:48<01:55,  8.85s/it]Best trial: 72. Best value: 0.0800261:  88%|████████▊ | 88/100 [14:48<01:40,  8.36s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  88%|████████▊ | 88/100 [14:49<01:40,  8.36s/it]Best trial: 72. Best value: 0.0800261:  88%|████████▊ | 88/100 [14:49<01:40,  8.36s/it]Best trial: 72. Best value: 0.0800261:  89%|████████▉ | 89/100 [14:49<01:09,  6.33s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  89%|████████▉ | 89/100 [14:50<01:09,  6.33s/it]Best trial: 72. Best value: 0.0800261:  89%|████████▉ | 89/100 [14:50<01:09,  6.33s/it]Best trial: 72. Best value: 0.0800261:  90%|█████████ | 90/100 [14:50<00:47,  4.71s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  90%|█████████ | 90/100 [15:19<00:47,  4.71s/it]Best trial: 72. Best value: 0.0800261:  90%|█████████ | 90/100 [15:19<00:47,  4.71s/it]Best trial: 72. Best value: 0.0800261:  91%|█████████ | 91/100 [15:19<01:46, 11.89s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  91%|█████████ | 91/100 [15:22<01:46, 11.89s/it]Best trial: 72. Best value: 0.0800261:  91%|█████████ | 91/100 [15:22<01:46, 11.89s/it]Best trial: 72. Best value: 0.0800261:  92%|█████████▏| 92/100 [15:22<01:13,  9.16s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  92%|█████████▏| 92/100 [15:36<01:13,  9.16s/it]Best trial: 72. Best value: 0.0800261:  92%|█████████▏| 92/100 [15:36<01:13,  9.16s/it]Best trial: 72. Best value: 0.0800261:  93%|█████████▎| 93/100 [15:36<01:15, 10.85s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  93%|█████████▎| 93/100 [15:53<01:15, 10.85s/it]Best trial: 72. Best value: 0.0800261:  93%|█████████▎| 93/100 [15:53<01:15, 10.85s/it]Best trial: 72. Best value: 0.0800261:  94%|█████████▍| 94/100 [15:53<01:15, 12.58s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  94%|█████████▍| 94/100 [16:08<01:15, 12.58s/it]Best trial: 72. Best value: 0.0800261:  94%|█████████▍| 94/100 [16:08<01:15, 12.58s/it]Best trial: 72. Best value: 0.0800261:  95%|█████████▌| 95/100 [16:08<01:06, 13.39s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  95%|█████████▌| 95/100 [16:12<01:06, 13.39s/it]Best trial: 72. Best value: 0.0800261:  95%|█████████▌| 95/100 [16:12<01:06, 13.39s/it]Best trial: 72. Best value: 0.0800261:  96%|█████████▌| 96/100 [16:12<00:41, 10.38s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  96%|█████████▌| 96/100 [16:14<00:41, 10.38s/it]Best trial: 72. Best value: 0.0800261:  96%|█████████▌| 96/100 [16:14<00:41, 10.38s/it]Best trial: 72. Best value: 0.0800261:  97%|█████████▋| 97/100 [16:14<00:24,  8.07s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  97%|█████████▋| 97/100 [16:17<00:24,  8.07s/it]Best trial: 72. Best value: 0.0800261:  97%|█████████▋| 97/100 [16:17<00:24,  8.07s/it]Best trial: 72. Best value: 0.0800261:  98%|█████████▊| 98/100 [16:17<00:13,  6.50s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  98%|█████████▊| 98/100 [16:22<00:13,  6.50s/it]Best trial: 72. Best value: 0.0800261:  98%|█████████▊| 98/100 [16:22<00:13,  6.50s/it]Best trial: 72. Best value: 0.0800261:  99%|█████████▉| 99/100 [16:22<00:05,  5.92s/it]/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (32,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128,) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (64, 32) which is of type tuple.
+  optuna_warn(message)
+/dcs/23/u5514578/cs310/y3p/venv/lib64/python3.9/site-packages/optuna/distributions.py:502: UserWarning: Choices for a categorical distribution should be a tuple of None, bool, int, float and str for persistent storage but contains (128, 64) which is of type tuple.
+  optuna_warn(message)
+                                                                                       Best trial: 72. Best value: 0.0800261:  99%|█████████▉| 99/100 [16:23<00:05,  5.92s/it]Best trial: 72. Best value: 0.0800261:  99%|█████████▉| 99/100 [16:23<00:05,  5.92s/it]Best trial: 72. Best value: 0.0800261: 100%|██████████| 100/100 [16:23<00:00,  4.53s/it]Best trial: 72. Best value: 0.0800261: 100%|██████████| 100/100 [16:23<00:00,  9.84s/it]

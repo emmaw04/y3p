@@ -1,0 +1,18 @@
+{
+  "study": "multiclass_meta_lr",
+  "best_logloss": 0.9634371726805199,
+  "best_metrics": {
+    "accuracy": 0.5989844339392514,
+    "precision": 0.45864056784753815,
+    "recall": 0.4660348893274563,
+    "f1": 0.445997945329608,
+    "roc_auc": 0.8486290688414286,
+    "pr_auc": 0.5375445882902748,
+    "logloss": 0.9634371726805199
+  },
+  "best_params": {
+    "C": 0.08933948320060756,
+    "class_weight": null
+  },
+  "n_trials": 50
+}

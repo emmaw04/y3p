@@ -1,0 +1,7 @@
+Job: test-binary-meta_lr
+Repo: /dcs/23/u5514578/cs310/y3p
+PWD: /dcs/23/u5514578/cs310/y3p
+Python: /dcs/23/u5514578/cs310/y3p/venv/bin/python
+src import OK
+Task=binary Model=meta_lr DataFile=data/processed/dataset1.csv NTrials=2
+Running on tiger-05
