@@ -107,7 +107,12 @@ def _compile_multiclass_seq_model(
     return model
 
 
-def _make_binary_seq_classifier(cfg: ModelConfig, build_fn: Callable) -> BaseEstimator:
+def _make_binary_seq_classifier(
+    cfg: ModelConfig,
+    build_fn: Callable,
+    *,
+    batch_size: int = 512,
+) -> BaseEstimator:
     """shared wrapper for the stage 1 sequence models"""
 
     def model_fn(meta):
@@ -119,10 +124,10 @@ def _make_binary_seq_classifier(cfg: ModelConfig, build_fn: Callable) -> BaseEst
         cfg,
         model_fn,
         epochs=80,
-        batch_size=512,
+        batch_size=batch_size,
         monitor="val_pr_auc",
         mode="max",
-        patience=6,
+        patience=10,
     )
 
 
@@ -131,6 +136,7 @@ def _make_multiclass_seq_classifier(
     build_fn: Callable,
     *,
     n_classes: int,
+    batch_size: int = 512,
 ) -> BaseEstimator:
     """shared wrapper for the stage 2 sequence models"""
 
@@ -143,10 +149,10 @@ def _make_multiclass_seq_classifier(
         cfg,
         model_fn,
         epochs=80,
-        batch_size=512,
+        batch_size=batch_size,
         monitor="val_acc",
         mode="max",
-        patience=6,
+        patience=10,
     )
 
 
@@ -179,13 +185,13 @@ def make_stage1_rf(cfg: ModelConfig) -> BaseEstimator:
     """
 
     return RandomForestClassifier(
-        n_estimators=1832,
-        max_depth=18,
-        min_samples_leaf=18,
-        min_samples_split=13,
-        max_features=0.5447035601509961,
+        n_estimators=841,
+        max_depth=14,
+        min_samples_leaf=5,
+        min_samples_split=8,
+        max_features=0.3,
         bootstrap=True,
-        class_weight="balanced" if cfg.use_class_weight else None,
+        class_weight=None,
         n_jobs=cfg.n_jobs,
         random_state=cfg.random_state,
     )
@@ -198,15 +204,16 @@ def make_stage1_xgb(cfg: ModelConfig) -> BaseEstimator:
     """
 
     return XGBClassifier(
-        n_estimators=345,
-        max_depth=8,
-        learning_rate=0.12106896936002161,
-        subsample=0.6849356442713105,
-        colsample_bytree=0.5090949803242604,
+        n_estimators=469,
+        max_depth=6,
+        learning_rate=0.10934656142438419,
+        subsample=0.8406507528138978,
+        colsample_bytree=0.7318670875985085,
         min_child_weight=2,
-        reg_lambda=0.026892128247368887,
-        reg_alpha=2.6237821581611893,
-        gamma=2.1597250932105787,
+        reg_lambda=0.2707713602235789,
+        reg_alpha=0.00888399485712417,
+        gamma=0.8808306415506197,
+        max_bin=256,
         scale_pos_weight=26.646294743608884,
         objective="binary:logistic",
         eval_metric="logloss",
@@ -222,12 +229,48 @@ def make_stage1_svm(cfg: ModelConfig) -> BaseEstimator:
     """
 
     return SVC(
-        C=2.0,
+        C=0.1506884593067545,
         kernel="rbf",
-        gamma="scale",
+        gamma=0.04233624238517596,
         probability=True,
-        class_weight="balanced" if cfg.use_class_weight else None,
+        class_weight="balanced",
         random_state=cfg.random_state,
+    )
+
+
+def make_stage1_ann(cfg: ModelConfig) -> BaseEstimator:
+    """returns the tuned stage 1 artificial neural network"""
+
+    def build_ann(input_dim: int) -> "keras.Model":
+        model = keras.Sequential([
+            layers.Input(shape=(input_dim,)),
+            layers.Dense(32, activation="relu", kernel_regularizer=keras.regularizers.l2(0.0003129707937151823)),
+            layers.Dropout(0.3482830988348138),
+            layers.Dense(1, activation="sigmoid"),
+        ])
+
+        model.compile(
+            optimizer=keras.optimizers.Adam(learning_rate=0.0007127590653708736),
+            loss="binary_crossentropy",
+            metrics=[
+                keras.metrics.AUC(curve="PR", name="pr_auc"),
+                keras.metrics.AUC(curve="ROC", name="roc_auc"),
+            ],
+        )
+        return model
+
+    def model_fn(meta):
+        keras.utils.set_random_seed(cfg.random_state)
+        return build_ann(meta["n_features_in_"])
+
+    return _make_keras_classifier(
+        cfg,
+        model_fn,
+        epochs=80,
+        batch_size=64,
+        monitor="val_pr_auc",
+        mode="max",
+        patience=10,
     )
 
 
@@ -238,6 +281,7 @@ def get_stage1_tabular_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
         "rf": make_stage1_rf(cfg),
         "xgb": make_stage1_xgb(cfg),
         "svm": make_stage1_svm(cfg),
+        "ann": make_stage1_ann(cfg),
     }
 
 # stage 1 sequential
@@ -246,12 +290,12 @@ def _build_tcn_binary(
     seq_len: int,
     n_features: int,
     filters: int = 64,
-    kernel_size: int = 3,
-    dropout: float = 0.10879485872574356,
-    pooling: str = "gap",
-    learning_rate: float = 0.00011662890273931399,
+    kernel_size: int = 4,
+    dropout: float = 0.15117968234330592,
+    pooling: str = "last",
+    learning_rate: float = 0.0009484229044417891,
     focal_gamma: float = 1.0,
-    focal_alpha: float = 0.5,
+    focal_alpha: float = 0.75,
 ) -> "keras.Model":
     """builds the binary tcn
 
@@ -297,11 +341,11 @@ def _build_tcn_gru_binary(
     seq_len: int,
     n_features: int,
     filters: int = 64,
-    kernel_size: int = 3,
-    dropout: float = 0.15,
-    rnn_units: int = 32,
-    rnn_dropout: float = 0.2,
-    learning_rate: float = 1e-3,
+    kernel_size: int = 2,
+    dropout: float = 0.0444341795866854,
+    rnn_units: int = 16,
+    rnn_dropout: float = 0.2741761381775658,
+    learning_rate: float = 0.0014409354395782717,
 ) -> "keras.Model":
     """builds the binary tcn gru model
 
@@ -342,8 +386,8 @@ def _build_lstm_binary(
     seq_len: int,
     n_features: int,
     rnn_units: int = 64,
-    rnn_dropout: float = 0.2,
-    learning_rate: float = 1e-3,
+    rnn_dropout: float = 0.03852451305608232,
+    learning_rate: float = 0.0007454170873871039,
 ) -> "keras.Model":
     """builds the binary lstm
 
@@ -380,8 +424,8 @@ def _build_gru_binary(
     seq_len: int,
     n_features: int,
     rnn_units: int = 64,
-    rnn_dropout: float = 0.2,
-    learning_rate: float = 1e-3,
+    rnn_dropout: float = 0.010142639375770673,
+    learning_rate: float = 0.0009731654271003453,
 ) -> "keras.Model":
     """builds the binary gru
 
@@ -420,25 +464,25 @@ def make_tcn_binary(cfg: ModelConfig, *, seq_len: int = 12) -> BaseEstimator:
     the seq_len argument is kept for compatibility even though the fitted shape is read at runtime
     """
 
-    return _make_binary_seq_classifier(cfg, _build_tcn_binary)
+    return _make_binary_seq_classifier(cfg, _build_tcn_binary, batch_size=128)
 
 
 def make_tcn_gru_binary(cfg: ModelConfig) -> BaseEstimator:
     """returns the stage 1 tcn gru classifier"""
 
-    return _make_binary_seq_classifier(cfg, _build_tcn_gru_binary)
+    return _make_binary_seq_classifier(cfg, _build_tcn_gru_binary, batch_size=128)
 
 
 def make_lstm_binary(cfg: ModelConfig) -> BaseEstimator:
     """returns the stage 1 lstm classifier"""
 
-    return _make_binary_seq_classifier(cfg, _build_lstm_binary)
+    return _make_binary_seq_classifier(cfg, _build_lstm_binary, batch_size=32)
 
 
 def make_gru_binary(cfg: ModelConfig) -> BaseEstimator:
     """returns the stage 1 gru classifier"""
 
-    return _make_binary_seq_classifier(cfg, _build_gru_binary)
+    return _make_binary_seq_classifier(cfg, _build_gru_binary, batch_size=32)
 
 
 def get_stage1_sequential_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
@@ -497,17 +541,15 @@ def make_stage2_ffnn(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     """
 
     def build_ffnn(input_dim: int) -> "keras.Model":
-        reg = keras.regularizers.l2(5e-4)
-
         model = keras.Sequential([
             layers.Input(shape=(input_dim,)),
-            layers.Dense(128, activation="relu", kernel_regularizer=reg),
-            layers.Dense(64, activation="relu", kernel_regularizer=reg),
+            layers.Dense(32, activation="relu", kernel_regularizer=keras.regularizers.l2(1.161257222624932e-05)),
+            layers.Dropout(0.2696839799381978),
             layers.Dense(n_classes, activation="softmax"),
         ])
 
         model.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=1e-3),
+            optimizer=keras.optimizers.Adam(learning_rate=0.0014153610406428582),
             loss="sparse_categorical_crossentropy",
             metrics=[keras.metrics.SparseCategoricalAccuracy(name="acc")],
         )
@@ -521,10 +563,10 @@ def make_stage2_ffnn(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
         cfg,
         model_fn,
         epochs=40,
-        batch_size=256,
+        batch_size=64,
         monitor="val_loss",
         mode="min",
-        patience=5,
+        patience=10,
     )
 
 
@@ -535,13 +577,13 @@ def make_stage2_rf(cfg: ModelConfig) -> BaseEstimator:
     """
 
     return RandomForestClassifier(
-        n_estimators=482,
-        max_depth=None,
-        min_samples_leaf=2,
-        min_samples_split=41,
-        max_features=0.13109109859596693,
+        n_estimators=892,
+        max_depth=14,
+        min_samples_leaf=5,
+        min_samples_split=20,
+        max_features="sqrt",
         bootstrap=True,
-        class_weight="balanced" if cfg.use_class_weight else None,
+        class_weight=None,
         n_jobs=cfg.n_jobs,
         random_state=cfg.random_state,
     )
@@ -554,12 +596,12 @@ def make_stage2_svm(cfg: ModelConfig) -> BaseEstimator:
     """
 
     return SVC(
-        C=2.0,
+        C=27.461363284183133,
         kernel="rbf",
-        gamma="scale",
+        gamma=0.04106194081414191,
         probability=True,
         decision_function_shape="ovr",
-        class_weight="balanced" if cfg.use_class_weight else None,
+        class_weight=None,
         random_state=cfg.random_state,
     )
 
@@ -568,15 +610,16 @@ def make_stage2_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     """returns the tuned xgboost model for stage 2"""
 
     return XGBClassifier(
-        n_estimators=4404,
-        max_depth=7,
-        learning_rate=0.20634912494467203,
-        subsample=0.9897570538738893,
-        colsample_bytree=0.5151275191150386,
-        min_child_weight=2,
-        reg_lambda=0.02591056758604487,
-        reg_alpha=2.2733958364357734,
-        gamma=0.4938415319283539,
+        n_estimators=444,
+        max_depth=4,
+        learning_rate=0.03314120416924632,
+        subsample=0.9352813595213753,
+        colsample_bytree=0.6034143183279435,
+        min_child_weight=1,
+        reg_lambda=0.08174791935277638,
+        reg_alpha=0.007071279795461194,
+        gamma=0.6179551616665386,
+        max_bin=256,
         objective="multi:softprob",
         num_class=n_classes,
         eval_metric="mlogloss",
@@ -602,11 +645,11 @@ def _build_tcn_multiclass(
     seq_len: int,
     n_features: int,
     n_classes: int,
-    filters: int = 64,
+    filters: int = 32,
     kernel_size: int = 3,
-    dropout: float = 0.12,
-    pooling: str = "gap",
-    learning_rate: float = 1e-4,
+    dropout: float = 0.3189536660208673,
+    pooling: str = "last",
+    learning_rate: float = 0.0012208142144753873,
 ) -> "keras.Model":
     """builds the multiclass tcn for stage 2"""
 
@@ -641,12 +684,12 @@ def _build_tcn_gru_multiclass(
     seq_len: int,
     n_features: int,
     n_classes: int,
-    filters: int = 64,
+    filters: int = 32,
     kernel_size: int = 3,
-    dropout: float = 0.15,
-    rnn_units: int = 32,
-    rnn_dropout: float = 0.2,
-    learning_rate: float = 1e-3,
+    dropout: float = 0.1421548856945066,
+    rnn_units: int = 64,
+    rnn_dropout: float = 0.0010077077435941516,
+    learning_rate: float = 0.0006671159654368591,
 ) -> "keras.Model":
     """builds the multiclass tcn gru model for stage 2"""
 
@@ -684,9 +727,9 @@ def _build_lstm_multiclass(
     seq_len: int,
     n_features: int,
     n_classes: int,
-    rnn_units: int = 64,
-    rnn_dropout: float = 0.2,
-    learning_rate: float = 1e-3,
+    rnn_units: int = 32,
+    rnn_dropout: float = 0.25791781440280437,
+    learning_rate: float = 0.0008962278983461516,
 ) -> "keras.Model":
     """builds the multiclass lstm for stage 2"""
 
@@ -720,9 +763,9 @@ def _build_gru_multiclass(
     seq_len: int,
     n_features: int,
     n_classes: int,
-    rnn_units: int = 64,
-    rnn_dropout: float = 0.2,
-    learning_rate: float = 1e-3,
+    rnn_units: int = 32,
+    rnn_dropout: float = 0.16754040659127542,
+    learning_rate: float = 0.0008375958618273803,
 ) -> "keras.Model":
     """builds the multiclass gru for stage 2"""
 
@@ -755,25 +798,25 @@ def _build_gru_multiclass(
 def make_tcn_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     """returns the stage 2 tcn classifier"""
 
-    return _make_multiclass_seq_classifier(cfg, _build_tcn_multiclass, n_classes=n_classes)
+    return _make_multiclass_seq_classifier(cfg, _build_tcn_multiclass, n_classes=n_classes, batch_size=128)
 
 
 def make_tcn_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     """returns the stage 2 tcn gru classifier"""
 
-    return _make_multiclass_seq_classifier(cfg, _build_tcn_gru_multiclass, n_classes=n_classes)
+    return _make_multiclass_seq_classifier(cfg, _build_tcn_gru_multiclass, n_classes=n_classes, batch_size=128)
 
 
 def make_lstm_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     """returns the stage 2 lstm classifier"""
 
-    return _make_multiclass_seq_classifier(cfg, _build_lstm_multiclass, n_classes=n_classes)
+    return _make_multiclass_seq_classifier(cfg, _build_lstm_multiclass, n_classes=n_classes, batch_size=32)
 
 
 def make_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     """returns the stage 2 gru classifier"""
 
-    return _make_multiclass_seq_classifier(cfg, _build_gru_multiclass, n_classes=n_classes)
+    return _make_multiclass_seq_classifier(cfg, _build_gru_multiclass, n_classes=n_classes, batch_size=128)
 
 
 def get_stage2_sequential_models(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
@@ -793,10 +836,11 @@ def make_meta_binary_mlp(cfg: ModelConfig) -> BaseEstimator:
     """returns the binary mlp meta learner used on stacked stage 1 outputs"""
 
     return MLPClassifier(
-        hidden_layer_sizes=(64, 32),
+        hidden_layer_sizes=(128, 64),
         activation="relu",
-        alpha=1e-4,
-        learning_rate_init=1e-3,
+        alpha=0.0014750765684701768,
+        learning_rate_init=0.013743140045520868,
+        batch_size=128,
         max_iter=200,
         early_stopping=True,
         random_state=cfg.random_state,
@@ -808,10 +852,10 @@ def make_meta_binary_lr(cfg: ModelConfig) -> BaseEstimator:
 
     return LogisticRegression(
         penalty="l2",
-        C=1.0,
+        C=0.16876312778393562,
         solver="lbfgs",
         max_iter=4000,
-        class_weight="balanced" if cfg.use_class_weight else None,
+        class_weight=None,
         random_state=cfg.random_state,
     )
 
@@ -820,12 +864,15 @@ def make_meta_binary_xgb(cfg: ModelConfig) -> BaseEstimator:
     """returns the binary xgboost meta learner"""
 
     return XGBClassifier(
-        n_estimators=600,
+        n_estimators=650,
         max_depth=3,
-        learning_rate=0.05,
-        subsample=0.9,
-        colsample_bytree=0.9,
-        reg_lambda=1.0,
+        learning_rate=0.0351660559697577,
+        subsample=0.7033869080464379,
+        colsample_bytree=0.962851669188502,
+        reg_alpha=1.1258660482262575e-06,
+        reg_lambda=13.994968791682169,
+        min_child_weight=8,
+        gamma=3.2257301877317572,
         objective="binary:logistic",
         eval_metric="logloss",
         n_jobs=cfg.n_jobs,
@@ -838,10 +885,11 @@ def make_meta_multiclass_mlp(cfg: ModelConfig) -> BaseEstimator:
     """returns the multiclass mlp meta learner used on stacked stage 2 outputs"""
 
     return MLPClassifier(
-        hidden_layer_sizes=(128, 64),
+        hidden_layer_sizes=(32,),
         activation="relu",
-        alpha=1e-4,
-        learning_rate_init=1e-3,
+        alpha=0.0005053944133370265,
+        learning_rate_init=0.00033361078666799233,
+        batch_size=32,
         max_iter=250,
         early_stopping=True,
         random_state=cfg.random_state,
@@ -853,11 +901,11 @@ def make_meta_multiclass_lr(cfg: ModelConfig) -> BaseEstimator:
 
     return LogisticRegression(
         penalty="l2",
-        C=1.0,
+        C=0.08933948320060756,
         solver="lbfgs",
         max_iter=6000,
         multi_class="multinomial",
-        class_weight="balanced" if cfg.use_class_weight else None,
+        class_weight=None,
         random_state=cfg.random_state,
     )
 
@@ -866,12 +914,15 @@ def make_meta_multiclass_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimat
     """returns the multiclass xgboost meta learner"""
 
     return XGBClassifier(
-        n_estimators=800,
+        n_estimators=338,
         max_depth=3,
-        learning_rate=0.05,
-        subsample=0.9,
-        colsample_bytree=0.9,
-        reg_lambda=1.0,
+        learning_rate=0.05720671296025396,
+        subsample=0.962183523136069,
+        colsample_bytree=0.7031882165929242,
+        reg_alpha=1.2022222899804231,
+        reg_lambda=0.015654414442086057,
+        min_child_weight=1,
+        gamma=4.655392345755547,
         objective="multi:softprob",
         num_class=n_classes,
         eval_metric="mlogloss",
