@@ -170,7 +170,6 @@ def _tcn_residual_block(x, *, filters: int, kernel_size: int, dilation: int, dro
 
     return layers.Add()([shortcut, x])
 
-
 # stage 1 tabular
 
 def make_stage1_rf(cfg: ModelConfig) -> BaseEstimator:
@@ -240,7 +239,6 @@ def get_stage1_tabular_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
         "xgb": make_stage1_xgb(cfg),
         "svm": make_stage1_svm(cfg),
     }
-
 
 # stage 1 sequential
 

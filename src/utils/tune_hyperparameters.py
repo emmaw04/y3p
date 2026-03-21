@@ -57,7 +57,29 @@ from src.models.models import (
     _build_tcn_multiclass,
     _build_vse_hybrid_binary,
 )
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
 
+from src.models.models import (
+    ModelConfig,
+    make_stage1_svm,
+    make_stage1_xgb,
+    make_tcn_binary,
+    make_tcn_gru_binary,
+    make_stage2_svm,
+    make_stage2_rf,
+    make_stage2_xgb,
+    make_stage2_ffnn,
+    _build_gru_binary,
+    _build_gru_multiclass,
+    _build_lstm_binary,
+    _build_lstm_multiclass,
+    _build_tcn_binary,
+    _build_tcn_gru_binary,
+    _build_tcn_gru_multiclass,
+    _build_tcn_multiclass,
+    _build_vse_hybrid_binary,
+)
 
 def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> dict[str, float]:
     """unified metric computation for both binary and multiclass tasks"""
@@ -372,6 +394,248 @@ def build_cached_seq_folds(df: pd.DataFrame, x: pd.DataFrame, y: pd.Series, fold
         
     return cached
 
+def _as_dense(x):
+    return x.toarray() if hasattr(x, "toarray") else np.asarray(x)
+
+
+def _binary_pos_col(proba: np.ndarray) -> np.ndarray:
+    proba = np.asarray(proba)
+    if proba.ndim == 1:
+        return proba.reshape(-1, 1)
+    if proba.ndim == 2 and proba.shape[1] == 2:
+        return proba[:, [1]]
+    if proba.ndim == 2 and proba.shape[1] == 1:
+        return proba
+    raise ValueError(f"unexpected binary proba shape: {proba.shape}")
+
+
+def _expand_multiclass_proba(proba: np.ndarray, classes_: np.ndarray, n_classes: int) -> np.ndarray:
+    proba = np.asarray(proba)
+    full = np.zeros((proba.shape[0], n_classes), dtype=float)
+    for j, cls in enumerate(classes_):
+        full[:, int(cls)] = proba[:, j]
+    return full
+
+
+def suggest_meta_lr_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
+    params = {
+        "C": trial.suggest_float("C", 1e-3, 50.0, log=True),
+        "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
+        "solver": "lbfgs",
+        "max_iter": 6000 if not is_binary else 4000,
+    }
+    if not is_binary:
+        params["multi_class"] = "multinomial"
+    return params
+
+
+def suggest_meta_mlp_params(trial: optuna.Trial) -> dict[str, Any]:
+    return {
+        "hidden_layer_sizes": trial.suggest_categorical(
+            "hidden_layer_sizes",
+            [(32,), (64,), (128,), (64, 32), (128, 64)]
+        ),
+        "alpha": trial.suggest_float("alpha", 1e-6, 1e-2, log=True),
+        "learning_rate_init": trial.suggest_float("learning_rate_init", 1e-4, 3e-2, log=True),
+        "batch_size": trial.suggest_categorical("batch_size", [32, 64, 128, 256]),
+    }
+
+
+def suggest_meta_xgb_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
+    params = {
+        "tree_method": "hist",
+        "n_estimators": trial.suggest_int("n_estimators", 100, 800),
+        "max_depth": trial.suggest_int("max_depth", 2, 5),
+        "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.2, log=True),
+        "subsample": trial.suggest_float("subsample", 0.7, 1.0),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.7, 1.0),
+        "reg_alpha": trial.suggest_float("reg_alpha", 1e-6, 10.0, log=True),
+        "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 20.0, log=True),
+        "min_child_weight": trial.suggest_int("min_child_weight", 1, 8),
+        "gamma": trial.suggest_float("gamma", 0.0, 5.0),
+    }
+    if is_binary:
+        params["objective"] = "binary:logistic"
+        params["eval_metric"] = "logloss"
+    else:
+        params["objective"] = "multi:softprob"
+        params["eval_metric"] = "mlogloss"
+    return params
+
+
+def build_meta_folds(
+    df: pd.DataFrame,
+    x: pd.DataFrame,
+    y: pd.Series,
+    folds: list,
+    *,
+    is_binary: bool,
+    n_classes: int,
+    seed: int,
+) -> list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+    """
+    Build OOF stacked features for the meta learner.
+
+    Binary stage 1 bases: tcn, tcn_gru, svm, xgb
+    Multiclass stage 2 bases: svm, rf, xgb, ann
+    """
+    cfg = ModelConfig(random_state=seed, n_jobs=-1, use_class_weight=True)
+    fold_val_sets: list[tuple[np.ndarray, np.ndarray]] = []
+
+    if is_binary:
+        svm_cached = build_cached_folds(x, y, folds, "svm")
+        xgb_cached = build_cached_folds(x, y, folds, "xgb")
+        seq_cached = build_cached_seq_folds(df, x, y, folds, seq_len=8)
+
+        for fold_idx in range(len(folds)):
+            cols = []
+
+            # svm
+            xt_tr, y_tr, xt_va, y_va, _, _ = svm_cached[fold_idx]
+            model = make_stage1_svm(cfg)
+            model.fit(xt_tr, y_tr)
+            cols.append(_binary_pos_col(model.predict_proba(xt_va)))
+
+            # xgb
+            xt_tr, y_tr, xt_va, y_va2, _, _ = xgb_cached[fold_idx]
+            if not np.array_equal(y_va, y_va2):
+                raise ValueError("binary meta fold misalignment between svm and xgb cached folds")
+            model = make_stage1_xgb(cfg)
+            model.fit(xt_tr, y_tr)
+            cols.append(_binary_pos_col(model.predict_proba(xt_va)))
+
+            # tcn + tcn_gru
+            x_tr_seq, y_tr_seq, x_va_seq, y_va_seq, _, _ = seq_cached[fold_idx]
+            if len(y_va_seq) != len(y_va):
+                raise ValueError("binary meta fold misalignment between tabular and sequence folds")
+
+            model = make_tcn_binary(cfg)
+            model.fit(x_tr_seq, y_tr_seq)
+            cols.append(_binary_pos_col(model.predict_proba(x_va_seq)))
+            tf.keras.backend.clear_session()
+
+            model = make_tcn_gru_binary(cfg)
+            model.fit(x_tr_seq, y_tr_seq)
+            cols.append(_binary_pos_col(model.predict_proba(x_va_seq)))
+            tf.keras.backend.clear_session()
+
+            z_va = np.hstack(cols)
+            fold_val_sets.append((z_va, y_va))
+
+    else:
+        svm_cached = build_cached_folds(x, y, folds, "svm")
+        rf_cached = build_cached_folds(x, y, folds, "rf")
+        xgb_cached = build_cached_folds(x, y, folds, "xgb")
+        ann_cached = build_cached_folds(x, y, folds, "ann")
+
+        for fold_idx in range(len(folds)):
+            cols = []
+
+            # svm
+            xt_tr, y_tr, xt_va, y_va, _, _ = svm_cached[fold_idx]
+            model = make_stage2_svm(cfg)
+            model.fit(xt_tr, y_tr)
+            cols.append(_expand_multiclass_proba(model.predict_proba(xt_va), model.classes_, n_classes))
+
+            # rf
+            xt_tr, y_tr, xt_va, y_va2, _, _ = rf_cached[fold_idx]
+            if not np.array_equal(y_va, y_va2):
+                raise ValueError("multiclass meta fold misalignment between svm and rf cached folds")
+            model = make_stage2_rf(cfg)
+            model.fit(xt_tr, y_tr)
+            cols.append(_expand_multiclass_proba(model.predict_proba(xt_va), model.classes_, n_classes))
+
+            # xgb
+            xt_tr, y_tr, xt_va, y_va3, _, _ = xgb_cached[fold_idx]
+            if not np.array_equal(y_va, y_va3):
+                raise ValueError("multiclass meta fold misalignment between rf and xgb cached folds")
+            model = make_stage2_xgb(cfg, n_classes=n_classes)
+            model.fit(xt_tr, y_tr)
+            cols.append(_expand_multiclass_proba(model.predict_proba(xt_va), model.classes_, n_classes))
+
+            # ann
+            xt_tr, y_tr, xt_va, y_va4, _, _ = ann_cached[fold_idx]
+            if not np.array_equal(y_va, y_va4):
+                raise ValueError("multiclass meta fold misalignment between xgb and ann cached folds")
+            xt_tr = _as_dense(xt_tr)
+            xt_va = _as_dense(xt_va)
+            model = make_stage2_ffnn(cfg, n_classes=n_classes)
+            model.fit(xt_tr, y_tr)
+            cols.append(_expand_multiclass_proba(model.predict_proba(xt_va), model.classes_, n_classes))
+            tf.keras.backend.clear_session()
+
+            z_va = np.hstack(cols)
+            fold_val_sets.append((z_va, y_va))
+
+    meta_folds = []
+    for i in range(len(fold_val_sets)):
+        x_va, y_va = fold_val_sets[i]
+        x_tr = np.vstack([fold_val_sets[j][0] for j in range(len(fold_val_sets)) if j != i])
+        y_tr = np.concatenate([fold_val_sets[j][1] for j in range(len(fold_val_sets)) if j != i])
+        meta_folds.append((x_tr, y_tr, x_va, y_va))
+
+    return meta_folds
+
+
+def objective_meta(
+    trial: optuna.Trial,
+    meta_folds: list,
+    model_name: str,
+    is_binary: bool,
+    n_classes: int,
+    seed: int,
+) -> float:
+    if model_name == "meta_lr":
+        params = suggest_meta_lr_params(trial, is_binary)
+    elif model_name == "meta_mlp":
+        params = suggest_meta_mlp_params(trial)
+    elif model_name == "meta_xgb":
+        params = suggest_meta_xgb_params(trial, is_binary)
+    else:
+        raise ValueError(f"unsupported meta model: {model_name}")
+
+    losses = []
+    fold_metrics = []
+
+    for fold, (x_tr, y_tr, x_va, y_va) in enumerate(meta_folds):
+        if model_name == "meta_lr":
+            model = LogisticRegression(**params, random_state=seed)
+
+        elif model_name == "meta_mlp":
+            model = MLPClassifier(
+                hidden_layer_sizes=params["hidden_layer_sizes"],
+                alpha=params["alpha"],
+                learning_rate_init=params["learning_rate_init"],
+                batch_size=params["batch_size"],
+                activation="relu",
+                max_iter=300,
+                early_stopping=True,
+                random_state=seed,
+            )
+
+        elif model_name == "meta_xgb":
+            kwargs = dict(params)
+            if not is_binary:
+                kwargs["num_class"] = n_classes
+            model = XGBClassifier(**kwargs, n_jobs=-1, random_state=seed)
+
+        model.fit(x_tr, y_tr)
+        proba = model.predict_proba(x_va)
+
+        if not is_binary:
+            proba = _expand_multiclass_proba(proba, model.classes_, n_classes)
+
+        m = compute_metrics(y_va, proba, is_binary)
+        losses.append(m["logloss"])
+        fold_metrics.append(m)
+
+        trial.report(float(np.mean(losses)), step=fold)
+        if trial.should_prune():
+            raise optuna.TrialPruned()
+
+    mean_metrics = mean_metric_dict(fold_metrics)
+    trial.set_user_attr("cv_metrics", mean_metrics)
+    return mean_metrics["logloss"]
 
 def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_binary: bool, n_classes: int, seed: int) -> float:
     params = suggest_seq_params(trial, model_name, is_binary)
@@ -465,7 +729,7 @@ def main():
     ap.add_argument("--data_stage1", help="path to stage 1 data")
     ap.add_argument("--data_stage2", help="path to stage 2 data")
     ap.add_argument("--task", choices=["binary", "multiclass"], required=True)
-    ap.add_argument("--model", choices=["rf", "xgb", "svm", "ann", "tcn", "gru", "lstm", "tcn_gru", "hybrid_vse"], required=True)
+    ap.add_argument("--model", choices=["rf", "xgb", "svm", "ann","tcn", "gru", "lstm", "tcn_gru", "hybrid_vse","meta_lr", "meta_xgb", "meta_mlp",],required=True,)
     ap.add_argument("--n_trials", type=int, default=100)
     ap.add_argument("--outdir", default="runs/tuning")
     args = ap.parse_args()
@@ -477,7 +741,10 @@ def main():
     n_splits = 5
 
     seq_models = {"tcn", "gru", "lstm", "tcn_gru", "hybrid_vse"}
+    meta_models = {"meta_lr", "meta_xgb", "meta_mlp"}
+
     is_seq = args.model in seq_models
+    is_meta = args.model in meta_models
     is_binary = args.task == "binary"
 
     if is_binary:
@@ -518,14 +785,36 @@ def main():
     
     study = optuna.create_study(direction="minimize", sampler=sampler, pruner=pruner, study_name=study_name)
 
-    if not is_seq:
+    if is_meta:
+        meta_folds = build_meta_folds(
+            df, x, y, fb.folds,
+            is_binary=is_binary,
+            n_classes=n_classes,
+            seed=seed,
+        )
+        study.optimize(
+            lambda t: objective_meta(t, meta_folds, args.model, is_binary, n_classes, seed),
+            n_trials=args.n_trials,
+            show_progress_bar=True,
+        )
+
+    elif not is_seq:
         pre_name = args.model
         cached_folds = build_cached_folds(x, y, fb.folds, pre_name)
-        study.optimize(lambda t: objective_tabular(t, cached_folds, args.model, is_binary, n_classes, seed), n_trials=args.n_trials, show_progress_bar=True)
+        study.optimize(
+            lambda t: objective_tabular(t, cached_folds, args.model, is_binary, n_classes, seed),
+            n_trials=args.n_trials,
+            show_progress_bar=True,
+        )
+
     else:
         seq_len = 8 if is_binary else 12
         cached_folds = build_cached_seq_folds(df, x, y, fb.folds, seq_len)
-        study.optimize(lambda t: objective_seq(t, cached_folds, args.model, is_binary, n_classes, seed), n_trials=args.n_trials, show_progress_bar=True)
+        study.optimize(
+            lambda t: objective_seq(t, cached_folds, args.model, is_binary, n_classes, seed),
+            n_trials=args.n_trials,
+            show_progress_bar=True,
+        )
 
     best_obj = {
         "study": study_name,
@@ -546,6 +835,7 @@ if __name__ == "__main__":
 """
 commands to run:
 
+binary base learners
 python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model ann --n_trials 100
 python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model rf --n_trials 100
 python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model xgb --n_trials 100
@@ -555,6 +845,7 @@ python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.c
 python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model gru --n_trials 100
 python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model lstm --n_trials 100
 
+multiclass base learners
 python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model ann --n_trials 50
 python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model rf --n_trials 50
 python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model xgb --n_trials 50
@@ -563,4 +854,38 @@ python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.c
 python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model tcn_gru --n_trials 50
 python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model gru --n_trials 50
 python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model lstm --n_trials 50
+
+binary meta learners
+python -m src.utils.tune_hyperparameters \
+  --data_stage1 data/processed/dataset1.csv \
+  --task binary \
+  --model meta_lr \
+  --n_trials 100
+python -m src.utils.tune_hyperparameters \
+  --data_stage1 data/processed/dataset1.csv \
+  --task binary \
+  --model meta_xgb \
+  --n_trials 100
+python -m src.utils.tune_hyperparameters \
+  --data_stage1 data/processed/dataset1.csv \
+  --task binary \
+  --model meta_mlp \
+  --n_trials 100
+
+multiclass meta learners
+python -m src.utils.tune_hyperparameters \
+  --data_stage2 data/processed/dataset2.csv \
+  --task multiclass \
+  --model meta_lr \
+  --n_trials 50
+python -m src.utils.tune_hyperparameters \
+  --data_stage2 data/processed/dataset2.csv \
+  --task multiclass \
+  --model meta_xgb \
+  --n_trials 50
+python -m src.utils.tune_hyperparameters \
+  --data_stage2 data/processed/dataset2.csv \
+  --task multiclass \
+  --model meta_mlp \
+  --n_trials 50
 """
