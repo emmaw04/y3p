@@ -1,0 +1,17 @@
+Job: stage1-ablation
+Repo: /dcs/23/u5514578/cs310/y3p
+PWD: /dcs/23/u5514578/cs310/y3p
+Host: tiger-07
+Python: /dcs/23/u5514578/cs310/y3p/venv/bin/python
+Python 3.9.25
+src import OK
+Checking dataset exists...
+-rw------- 1 u5514578 dcsugrad 17M Mar 19 16:44 data/processed/dataset1.csv
+Running stage 1 ablation...
+[ablation_eval] stage=1 data=data/processed/dataset1.csv
+[META] generating base-level OOF probabilities for ALL base models...
+[META][PART A][tabular oof] stage=1 n=96916 base=['rf', 'xgb', 'svm', 'ann']
+[META][PART A][tabular oof][fold 0] train=77689 test=19227
+  -> fit base='rf'
+  -> fit base='xgb'
+  -> fit base='svm'

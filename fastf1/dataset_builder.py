@@ -859,7 +859,7 @@ def make_dataset_2(df_full: pd.DataFrame) -> pd.DataFrame:
     df_pit = df_full[df_full.get("y_pit", 0).astype(int) == 1].copy()
 
     keep_cols = [
-        "race_id", "race_progress",
+        "race_id", "driver_id", "lapno", "race_progress",
         "pit_stops_so_far", 
         "current_compound", "race_track",
         "fulfilled_second_compound",
