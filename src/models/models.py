@@ -608,7 +608,7 @@ def make_stage2_svm(cfg: ModelConfig) -> BaseEstimator:
 
 def make_stage2_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     """returns the tuned xgboost model for stage 2"""
-
+ 
     return XGBClassifier(
         n_estimators=444,
         max_depth=4,
