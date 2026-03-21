@@ -1,0 +1,16 @@
+{
+  "ablations": [
+    "baseline_full",
+    "drop_ann",
+    "drop_rf",
+    "drop_svm",
+    "drop_xgb",
+    "drop_tcn",
+    "drop_tcn_gru",
+    "drop_lstm",
+    "drop_gru",
+    "drop_all_tabular_bases",
+    "drop_all_sequential_bases",
+    "drop_all_race_context_KEEP_ONLY_PREDS"
+  ]
+}
