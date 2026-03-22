@@ -31,35 +31,39 @@ from src.data.preprocessing import build_preprocessor, PreprocessConfig, make_pr
 from src.models.models import (
     ModelConfig,
     build_model_pipeline,
-    get_binary_base_learners,
-    get_meta_binary_learners,
-    get_meta_multiclass_learners,
-    get_multiclass_base_learners,
-    get_stage1_sequential_models,
-    get_stage2_sequential_models,
+    make_stage1_xgb,
+    make_stage1_svm,
+    make_lstm_binary,
+    make_tcn_gru_binary,
+    make_meta_binary_xgb,
+    make_stage2_rf,
+    make_stage2_xgb,
+    make_stage2_svm,
+    make_tcn_gru_multiclass,
+    make_meta_multiclass_xgb
 )
 
 
-def collect_tabular_oof_preds(x, y, folds, model_names, get_models_fn, is_binary: bool, cfg: ModelConfig, **kwargs) -> np.ndarray:
+def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.ndarray:
     """
     trains base tabular models on the folds and grabs their out of fold predictions
     to be used as features by the meta model.
     """
     n = len(y)
-    models_dict = get_models_fn(cfg, **kwargs)
+    names = list(models_dict.keys())
     
     if is_binary:
-        meta_x = np.zeros((n, len(model_names)), dtype=float)
+        meta_x = np.zeros((n, len(names)), dtype=float)
     else:
         n_classes = len(COMPOUND_CLASSES)
-        meta_x = np.zeros((n, len(model_names) * n_classes), dtype=float)
+        meta_x = np.zeros((n, len(names) * n_classes), dtype=float)
 
     for fold, (tr_idx, va_idx) in enumerate(folds):
         print(f"collecting tabular oof preds for fold {fold}")
         x_tr, y_tr = x.iloc[tr_idx], y.iloc[tr_idx]
         x_va = x.iloc[va_idx]
 
-        for j, name in enumerate(model_names):
+        for j, name in enumerate(names):
             est = clone(models_dict[name])
             num_cols, cat_cols = infer_feature_types(x)
             pre = make_preprocessor_for_model(name, num_cols=num_cols, cat_cols=cat_cols)
@@ -82,7 +86,7 @@ def collect_tabular_oof_preds(x, y, folds, model_names, get_models_fn, is_binary
     return meta_x
 
 
-def get_seq_oof_preds(df: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray]], cfg: ModelConfig, model_name: str, task: str) -> np.ndarray:
+def get_seq_oof_preds(df: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray]], model_name: str, model_instance, task: str) -> np.ndarray:
     """
     grabs out of fold predictions for sequential models.
     handles both binary and multiclass tasks.
@@ -118,7 +122,7 @@ def get_seq_oof_preds(df: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray
             xt_all = xt_all.toarray()
         xt_all = xt_all.astype(np.float32)
 
-        x_seq, y_seq, idx_last, seq_idx, eff_len = build_feature_sequences(
+        x_seq, y_seq, idx_last, seq_idx, _ = build_feature_sequences(
             keys, xt_all, y_full, seq_len=seq_len, pad_left=True, add_timestep_mask=True
         )
 
@@ -136,6 +140,8 @@ def get_seq_oof_preds(df: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray
         if len(y_seq_tr) == 0 or len(x_seq_va) == 0:
             continue
 
+        model = clone(model_instance)
+
         if task == "binary":
             n_pos = int(np.sum(y_seq_tr == 1))
             n_neg = int(np.sum(y_seq_tr == 0))
@@ -148,9 +154,7 @@ def get_seq_oof_preds(df: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray
             pos_w = min(20.0, float(n_neg / n_pos))
             class_w = {0: 1.0, 1: pos_w}
 
-            model = get_stage1_sequential_models(cfg)[model_name]
             model.fit(x_seq_tr, y_seq_tr, class_weight=class_w)
-
             proba = model.predict_proba(x_seq_va)[:, 1]
             oof_pred[idx_last_va] = proba
         else:
@@ -160,9 +164,7 @@ def get_seq_oof_preds(df: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray
             for c in range(n_classes):
                 class_w.setdefault(c, 1.0)
 
-            model = get_stage2_sequential_models(cfg, n_classes=n_classes)[model_name]
             model.fit(x_seq_tr, y_seq_tr, class_weight=class_w)
-
             proba_fold = model.predict_proba(x_seq_va)
             classes_seen = model.classes_ if hasattr(model, "classes_") else np.arange(n_classes)
             
@@ -180,17 +182,26 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
     art_dir = outdir / "stage1_binary" / "artifacts"
     art_dir.mkdir(parents=True, exist_ok=True)
     
-    tab_names = ["xgb", "svm"]
-    seq_names = ["lstm", "tcn_gru"]
+    tab_models = {
+        "xgb": make_stage1_xgb(cfg),
+        "svm": make_stage1_svm(cfg)
+    }
+    seq_models = {
+        "lstm": make_lstm_binary(cfg),
+        "tcn_gru": make_tcn_gru_binary(cfg)
+    }
+    
+    tab_names = list(tab_models.keys())
+    seq_names = list(seq_models.keys())
     all_names = tab_names + seq_names
     
     print("starting stage 1 tabular base models oof collection")
-    meta_x_tabular = collect_tabular_oof_preds(x, y, folds, tab_names, get_binary_base_learners, is_binary=True, cfg=cfg)
+    meta_x_tabular = collect_tabular_oof_preds(x, y, folds, tab_models, is_binary=True)
     
     seq_oofs = []
-    for s_name in seq_names:
+    for s_name, s_model in seq_models.items():
         print(f"starting stage 1 {s_name} base model oof collection")
-        seq_oof = get_seq_oof_preds(df1, folds, cfg, s_name, "binary")
+        seq_oof = get_seq_oof_preds(df1, folds, s_name, s_model, "binary")
         seq_oofs.append(np.nan_to_num(seq_oof, nan=0.0))
         
     meta_x_all = np.column_stack([meta_x_tabular] + seq_oofs)
@@ -211,7 +222,7 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
         x_meta_va = x_meta_df.iloc[va_idx]
         y_tr = y.iloc[tr_idx].to_numpy()
 
-        meta_est = clone(get_meta_binary_learners(cfg)["xgb"])
+        meta_est = make_meta_binary_xgb(cfg)
         num_m, cat_m = infer_feature_types(x_meta_df)
         meta_pre = build_preprocessor(num_cols=num_m, cat_cols=cat_m, cfg=PreprocessConfig(scale_numeric=False, sparse_onehot=True))
 
@@ -240,7 +251,7 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
     oof_df.to_csv(art_dir / "oof_predictions.csv", index=False)
     
     print("fitting final stage 1 meta model on full dataset")
-    meta_est = get_meta_binary_learners(cfg)["xgb"]
+    meta_est = make_meta_binary_xgb(cfg)
     num_m, cat_m = infer_feature_types(x_meta_df)
     meta_pre = build_preprocessor(num_cols=num_m, cat_cols=cat_m, cfg=PreprocessConfig(scale_numeric=False, sparse_onehot=True))
     
@@ -252,11 +263,8 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
     print("retraining tabular base models on full dataset")
     num_cols, cat_cols = infer_feature_types(x)
     
-    base_tabular_dict = get_binary_base_learners(cfg)
-    for name in tab_names:
-        est = clone(base_tabular_dict[name])
+    for name, est in tab_models.items():
         pre = make_preprocessor_for_model(name, num_cols=num_cols, cat_cols=cat_cols)
-        
         pipe = build_model_pipeline(pre, est)
         pipe.fit(x, y)
         path = art_dir / f"base_{name}_pipeline.joblib"
@@ -268,8 +276,7 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
     keys = df1[["race_id", "driver_id", "lapno"]].copy()
     x_tab = df1.drop(columns=["y_pit", "y_compound", "race_id", "driver_id"], errors="ignore").copy()
     
-    seq_dict = get_stage1_sequential_models(cfg)
-    for name in seq_names:
+    for name, model in seq_models.items():
         num_t, cat_t = infer_feature_types(x_tab)
         pre = make_preprocessor_for_model(name, num_cols=num_t, cat_cols=cat_t)
         pre.fit(x_tab, y_full)
@@ -287,7 +294,6 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
         n_neg = int(np.sum(y_seq == 0))
         pos_w = min(20.0, float(n_neg / n_pos)) if n_pos > 0 else 1.0
         
-        model = seq_dict[name]
         model.fit(x_seq, y_seq, class_weight={0: 1.0, 1: float(pos_w)})
 
         dump(pre, art_dir / f"{name}_preprocessor.joblib")
@@ -320,18 +326,26 @@ def train_stage2_final(df2, x, y, folds, outdir: Path, cfg: ModelConfig):
     art_dir.mkdir(parents=True, exist_ok=True)
     n_classes = len(COMPOUND_CLASSES)
     
-    tab_names = ["rf", "xgb", "svm"]
-    seq_names = ["tcn_gru"]
+    tab_models = {
+        "rf": make_stage2_rf(cfg),
+        "xgb": make_stage2_xgb(cfg, n_classes=n_classes),
+        "svm": make_stage2_svm(cfg)
+    }
+    seq_models = {
+        "tcn_gru": make_tcn_gru_multiclass(cfg, n_classes=n_classes)
+    }
+    
+    tab_names = list(tab_models.keys())
+    seq_names = list(seq_models.keys())
     all_names = tab_names + seq_names
     
     print("starting stage 2 tabular base models oof collection")
-    meta_x_tabular = collect_tabular_oof_preds(x, y, folds, tab_names, get_multiclass_base_learners, is_binary=False, cfg=cfg, n_classes=n_classes)
+    meta_x_tabular = collect_tabular_oof_preds(x, y, folds, tab_models, is_binary=False)
     
     seq_oofs = []
-    for s_name in seq_names:
+    for s_name, s_model in seq_models.items():
         print(f"starting stage 2 {s_name} base model oof collection")
-        seq_oof = get_seq_oof_preds(df2, folds, cfg, s_name, "multiclass")
-        # For multiclass, seq_oof is shape (N, n_classes). Flatten NaNs to uniform probability or 0
+        seq_oof = get_seq_oof_preds(df2, folds, s_name, s_model, "multiclass")
         seq_oof = np.nan_to_num(seq_oof, nan=1.0/n_classes)
         seq_oofs.append(seq_oof)
         
@@ -356,7 +370,7 @@ def train_stage2_final(df2, x, y, folds, outdir: Path, cfg: ModelConfig):
         x_meta_va = x_meta_df.iloc[va_idx]
         y_tr = y.iloc[tr_idx].to_numpy()
 
-        meta_est = clone(get_meta_multiclass_learners(cfg, n_classes=n_classes)["xgb"])
+        meta_est = make_meta_multiclass_xgb(cfg, n_classes=n_classes)
         num_m, cat_m = infer_feature_types(x_meta_df)
         meta_pre = build_preprocessor(num_cols=num_m, cat_cols=cat_m, cfg=PreprocessConfig(scale_numeric=False, sparse_onehot=True))
 
@@ -395,7 +409,7 @@ def train_stage2_final(df2, x, y, folds, outdir: Path, cfg: ModelConfig):
     oof_df.to_csv(art_dir / "oof_predictions.csv", index=False)
     
     print("fitting final stage 2 meta model on full dataset")
-    meta_est = get_meta_multiclass_learners(cfg, n_classes=n_classes)["xgb"]
+    meta_est = make_meta_multiclass_xgb(cfg, n_classes=n_classes)
     num_m, cat_m = infer_feature_types(x_meta_df)
     meta_pre = build_preprocessor(num_cols=num_m, cat_cols=cat_m, cfg=PreprocessConfig(scale_numeric=False, sparse_onehot=True))
     
@@ -407,11 +421,8 @@ def train_stage2_final(df2, x, y, folds, outdir: Path, cfg: ModelConfig):
     print("retraining tabular base models on full dataset")
     num_cols, cat_cols = infer_feature_types(x)
     
-    base_tabular_dict = get_multiclass_base_learners(cfg, n_classes=n_classes)
-    for name in tab_names:
-        est = clone(base_tabular_dict[name])
+    for name, est in tab_models.items():
         pre = make_preprocessor_for_model(name, num_cols=num_cols, cat_cols=cat_cols)
-        
         pipe = build_model_pipeline(pre, est)
         pipe.fit(x, y)
         path = art_dir / f"base_{name}_pipeline.joblib"
@@ -424,8 +435,7 @@ def train_stage2_final(df2, x, y, folds, outdir: Path, cfg: ModelConfig):
     keys = df2_tmp[["race_id", "driver_id", "lapno"]].copy()
     x_tab = df2_tmp.drop(columns=["y_pit", "y_compound", "y_compound_encoded", "race_id", "driver_id"], errors="ignore").copy()
     
-    seq_dict = get_stage2_sequential_models(cfg, n_classes=n_classes)
-    for name in seq_names:
+    for name, model in seq_models.items():
         num_t, cat_t = infer_feature_types(x_tab)
         pre = make_preprocessor_for_model(name, num_cols=num_t, cat_cols=cat_t)
         pre.fit(x_tab)
@@ -449,7 +459,6 @@ def train_stage2_final(df2, x, y, folds, outdir: Path, cfg: ModelConfig):
         for c in range(n_classes):
             class_w.setdefault(c, 1.0)
             
-        model = seq_dict[name]
         model.fit(x_seq_valid, y_seq_valid, class_weight=class_w)
 
         dump(pre, art_dir / f"{name}_preprocessor.joblib")
