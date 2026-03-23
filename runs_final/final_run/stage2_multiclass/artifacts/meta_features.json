@@ -1,0 +1,24 @@
+{
+  "columns": [
+    "p_rf_c0",
+    "p_rf_c1",
+    "p_rf_c2",
+    "p_rf_c3",
+    "p_rf_c4",
+    "p_xgb_c0",
+    "p_xgb_c1",
+    "p_xgb_c2",
+    "p_xgb_c3",
+    "p_xgb_c4",
+    "p_svm_c0",
+    "p_svm_c1",
+    "p_svm_c2",
+    "p_svm_c3",
+    "p_svm_c4",
+    "p_tcn_gru_c0",
+    "p_tcn_gru_c1",
+    "p_tcn_gru_c2",
+    "p_tcn_gru_c3",
+    "p_tcn_gru_c4"
+  ]
+}

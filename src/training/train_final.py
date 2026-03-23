@@ -65,7 +65,7 @@ def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.n
 
         for j, name in enumerate(names):
             est = clone(models_dict[name])
-            num_cols, cat_cols = infer_feature_types(x)
+            num_cols, cat_cols = infer_feature_types(x_tr)
             pre = make_preprocessor_for_model(name, num_cols=num_cols, cat_cols=cat_cols)
             
             pipe = build_model_pipeline(pre, est)
@@ -166,8 +166,11 @@ def get_seq_oof_preds(df: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray
 
             model.fit(x_seq_tr, y_seq_tr, class_weight=class_w)
             proba_fold = model.predict_proba(x_seq_va)
-            classes_seen = model.classes_ if hasattr(model, "classes_") else np.arange(n_classes)
-            
+            classes_seen = (
+                model.model_.classes_
+                if hasattr(model, "model_") and hasattr(model.model_, "classes_")
+                else (model.classes_ if hasattr(model, "classes_") else np.arange(n_classes))
+            )
             proba_full = np.zeros((len(x_seq_va), n_classes), dtype=float)
             for c_idx, cls in enumerate(classes_seen):
                 proba_full[:, int(cls)] = proba_fold[:, c_idx]
@@ -223,7 +226,7 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
         y_tr = y.iloc[tr_idx].to_numpy()
 
         meta_est = make_meta_binary_xgb(cfg)
-        num_m, cat_m = infer_feature_types(x_meta_df)
+        num_m, cat_m = infer_feature_types(x_meta_tr)
         meta_pre = build_preprocessor(num_cols=num_m, cat_cols=cat_m, cfg=PreprocessConfig(scale_numeric=False, sparse_onehot=True))
 
         meta_pipe = build_model_pipeline(meta_pre, meta_est)
@@ -292,7 +295,9 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
 
         n_pos = int(np.sum(y_seq == 1))
         n_neg = int(np.sum(y_seq == 0))
-        pos_w = min(20.0, float(n_neg / n_pos)) if n_pos > 0 else 1.0
+        if n_pos == 0 or n_neg == 0:
+            raise RuntimeError(f"Degenerate sequence labels for {name}: n_pos={n_pos}, n_neg={n_neg}")
+        pos_w = min(20.0, float(n_neg / n_pos))
         
         model.fit(x_seq, y_seq, class_weight={0: 1.0, 1: float(pos_w)})
 
@@ -371,7 +376,7 @@ def train_stage2_final(df2, x, y, folds, outdir: Path, cfg: ModelConfig):
         y_tr = y.iloc[tr_idx].to_numpy()
 
         meta_est = make_meta_multiclass_xgb(cfg, n_classes=n_classes)
-        num_m, cat_m = infer_feature_types(x_meta_df)
+        num_m, cat_m = infer_feature_types(x_meta_tr)
         meta_pre = build_preprocessor(num_cols=num_m, cat_cols=cat_m, cfg=PreprocessConfig(scale_numeric=False, sparse_onehot=True))
 
         meta_pipe = build_model_pipeline(meta_pre, meta_est)
@@ -394,7 +399,6 @@ def train_stage2_final(df2, x, y, folds, outdir: Path, cfg: ModelConfig):
         "fold": fold_assignment,
         "y_compound": df2["y_compound"],
         "is_wet_race": df2["is_wet_race"],
-        "fcy_status": df2["fcy_status"],
         "race_track": df2["race_track"],
         "current_compound": df2["current_compound"],
     })
@@ -520,12 +524,14 @@ def main():
     if args.only_stage in {"all", "stage2"}:
         if not args.data_stage2:
             raise ValueError("need stage 2 data path")
+
         df2 = load_stage2_dataset(args.data_stage2, strict=True)
+        df2 = encode_y_compound(df2, col="y_compound", out_col="y_compound_encoded")
+        df2 = df2.loc[~df2["y_compound_encoded"].isna()].copy()
+
         x2, y2 = get_stage2_xy(df2)
-        
-        df2_tmp = encode_y_compound(df2, col="y_compound", out_col="y_compound_encoded")
-        fb2 = make_race_group_folds(df2_tmp, target_col="y_compound_encoded", n_splits=n_splits, seed=seed)
-        
+        fb2 = make_race_group_folds(df2, target_col="y_compound_encoded", n_splits=n_splits, seed=seed)
+
         print("training final stage 2 models")
         manifest["stage2"] = train_stage2_final(df2, x2, y2, fb2.folds, root, cfg)
         

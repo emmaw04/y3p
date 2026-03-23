@@ -1,0 +1,31 @@
+{
+  "columns": [
+    "lapno",
+    "race_progress",
+    "position",
+    "fcy_status",
+    "pit_stops_so_far",
+    "tyre_change_pursuer",
+    "track_category",
+    "current_compound",
+    "lap_time",
+    "interval",
+    "tyre_age",
+    "gap_behind_s",
+    "n_cars_within_5s_ahead",
+    "tyre_age_diff_to_ahead",
+    "rejoin_gap_ahead_est_s",
+    "rejoin_gap_behind_est_s",
+    "close_ahead",
+    "race_track",
+    "is_wet_race",
+    "is_raining",
+    "minutes_rain",
+    "fulfilled_second_compound",
+    "gap_behind_s_missing",
+    "tyre_age_diff_to_ahead_missing",
+    "rejoin_gap_ahead_est_s_missing",
+    "rejoin_gap_behind_est_s_missing",
+    "tyre_age_missing"
+  ]
+}

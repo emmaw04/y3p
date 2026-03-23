@@ -1,0 +1,13 @@
+{
+  "ablations": [
+    "baseline_full",
+    "drop_G_race_phase",
+    "drop_G_strategy_history",
+    "drop_G_pit_stops_left_only",
+    "drop_G_tyre_state",
+    "drop_G_track_context",
+    "drop_G_race_control_weather",
+    "drop_G_traffic_gap_context",
+    "drop_G_rejoin_window"
+  ]
+}

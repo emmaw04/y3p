@@ -1,0 +1,42 @@
+{
+  "seed": 42,
+  "n_splits": 5,
+  "holdout_race_ids": [
+    53,
+    73,
+    24,
+    75,
+    2,
+    64,
+    139
+  ],
+  "stage1": {
+    "stage": "stage1_binary",
+    "tab_models": [
+      "xgb",
+      "svm"
+    ],
+    "seq_models": [
+      "lstm",
+      "tcn_gru"
+    ],
+    "meta_model": "xgb",
+    "meta_uses_context": true,
+    "artifacts": {
+      "meta_pipeline": "meta_pipeline.joblib",
+      "base_pipelines": {
+        "xgb": "base_xgb_pipeline.joblib",
+        "svm": "base_svm_pipeline.joblib",
+        "lstm": {
+          "preprocessor": "lstm_preprocessor.joblib",
+          "model": "lstm_model.keras"
+        },
+        "tcn_gru": {
+          "preprocessor": "tcn_gru_preprocessor.joblib",
+          "model": "tcn_gru_model.keras"
+        }
+      },
+      "oof_predictions": "oof_predictions.csv"
+    }
+  }
+}

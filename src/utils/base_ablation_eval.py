@@ -57,7 +57,9 @@ SEED_DEFAULT = 42
 
 STAGE1_FEATURE_GROUPS = {
     "G_race_phase": ["lapno", "race_progress"],
-    "G_strategy_history": ["pit_stops_so_far", "pit_stops_left"],
+    "G_strategy_history": ["pit_stops_so_far"],
+    #"G_strategy_history": ["pit_stops_so_far", "pit_stops_left"],
+    #"G_pit_stops_left_only": ["pit_stops_left"],
     "G_tyre_state": ["current_compound", "fulfilled_second_compound", "tyre_age", "tyre_age_missing"],
     "G_track_context": ["race_track", "track_category"],
     "G_race_control_weather": ["is_wet_race", "is_raining", "minutes_rain", "fcy_status"],
@@ -68,8 +70,9 @@ STAGE1_FEATURE_GROUPS = {
 
 STAGE2_FEATURE_GROUPS = {
     "G_race_phase": ["lapno", "race_progress"],
-    "G_strategy_history": ["pit_stops_so_far", "pit_stops_left"],
-    "G_pit_stops_left_only": ["pit_stops_left"],
+    "G_strategy_history": ["pit_stops_so_far"],
+    #"G_strategy_history": ["pit_stops_so_far", "pit_stops_left"],
+    #"G_pit_stops_left_only": ["pit_stops_left"],
     "G_tyre_state": ["current_compound", "fulfilled_second_compound"],
     "G_track_context": ["race_track"],
     "G_race_control_weather": ["is_wet_race", "is_raining", "minutes_rain"],
