@@ -498,7 +498,7 @@ def main():
     ap.add_argument("--only_stage", choices=["all", "stage1", "stage2"], default="all", help="which stage to run")
     args = ap.parse_args()
 
-    root = Path("runs_final") / "final_run"
+    root = Path("runs") / "final_run"
     root.mkdir(parents=True, exist_ok=True)
     
     seed = 42

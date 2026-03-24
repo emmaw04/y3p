@@ -31,8 +31,15 @@ WET_MULTIPLIERS = [
     ("wet_500", 6.0),
 ]
 
+ID_COLS = ["race_id", "driver_id", "lapno"]
 
-def inverse_to_original_units(x_res: np.ndarray, preprocessor: ColumnTransformer, num_cols: list[str], cat_cols: list[str]) -> pd.DataFrame:
+
+def inverse_to_original_units(
+    x_res: np.ndarray,
+    preprocessor: ColumnTransformer,
+    num_cols: list[str],
+    cat_cols: list[str],
+) -> pd.DataFrame:
     """
     reverses the standard scaling and ordinal encoding so the smote outputs
     look like the original dataset again.
@@ -47,7 +54,7 @@ def inverse_to_original_units(x_res: np.ndarray, preprocessor: ColumnTransformer
     enc = preprocessor.named_transformers_["cat"].named_steps["enc"]
 
     x_num_inv = scaler.inverse_transform(x_num)
-    
+
     # ensure categoricals map back nicely
     x_cat_rounded = np.rint(x_cat).astype(int)
     x_cat_inv = enc.inverse_transform(x_cat_rounded.astype(float))
@@ -69,11 +76,11 @@ def build_sampling_strategy(y_enc: np.ndarray, wet_mult: float, wet_label: int) 
     maj_count = counts[maj_label]
 
     strategy = {}
-    
+
     for cls, n in counts.items():
         if cls == maj_label:
             continue
-            
+
         if cls == wet_label:
             wet_count = counts.get(wet_label, 0)
             if wet_count >= 2:
@@ -91,29 +98,79 @@ def get_safe_k_neighbors(y_enc: np.ndarray, strategy: dict[int, int], k_max: int
     """smote needs enough neighbors to work with. this ensures we dont crash if a class is too rare."""
     if not strategy:
         return None
-        
+
     counts = pd.Series(y_enc).value_counts()
     min_n = min(int(counts[c]) for c in strategy.keys() if c in counts.index)
-    
+
     if min_n < 2:
         return None
-        
+
     return int(max(1, min(k_max, min_n - 1)))
+
+
+def build_resampled_metadata(
+    meta_df: pd.DataFrame,
+    y_orig: pd.Series,
+    y_res_enc: np.ndarray,
+    le: LabelEncoder,
+    seed: int,
+) -> pd.DataFrame:
+    """
+    keeps the original metadata rows for original samples and assigns metadata
+    to synthetic rows by sampling from real rows of the same target class.
+    allows us to run evaluate_stack.py
+    """
+    rng = np.random.default_rng(seed)
+
+    n_orig = len(meta_df)
+    n_res = len(y_res_enc)
+
+    if n_res == n_orig:
+        return meta_df.reset_index(drop=True).copy()
+
+    synth_n = n_res - n_orig
+    synth_labels = le.inverse_transform(y_res_enc[n_orig:])
+
+    meta_orig = meta_df.reset_index(drop=True).copy()
+    y_orig = y_orig.reset_index(drop=True).astype(str)
+
+    synth_meta = pd.DataFrame(index=range(synth_n), columns=meta_orig.columns)
+
+    for cls_name in np.unique(synth_labels):
+        cls_mask = synth_labels == cls_name
+        n_cls = int(np.sum(cls_mask))
+
+        pool = meta_orig.loc[y_orig == cls_name].reset_index(drop=True)
+        if pool.empty:
+            raise ValueError(f"no metadata rows available for class {cls_name}")
+
+        chosen_idx = rng.integers(0, len(pool), size=n_cls)
+        synth_meta.loc[cls_mask, :] = pool.iloc[chosen_idx].to_numpy()
+
+    out = pd.concat([meta_orig, synth_meta], ignore_index=True)
+
+    # restore integer-like id columns if present
+    for col in ["race_id", "driver_id", "lapno"]:
+        if col in out.columns:
+            out[col] = pd.to_numeric(out[col], errors="coerce").round().astype("Int64")
+
+    return out
 
 
 def generate_smote_datasets():
     Path(OUTDIR).mkdir(parents=True, exist_ok=True)
-    
+
     print("loading dataset...")
     df = pd.read_csv(DATA_PATH, na_values=[""])
-    
-    # drop ids since they aren't features
-    df = df.drop(columns=["race_id"], errors="ignore")
-    if "driver_id" in df.columns:
-        df = df.drop(columns=["driver_id"])
-        
+
     target = "y_compound"
-    x_all = df.drop(columns=[target])
+    original_cols = list(df.columns)
+
+    id_cols = [c for c in ID_COLS if c in df.columns]
+    meta_df = df[id_cols].copy()
+
+    # remove ids from the feature matrix so smote does not interpolate them
+    x_all = df.drop(columns=id_cols + [target], errors="ignore")
     y_all = df[target].astype(str)
 
     cat_cols = [
@@ -138,7 +195,7 @@ def generate_smote_datasets():
         "rejoin_gap_ahead_est_s",
         "rejoin_gap_behind_est_s",
     ]
-    
+
     # only keep columns that actually exist in the dataframe to prevent crashes
     cat_cols = [c for c in cat_cols if c in x_all.columns]
     num_cols = [c for c in num_cols if c in x_all.columns]
@@ -165,7 +222,7 @@ def generate_smote_datasets():
 
     if "WET" not in class_names:
         raise ValueError("wet compound missing from labels. smote generator expects wet.")
-        
+
     wet_label = int(le.transform(["WET"])[0])
 
     print("fitting preprocessor on full dataset...")
@@ -173,7 +230,7 @@ def generate_smote_datasets():
 
     for setting_name, wet_mult in WET_MULTIPLIERS:
         print(f"generating dataset for {setting_name} (wet multiplier x{wet_mult})")
-        
+
         strategy = build_sampling_strategy(y_enc_all, wet_mult, wet_label)
         k = get_safe_k_neighbors(y_enc_all, strategy)
 
@@ -188,18 +245,28 @@ def generate_smote_datasets():
         else:
             x_res, y_res = x_full, y_enc_all
 
-        print(f"  reversing transformations to save in original units...")
-        df_human = inverse_to_original_units(x_res, preprocessor, num_cols, cat_cols)
-        df_human["y_compound"] = le.inverse_transform(y_res)
-        
-        # add placeholder race_id to match original data format for pipeline compatibility
-        df_human["race_id"] = 0 
+        print("  reversing transformations to save in original units...")
+        df_features = inverse_to_original_units(x_res, preprocessor, num_cols, cat_cols)
+        df_features[target] = le.inverse_transform(y_res)
+
+        print("  rebuilding metadata columns...")
+        df_meta = build_resampled_metadata(meta_df, y_all, y_res, le, seed=SEED)
+
+        df_out = pd.concat([df_meta.reset_index(drop=True), df_features.reset_index(drop=True)], axis=1)
+
+        # restore original column order exactly
+        missing_cols = [c for c in original_cols if c not in df_out.columns]
+        if missing_cols:
+            raise ValueError(f"output is missing expected columns: {missing_cols}")
+
+        df_out = df_out[original_cols]
 
         out_csv = os.path.join(OUTDIR, f"{setting_name}_dataset.csv")
-        df_human.to_csv(out_csv, index=False)
+        df_out.to_csv(out_csv, index=False)
         print(f"  saved to {out_csv}")
 
     print("all datasets generated successfully.")
+
 
 if __name__ == "__main__":
     generate_smote_datasets()

@@ -1,0 +1,11 @@
+stage,slice,rows,races,positives,f1,precision,recall,pr_auc,logloss
+stage1_binary,all_races,96916,165,2552.0,0.4777,0.5019,0.4557,0.4521,0.0745
+stage1_binary,wet_races,11276,19,380.0,0.2643,0.3347,0.2184,0.2043,0.133
+stage1_binary,dry_races,85640,146,2172.0,0.5093,0.522,0.4972,0.4967,0.0668
+stage1_binary,races_with_fcy,52429,89,1375.0,0.4402,0.4543,0.4269,0.4109,0.0782
+stage1_binary,races_without_fcy,44487,76,1177.0,0.5232,0.562,0.4894,0.5033,0.07
+stage2_multiclass,all_races,4236,165,,0.4373,0.4428,0.4339,0.4671,0.9455
+stage2_multiclass,wet_races,704,19,,0.2181,0.22,0.2243,0.2555,1.6524
+stage2_multiclass,dry_races,3532,146,,0.4608,0.4718,0.4538,0.6585,0.8046
+stage2_multiclass,races_with_fcy,2314,89,,0.4362,0.445,0.4328,0.4908,0.922
+stage2_multiclass,races_without_fcy,1922,76,,0.4193,0.42,0.4194,0.4377,0.9738

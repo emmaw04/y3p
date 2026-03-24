@@ -295,7 +295,7 @@ def run_stage2_stacking(x, y, cfg: ModelConfig, folds: list[tuple[np.ndarray, np
         classes_seen = meta_pipe.named_steps["model"].classes_ if hasattr(meta_pipe.named_steps["model"], "classes_") else getattr(meta_pipe, "classes_")
         proba_full = np.zeros((len(va_idx), n_classes), dtype=float)
         for c_idx, cls in enumerate(classes_seen):
-            proba_full[:, int(cls)] = prob_fold[:, c_idx]
+            proba_full[:, int(cls)] = proba_fold[:, c_idx]
             
         oof_meta_proba[va_idx] = proba_full
         metrics = compute_multiclass_metrics(y_va, proba_full)

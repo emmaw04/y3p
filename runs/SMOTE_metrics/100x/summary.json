@@ -1,0 +1,9 @@
+{
+  "stage": "stage2_multiclass",
+  "meta_model": "xgb",
+  "n_folds": 5,
+  "n_classes": 5,
+  "accuracy_mean": 0.777581098446635,
+  "f1_macro_mean": 0.7260086444461228,
+  "logloss_mean": 0.5795756742780044
+}
