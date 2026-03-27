@@ -213,7 +213,11 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
     df_probs = pd.DataFrame(meta_x_all, columns=prob_cols)
     
     # meta learner gets race context (original features) along with probabilities
-    x_meta_df = pd.concat([df_probs.reset_index(drop=True), x.reset_index(drop=True)], axis=1)
+    #x_meta_df = pd.concat([df_probs.reset_index(drop=True), x.reset_index(drop=True)], axis=1)
+    
+    #meta learner just gets base probabilities
+    x_meta_df = pd.concat([df_probs.reset_index(drop=True)], axis=1)
+
 
     print("generating OOF predictions for stage 1 meta learner")
     meta_oof_proba = np.zeros(len(y), dtype=float)
