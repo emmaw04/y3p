@@ -38,5 +38,32 @@
       },
       "oof_predictions": "oof_predictions.csv"
     }
+  },
+  "stage2": {
+    "stage": "stage2_multiclass",
+    "n_classes": 5,
+    "tab_models": [
+      "rf",
+      "xgb",
+      "svm"
+    ],
+    "seq_models": [
+      "tcn_gru"
+    ],
+    "meta_model": "xgb",
+    "meta_uses_context": false,
+    "artifacts": {
+      "meta_pipeline": "meta_pipeline.joblib",
+      "base_pipelines": {
+        "rf": "base_rf_pipeline.joblib",
+        "xgb": "base_xgb_pipeline.joblib",
+        "svm": "base_svm_pipeline.joblib",
+        "tcn_gru": {
+          "preprocessor": "tcn_gru_preprocessor.joblib",
+          "model": "tcn_gru_model.keras"
+        }
+      },
+      "oof_predictions": "oof_predictions.csv"
+    }
   }
 }

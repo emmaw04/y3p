@@ -30,50 +30,52 @@ pd.set_option('future.no_silent_downcasting', True)
 # -----------------------------
 
 # set this to true to include the pit_stops_left feature, useful for certain structural analyses.
-INCLUDE_PIT_STOPS_LEFT = True
+INCLUDE_PIT_STOPS_LEFT = False
 
-# estimated time lost in pit lane for different tracks in seconds
-# taken from historical averages
-PIT_LOSS_BY_TRACK_S: dict[str, float] = {
-    "70th Anniversary Grand Prix": 28.378,
-    "Abu Dhabi Grand Prix": 21.7175,
-    "Australian Grand Prix": 18.0205,
-    "Austrian Grand Prix": 21.6775,
-    "Azerbaijan Grand Prix": 20.6375,
-    "Bahrain Grand Prix": 24.8,
-    "Belgian Grand Prix": 23.076,
-    "Brazilian Grand Prix": 23.113,
-    "British Grand Prix": 28.914,
-    "Canadian Grand Prix": 23.711,
-    "Chinese Grand Prix": 22.777,
-    "Dutch Grand Prix": 19.643,
-    "Eifel Grand Prix": 22.61,
-    "Emilia Romagna Grand Prix": 30.289,
-    "French Grand Prix": 30.36,
-    "German Grand Prix": 20.563,
-    "Hungarian Grand Prix": 21.814,
-    "Italian Grand Prix": 24.445,
-    "Japanese Grand Prix": 23.396,
-    "Las Vegas Grand Prix": 21.5585,
-    "Mexican Grand Prix": 22.3685,
-    "Mexico City Grand Prix": 22.492,
-    "Miami Grand Prix": 22.1465,
-    "Monaco Grand Prix": 24.2765,
-    "Portuguese Grand Prix": 26.1275,
-    "Qatar Grand Prix": 28.317,
-    "Russian Grand Prix": 29.933,
-    "Sakhir Grand Prix": 24.2485,
-    "Saudi Arabian Grand Prix": 20.9425,
-    "Singapore Grand Prix": 29.518,
-    "Spanish Grand Prix": 22.2165,
-    "Styrian Grand Prix": 21.627,
-    "São Paulo Grand Prix": 23.602,
-    "Turkish Grand Prix": 23.5235,
-    "United States Grand Prix": 24.023,
+# estimated net time loss from making a pit stop, in seconds.
+# this is not raw pit-lane transit time. instead, it is the median
+# pit-entry-to-pit-exit window minus an estimated no-stop on-track window
+# over the comparable pit-entry-to-pit-exit section of the circuit.
+NET_PIT_LOSS_BY_TRACK_S: dict[str, float] = {
+    "70th Anniversary Grand Prix": 9.01,
+    "Abu Dhabi Grand Prix": 11.216,
+    "Australian Grand Prix": 5.783,
+    "Austrian Grand Prix": 9.668,
+    "Azerbaijan Grand Prix": 6.65,
+    "Bahrain Grand Prix": 9.629,
+    "Belgian Grand Prix": 6.754,
+    "Brazilian Grand Prix": 10.345,
+    "British Grand Prix": 9.602,
+    "Canadian Grand Prix": 8.075,
+    "Chinese Grand Prix": 9.13,
+    "Dutch Grand Prix": 8.043,
+    "Eifel Grand Prix": 8.759,
+    "Emilia Romagna Grand Prix": 13.08,
+    "French Grand Prix": 9.982,
+    "German Grand Prix": 8.53,
+    "Hungarian Grand Prix": 7.905,
+    "Italian Grand Prix": 9.408,
+    "Japanese Grand Prix": 8.353,
+    "Las Vegas Grand Prix": 7.284,
+    "Mexican Grand Prix": 8.249,
+    "Mexico City Grand Prix": 8.405,
+    "Miami Grand Prix": 6.367,
+    "Monaco Grand Prix": 10.712,
+    "Portuguese Grand Prix": 11.787,
+    "Qatar Grand Prix": 11.32,
+    "Russian Grand Prix": 9.231,
+    "Sakhir Grand Prix": 11.915,
+    "Saudi Arabian Grand Prix": 7.927,
+    "Singapore Grand Prix": 12.235,
+    "Spanish Grand Prix": 9.141,
+    "Styrian Grand Prix": 9.707,
+    "São Paulo Grand Prix": 10.487,
+    "Tuscan Grand Prix": 8.522,
+    "United States Grand Prix": 9.958,
 }
 
-# fallback value if track is not in the list
-DEFAULT_PIT_LOSS_S = 23.113
+# fallback used when a track is not present in the dictionary
+DEFAULT_NET_PIT_LOSS_S = 9.141
 
 # mapping for compound hardness to an absolute scale where 1 is hardest and 7 is softest
 # standardizes across 2018's A-compounds and the current C-compounds
@@ -136,13 +138,19 @@ def normalize_compound(x: Optional[str]) -> Optional[str]:
 
 
 def estimate_pit_loss_seconds(race_track: pd.Series, fcy_status: pd.Series) -> pd.Series:
-    """calculates estimated time lost in pits adjusting for safety car status"""
+    """calculates estimated net time loss from pitting, adjusted for safety car status"""
     track = race_track.astype(str).str.strip()
-    base = track.map(PIT_LOSS_BY_TRACK_S).fillna(DEFAULT_PIT_LOSS_S).astype(float)
+    base = track.map(NET_PIT_LOSS_BY_TRACK_S).fillna(DEFAULT_NET_PIT_LOSS_S).astype(float)
 
     f = pd.to_numeric(fcy_status, errors="coerce").fillna(0).astype(int)
-    # reduce loss under safety car conditions
-    mult = np.where((f == 1) | (f == 2), 0.65, np.where((f == 3) | (f == 4), 0.45, 1.0))
+
+    # reduce the net loss under VSC / SC conditions
+    # constant factors we reduce loss by are taken from Heilmeiers assumption made in his simulator in how much slower cars move under SC/VSC
+    mult = np.where(
+        (f == 1) | (f == 2),
+        0.71,
+        np.where((f == 3) | (f == 4), 0.63, 1.0)
+    )
     return base * mult
 
 
@@ -304,11 +312,11 @@ def add_undercut_features(df: pd.DataFrame) -> pd.DataFrame:
     df["ahead1_tyre_age"] = g["tyre_age"].shift(1)
     df["tyre_age_diff_to_ahead"] = df["tyre_age"] - df["ahead1_tyre_age"]
 
-    # estimate gaps after a potential pit stop
+    # estimate gaps after a potential pit stop using track-specific net pit loss
     if "race_track" in df.columns and "fcy_status" in df.columns:
         df["pit_loss_est_s"] = estimate_pit_loss_seconds(df["race_track"], df["fcy_status"])
     else:
-        df["pit_loss_est_s"] = DEFAULT_PIT_LOSS_S
+        df["pit_loss_est_s"] = DEFAULT_NET_PIT_LOSS_S
 
     # apply calculation per lap-group and join results back
     rejoin_cols = df.groupby(["race_id", "lapno"], sort=False, group_keys=False).apply(_rejoin_gaps_one_lap, include_groups=False)
@@ -331,14 +339,17 @@ def add_weather_flags(df: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
     if weather is None or weather.empty or "race_id" not in df.columns:
         return df
 
-    if "racetime_sofar" in df.columns:
+    # use session-clock timing whenever possible
+    if "decision_time_ms" in df.columns and df["decision_time_ms"].notna().any():
+        df["_time_ms"] = pd.to_numeric(df["decision_time_ms"], errors="coerce").round().astype("Int64")
+    elif "racetime_sofar" in df.columns:
         t_s = pd.to_numeric(df["racetime_sofar"], errors="coerce")
+        df["_time_ms"] = (t_s * 1000.0).round().astype("Int64")
     elif "racetime" in df.columns:
         t_s = pd.to_numeric(df["racetime"], errors="coerce")
+        df["_time_ms"] = (t_s * 1000.0).round().astype("Int64")
     else:
         return df
-
-    df["_time_ms"] = (t_s * 1000.0).round().astype("Int64")
 
     weather = weather.copy()
     weather["time_ms"] = pd.to_numeric(weather["time_ms"], errors="coerce")
@@ -354,7 +365,6 @@ def add_weather_flags(df: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
             out.append(df_r)
             continue
 
-        # identify rain streaks for duration calculation
         is_rain = w["rainfall"].eq(1)
         change = is_rain.ne(is_rain.shift(1, fill_value=False))
         w["streak_id"] = change.cumsum()
@@ -369,7 +379,6 @@ def add_weather_flags(df: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
         df_t = df_r.loc[has_t].sort_values("_time_ms_num").copy()
         df_nt = df_r.loc[~has_t].copy()
 
-        # perform asof merge to map weather states to laps
         df_t["_time_ms_i64"] = df_t["_time_ms_num"].astype(np.int64)
         w = w.dropna(subset=["time_ms"]).copy()
         w["time_ms_i64"] = w["time_ms"].astype(np.int64)
@@ -649,7 +658,9 @@ def load_core_tables(conn: sqlite3.Connection) -> Tuple[pd.DataFrame, pd.DataFra
         "race_id", "driver_id", "lapno", "position",
         "laptime", "racetime", "gap", "interval",
         "compound", "tireage", "nextcompound",
-        "pitintime", "pitstopduration", "pit_in_elapsed"
+        "pitintime", "pitstopduration", "pit_in_elapsed",
+        "pitintimenum", "pitouttimenum",
+        "sector1session_ms", "sector2session_ms", "sector3session_ms"
     ]
     laps_info = pd.read_sql_query("PRAGMA table_info(laps);", conn)
     existing_laps_cols = set(laps_info["name"].tolist())
@@ -743,6 +754,18 @@ def add_extra_output_features(df: pd.DataFrame) -> pd.DataFrame:
     df["gap_to_leader"] = pd.to_numeric(df.get("gap", np.nan), errors="coerce")
     df["interval"] = pd.to_numeric(df.get("interval", np.nan), errors="coerce")
     df["tyre_age"] = pd.to_numeric(df.get("tireage", np.nan), errors="coerce")
+
+    for c in ["pitintimenum", "pitouttimenum", "sector1session_ms", "sector2session_ms", "sector3session_ms"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    session_time_cols = [c for c in ["pitintimenum", "sector3session_ms", "sector2session_ms", "sector1session_ms"]
+                         if c in df.columns]
+
+    if session_time_cols:
+        df["decision_time_ms"] = df[session_time_cols].bfill(axis=1).iloc[:, 0]
+    else:
+        df["decision_time_ms"] = np.nan
 
     return df
 

@@ -19,6 +19,7 @@ INT_TO_COMPOUND: Dict[int, str] = {i: c for c, i in COMPOUND_TO_INT.items()}
 
 # holdout race IDs (for case studies, 64 and 139 are removed because the races are unsuitable for training)
 HOLDOUT_RACE_IDS: Tuple[int, ...] = (53, 73, 24, 75, 2, 64, 139)
+#HOLDOUT_RACE_IDS: Tuple[int, ...] = (53, 73, 24, 100, 2, 64, 139)
 
 # hard-coded categorical features for this project
 CATEGORICAL_FEATURES: set[str] = {

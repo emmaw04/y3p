@@ -77,12 +77,17 @@ def _segments_from_bool_mask(x: np.ndarray, mask: np.ndarray) -> List[Tuple[floa
     return [(a, min(100.0, b + 0.5)) if a == b else (a, b) for a, b in segs]
 
 def _make_left_padded_sequences_from_rows(
-    keys_df: pd.DataFrame, X_row: np.ndarray, window: int
+    keys_df: pd.DataFrame, X_row: np.ndarray, window: int, add_timestep_mask: bool = False
 ) -> Tuple[np.ndarray, np.ndarray]:
     # note to self: builds the sequences needed for the rnn models
     X_row = np.asarray(X_row)
     N, F = X_row.shape
-    X_seq = np.zeros((N, window, F), dtype=np.float32)
+    
+    if add_timestep_mask:
+        X_seq = np.zeros((N, window, F + 1), dtype=np.float32)
+    else:
+        X_seq = np.zeros((N, window, F), dtype=np.float32)
+        
     eff_len = np.zeros((N,), dtype=np.float32)
     group_indices = keys_df.groupby(["race_id", "driver_id"], sort=False).indices
 
@@ -92,7 +97,13 @@ def _make_left_padded_sequences_from_rows(
             start = max(0, t - window + 1)
             take = idx[start : t + 1]
             L = len(take)
-            X_seq[i, -L:, :] = X_row[take, :]
+            
+            if add_timestep_mask:
+                X_seq[i, -L:, :F] = X_row[take, :]
+                X_seq[i, -L:, F] = 1.0  # mask is 1 for real data, 0 for padding
+            else:
+                X_seq[i, -L:, :] = X_row[take, :]
+                
             eff_len[i] = L
     return X_seq, eff_len
 
@@ -114,10 +125,10 @@ def _keras_predict_proba(model: tf.keras.Model, X_np: np.ndarray) -> np.ndarray:
     raise ValueError(f"unexpected keras prediction shape: {y.shape}")
 
 def main():
-    # note to self: make sure the output directory exists
+    #make sure the output directory exists
     OUTDIR.mkdir(parents=True, exist_ok=True)
 
-    # note to self: load the main dataset and do some basic cleaning
+    #load the main dataset and do some basic cleaning
     df1 = pd.read_csv(STAGE1_CSV)
     for c in ["race_id", "driver_id", "lapno"]:
         df1[c] = pd.to_numeric(df1[c], errors="coerce").astype("Int64")
@@ -162,14 +173,14 @@ def main():
     X_lstm_row = lstm_pre.transform(X_raw)
     if hasattr(X_lstm_row, "toarray"): X_lstm_row = X_lstm_row.toarray()
     expected_T_lstm, expected_F_lstm = lstm_model.input_shape[1], lstm_model.input_shape[2]
-    X_seq_lstm, _ = _make_left_padded_sequences_from_rows(keys_df, X_lstm_row, window=expected_T_lstm)
+    X_seq_lstm, _ = _make_left_padded_sequences_from_rows(keys_df, X_lstm_row, window=expected_T_lstm, add_timestep_mask=True)
     p_lstm = _keras_predict_proba(lstm_model, X_seq_lstm)
 
     # note to self: generate predictions for the tcn_gru model
     X_tcn_gru_row = tcn_gru_pre.transform(X_raw)
     if hasattr(X_tcn_gru_row, "toarray"): X_tcn_gru_row = X_tcn_gru_row.toarray()
     expected_T_tcn_gru, expected_F_tcn_gru = tcn_gru_model.input_shape[1], tcn_gru_model.input_shape[2]
-    X_seq_tcn_gru, tcn_effective_len = _make_left_padded_sequences_from_rows(keys_df, X_tcn_gru_row, window=expected_T_tcn_gru)
+    X_seq_tcn_gru, tcn_effective_len = _make_left_padded_sequences_from_rows(keys_df, X_tcn_gru_row, window=expected_T_tcn_gru, add_timestep_mask=True)
     tcn_gru_proba = _keras_predict_proba(tcn_gru_model, X_seq_tcn_gru)
 
     # note to self: combine raw features and base model predictions for the meta model
@@ -210,7 +221,7 @@ def main():
         plt.figure(figsize=(10, 4))
         plt.plot(x, y, marker="o", linewidth=1)
         
-        # note to self: add shaded backgrounds for rain and fcy
+        #add shaded backgrounds for rain and fcy
         rain_segs = _segments_from_bool_mask(x, g["is_raining"].to_numpy(dtype=int) == 1)
         fcy_segs = _segments_from_bool_mask(x, g["fcy_status"].to_numpy(dtype=int) != 0)
         for a, b in rain_segs: plt.axvspan(a, b, alpha=0.12, facecolor="blue", linewidth=0)

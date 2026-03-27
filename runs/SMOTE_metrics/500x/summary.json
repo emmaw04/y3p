@@ -3,7 +3,7 @@
   "meta_model": "xgb",
   "n_folds": 5,
   "n_classes": 5,
-  "accuracy_mean": 0.7767040703946024,
-  "f1_macro_mean": 0.7911940596350009,
-  "logloss_mean": 0.5677653184271716
+  "accuracy_mean": 0.7776355480223829,
+  "f1_macro_mean": 0.7897775250090945,
+  "logloss_mean": 0.5598632863524678
 }

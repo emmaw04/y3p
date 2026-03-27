@@ -30,6 +30,7 @@
     "tyre_age_diff_to_ahead_missing",
     "rejoin_gap_ahead_est_s_missing",
     "rejoin_gap_behind_est_s_missing",
-    "tyre_age_missing"
+    "tyre_age_missing",
+    "pit_stops_left"
   ]
 }

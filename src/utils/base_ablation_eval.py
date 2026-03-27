@@ -57,7 +57,7 @@ SEED_DEFAULT = 42
 
 STAGE1_FEATURE_GROUPS = {
     "G_race_phase": ["lapno", "race_progress"],
-    "G_strategy_history": ["pit_stops_so_far"],
+    "G_strategy_history": ["pit_stops_so_far", "fulfilled_second_compound"],
     #"G_strategy_history": ["pit_stops_so_far", "pit_stops_left"],
     #"G_pit_stops_left_only": ["pit_stops_left"],
     "G_tyre_state": ["current_compound", "fulfilled_second_compound", "tyre_age", "tyre_age_missing"],
@@ -65,12 +65,12 @@ STAGE1_FEATURE_GROUPS = {
     "G_race_control_weather": ["is_wet_race", "is_raining", "minutes_rain", "fcy_status"],
     "G_traffic_gap_context": ["gap_behind_s", "gap_behind_s_missing", "n_cars_within_5s_ahead", "close_ahead"],
     "G_rejoin_window": ["tyre_age_diff_to_ahead", "tyre_age_diff_to_ahead_missing", "rejoin_gap_ahead_est_s", "rejoin_gap_ahead_est_s_missing", "rejoin_gap_behind_est_s", "rejoin_gap_behind_est_s_missing"],
-    "G_pace_position": ["lap_time", "position", "interval", "tyre_change_pursuer"]
+    "G_pace_position": ["lap_time", "position", "interval", "tyre_change_pursuer", "tyre_age", "current_compound"]
 }
 
 STAGE2_FEATURE_GROUPS = {
     "G_race_phase": ["lapno", "race_progress"],
-    "G_strategy_history": ["pit_stops_so_far"],
+    "G_strategy_history": ["pit_stops_so_far", "fulfilled_second_compound"],
     #"G_strategy_history": ["pit_stops_so_far", "pit_stops_left"],
     #"G_pit_stops_left_only": ["pit_stops_left"],
     "G_tyre_state": ["current_compound", "fulfilled_second_compound"],
