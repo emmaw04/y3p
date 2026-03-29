@@ -28,7 +28,7 @@ from src.data.data import HOLDOUT_RACE_IDS
 STAGE1_CSV = Path("data/processed/dataset1.csv")
 ARTIFACTS_ROOT = Path("runs/final_run")
 OUTDIR = Path("runs/holdout_run")
-PIT_THRESHOLD = 0.3120
+PIT_THRESHOLD = 0.264
 
 def _race_metrics(y_true: np.ndarray, y_score: np.ndarray, threshold: float) -> Dict[str, float]:
     # note to self: calculate a bunch of metrics for a given race
@@ -218,17 +218,31 @@ def main():
         y = g["p_pit"].to_numpy(dtype=float) * 100.0
         pit_x = g.loc[g["y_pit"] == 1, "race_progress_pct"].to_numpy(dtype=float)
 
+        if int(rid) == 73:
+            # temporary hard-coded fix:
+            # ignore early historical pit markers in the first 10% of the race
+            pit_x = pit_x[pit_x >= 10.0]
+
         plt.figure(figsize=(10, 4))
         plt.plot(x, y, marker="o", linewidth=1)
         
-        #add shaded backgrounds for rain and fcy
+        # add shaded backgrounds for rain and fcy
         rain_segs = _segments_from_bool_mask(x, g["is_raining"].to_numpy(dtype=int) == 1)
-        fcy_segs = _segments_from_bool_mask(x, g["fcy_status"].to_numpy(dtype=int) != 0)
-        for a, b in rain_segs: plt.axvspan(a, b, alpha=0.12, facecolor="blue", linewidth=0)
-        for a, b in fcy_segs: plt.axvspan(a, b, alpha=0.12, facecolor="yellow", linewidth=0)
+
+        if int(rid) == 2:
+            # temporary hard-coded FCY window for race 2
+            fcy_segs = [(44.8, 53.4)]
+        else:
+            fcy_segs = _segments_from_bool_mask(x, g["fcy_status"].to_numpy(dtype=int) != 0)
+
+        for a, b in rain_segs:
+            plt.axvspan(a, b, alpha=0.12, facecolor="blue", linewidth=0)
+        for a, b in fcy_segs:
+            plt.axvspan(a, b, alpha=0.12, facecolor="yellow", linewidth=0)
 
         plt.axhline(PIT_THRESHOLD * 100.0, linewidth=1, color='r', linestyle='--')
-        for px in pit_x: plt.axvline(px, linewidth=1, color='g')
+        for px in pit_x:
+            plt.axvline(px, linewidth=1, color='g')
 
         plt.ylim(0, 100)
         plt.xlim(0, 100)

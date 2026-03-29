@@ -1,0 +1,15 @@
+stage,slice,rows,races,positives,f1,precision,recall,pr_auc,logloss
+stage1_binary,all_races,96916,165,2552.0,0.5286,0.5439,0.5141,0.5163,0.0622
+stage1_binary,wet_races,11276,19,380.0,0.3834,0.4403,0.3395,0.31,0.1098
+stage1_binary,dry_races,85640,146,2172.0,0.5514,0.5583,0.5447,0.5549,0.0559
+stage1_binary,races_with_fcy,52429,89,1375.0,0.5155,0.5435,0.4902,0.5072,0.0637
+stage1_binary,races_without_fcy,44487,76,1177.0,0.5432,0.5444,0.5421,0.527,0.0603
+stage1_binary,more_seen_tracks,61398,105,1664.0,0.5326,0.5384,0.527,0.5347,0.0627
+stage1_binary,less_seen_tracks,35518,60,888.0,0.5206,0.5556,0.4899,0.4798,0.0611
+stage2_multiclass,all_races,4236,165,,0.4694,0.4673,0.4762,0.5086,0.9076
+stage2_multiclass,wet_races,704,19,,0.295,0.3977,0.3105,0.3339,1.4196
+stage2_multiclass,dry_races,3532,146,,0.4609,0.4769,0.4499,0.659,0.8056
+stage2_multiclass,races_with_fcy,2314,89,,0.4607,0.4632,0.4654,0.4882,0.9045
+stage2_multiclass,races_without_fcy,1922,76,,0.4655,0.457,0.4803,0.5883,0.9115
+stage2_multiclass,more_seen_tracks,2734,105,,0.463,0.4619,0.4707,0.5469,0.9231
+stage2_multiclass,less_seen_tracks,1502,60,,0.4777,0.4742,0.4842,0.4895,0.8796

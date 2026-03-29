@@ -22,6 +22,58 @@ PIT_THRESHOLD = 0.3120
 COMPOUND_LABELS = ["HARD", "MEDIUM", "SOFT", "INTERMEDIATE", "WET"]
 META_COLS_STAGE2 = [f"meta_proba_c{i}" for i in range(len(COMPOUND_LABELS))]
 
+# We need one GP-name-like column in stage1 so we can map names -> race_id.
+GP_COL_CANDIDATES = [
+    "grand_prix",
+    "race_name",
+    "race_track",
+    "location",
+    "event_name",
+]
+
+# Threshold chosen earlier: >= 6 appearances across 8 seasons = "more seen"
+MORE_SEEN_GPS = {
+    "Abu Dhabi Grand Prix",
+    "Austrian Grand Prix",
+    "Bahrain Grand Prix",
+    "Belgian Grand Prix",
+    "British Grand Prix",
+    "Hungarian Grand Prix",
+    "Italian Grand Prix",
+    "Spanish Grand Prix",
+    "Azerbaijan Grand Prix",
+    "Monaco Grand Prix",
+    "United States Grand Prix",
+    "Australian Grand Prix",
+    "Canadian Grand Prix",
+    "Japanese Grand Prix",
+    "Singapore Grand Prix",
+}
+
+LESS_SEEN_GPS = {
+    "Dutch Grand Prix",
+    "Emilia Romagna Grand Prix",
+    "Mexico City Grand Prix",
+    "Saudi Arabian Grand Prix",
+    "São Paulo Grand Prix",
+    "Chinese Grand Prix",
+    "French Grand Prix",
+    "Miami Grand Prix",
+    "Qatar Grand Prix",
+    "Russian Grand Prix",
+    "Las Vegas Grand Prix",
+    "Brazilian Grand Prix",
+    "German Grand Prix",
+    "Mexican Grand Prix",
+    "Portuguese Grand Prix",
+    "Styrian Grand Prix",
+    "Turkish Grand Prix",
+    "70th Anniversary Grand Prix",
+    "Eifel Grand Prix",
+    "Sakhir Grand Prix",
+    "Tuscan Grand Prix",
+}
+
 
 def _require_columns(df: pd.DataFrame, cols: list[str], name: str) -> None:
     missing = [c for c in cols if c not in df.columns]
@@ -29,16 +81,62 @@ def _require_columns(df: pd.DataFrame, cols: list[str], name: str) -> None:
         raise ValueError(f"{name} is missing columns: {missing}")
 
 
+def _infer_gp_col(df: pd.DataFrame) -> str:
+    for col in GP_COL_CANDIDATES:
+        if col in df.columns:
+            return col
+    raise ValueError(
+        "Could not find a Grand Prix name column in stage1. "
+        f"Tried: {GP_COL_CANDIDATES}"
+    )
+
+
+def _race_ids_for_gp_names(stage1: pd.DataFrame, gp_names: set[str], gp_col: str) -> set[int]:
+    race_meta = stage1[["race_id", gp_col]].drop_duplicates().copy()
+
+    # Sanity check: each race_id should map to exactly one GP name
+    counts = race_meta.groupby("race_id")[gp_col].nunique()
+    bad_ids = counts[counts > 1].index.tolist()
+    if bad_ids:
+        raise ValueError(
+            f"Some race_id values map to multiple GP names in column '{gp_col}': {bad_ids[:10]}"
+        )
+
+    found_names = set(race_meta[gp_col].dropna().unique())
+    missing = sorted(gp_names - found_names)
+    if missing:
+        print(
+            f"Warning: {len(missing)} hardcoded GP names were not found in stage1 column '{gp_col}': "
+            f"{missing}"
+        )
+
+    return set(race_meta.loc[race_meta[gp_col].isin(gp_names), "race_id"].unique())
+
+
 def _race_slices(stage1: pd.DataFrame) -> dict[str, set[int]]:
+    gp_col = _infer_gp_col(stage1)
+
     race_ids = set(stage1["race_id"].unique())
     wet_races = set(stage1.loc[stage1["is_wet_race"] == 1, "race_id"].unique())
     fcy_races = set(stage1.loc[stage1["fcy_status"] != 0, "race_id"].unique())
+
+    more_seen_races = _race_ids_for_gp_names(stage1, MORE_SEEN_GPS, gp_col)
+    less_seen_races = _race_ids_for_gp_names(stage1, LESS_SEEN_GPS, gp_col)
+
+    overlap = more_seen_races & less_seen_races
+    if overlap:
+        raise ValueError(
+            f"More-seen and less-seen race slices overlap on race_ids: {sorted(overlap)}"
+        )
+
     return {
         "all_races": race_ids,
         "wet_races": wet_races,
         "dry_races": race_ids - wet_races,
         "races_with_fcy": fcy_races,
         "races_without_fcy": race_ids - fcy_races,
+        "more_seen_tracks": more_seen_races,
+        "less_seen_tracks": less_seen_races,
     }
 
 
@@ -124,6 +222,7 @@ def main() -> None:
 
     metric_cols = ["f1", "precision", "recall", "pr_auc", "logloss"]
     report[metric_cols] = report[metric_cols].round(4)
+
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     report.to_csv(OUT_PATH, index=False)
 

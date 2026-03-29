@@ -1,106 +1,218 @@
-# Hierarchical Stacking Ensemble for Formula 1 Race Strategy Prediction
+# Data-driven forecasting of optimal pit stop strategies in Formula 1
 
-This repository contains the implementation of a PhD-level research project focused on predicting Formula 1 race strategies using a two-stage hierarchical machine learning framework. The system integrates traditional tabular classifiers with deep temporal models (TCN, GRU) in a stacking ensemble architecture, optimized via Optuna and validated through race-grouped cross-validation to mitigate data leakage.
+This repository contains the code for my third-year project on predicting Formula 1 pit stop strategy from historical race data.
 
-## Abstract
+The project focuses on the online version of the problem: at the end of each lap, given the current race situation, should a driver pit now or stay out, and if they pit, which compound should they switch to?
 
-Race strategy in Formula 1 is a multi-objective optimization problem characterized by high stochasticity and temporal dependencies. This project decomposes the problem into two distinct classification tasks:
-1.  **Stage 1 (Decision):** A binary classification task predicting the probability of a pit stop occurring on any given lap ($y_{pit} \in \{0, 1\}$).
-2.  **Stage 2 (Selection):** A multiclass classification task predicting the optimal tire compound for the subsequent stint ($y_{compound} \in \{\text{Hard, Medium, Soft, Intermediate, Wet}\}$), conditioned on a pit stop event.
+Rather than trying to predict a full race strategy in one go, the system works lap by lap. This makes it much closer to how strategy decisions actually happen during a race.
 
-The architecture employs a **Meta-Stacking** approach where base learner Out-Of-Fold (OOF) probabilities are used as augmented features for a second-level Gradient Boosted Decision Tree (XGBoost) meta-learner.
+## What the model does
 
----
+The final system is split into two stages.
 
-## 📂 Recursive Directory Structure
+### Stage 1: pit or no pit
 
-### 📁 `src/` - Core Logic and Implementation
-The `src` directory contains the modular implementation of the pipeline.
-*   **`src/data/`**: Data orchestration and ingestion.
-    *   `data.py`: Defines the rigorous schema for Stage 1/2 datasets, implements the `FoldBundle` logic for race-grouped cross-validation, and provides sequence builders for temporal models.
-    *   `preprocessing.py`: Implements `scikit-learn` pipelines for heterogeneous data handling (One-Hot Encoding for categorical race tracks, Scaling for lap-time deltas).
-*   **`src/models/`**: Architectural definitions.
-    *   `models.py`: A factory module for diverse estimators. Includes implementations for Temporal Convolutional Networks (TCN) with causal dilations, GRU/LSTM recurrent units, and tuned configurations for Random Forests and SVMs.
-*   **`src/training/`**: Execution and validation.
-    *   `train_final.py`: Retrains the full hierarchical ensemble on the entire non-holdout dataset to produce frozen artifacts.
-    *   `evaluate_hierarchical_ensemble.py`: End-to-end evaluation of the joint probability $P(y_{pit}, y_{compound})$.
-    *   `evaluate_stack.py`: Specific evaluation of the stacking meta-learner performance.
-*   **`src/utils/`**: Research and Optimization.
-    *   `tune_optuna.py`: Hyperparameter optimization (HPO) logic using Tree-structured Parzen Estimator (TPE) samplers and Median Pruners.
-    *   `SHAP_eval_b.py`: Interpretability module using SHAP (SHapley Additive exPlanations) to quantify feature attribution.
-    *   `smote_generator.py`: Synthetic Minority Over-sampling Technique (SMOTE) for addressing class imbalance in Stage 2 wet-weather scenarios.
+A binary classifier predicts the probability that a driver should pit at the end of the current lap.
 
-### 📁 `data/` - Data Persistence
-*   **`data/raw/`**: Contains the source SQLite database (`fastf1_vse_plus_final.sqlite`) derived from FastF1 and timing data.
-*   **`data/processed/`**: Cleaned, feature-engineered CSV/Parquet files.
-    *   `output1.csv` / `output2.csv`: Primary Stage 1 and Stage 2 datasets.
-    *   `SMOTE/`: Augmented datasets for multiclass imbalance handling.
-    *   `pit_stops_left_dataset/`: Specialized features for stint-remaining regressions.
-*   **`data/scripts/`**: ETL (Extract, Transform, Load) scripts for database cleaning and feature construction.
+### Stage 2: next compound
 
-### 📁 `results/` & `runs/` - Experimental Artifacts
-*   **`optunaruns/`**: JSON/CSV exports of optimization trials, capturing the evolution of hyperparameter search spaces.
-*   **`tuning_8_final/`**: Final Optuna `.db` files and serialized best-parameter configurations.
-*   **`ablation/`**: Results from feature ablation studies used to determine the impact of specific telemetry channels on predictive accuracy.
+If Stage 1 predicts a pit stop, a second model predicts the tyre compound for the next stint.
 
-### 📁 `VSE/` - Virtual Strategy Engineer
-A submodule containing a **Virtual Race Simulator**.
-*   Used for "Closed-loop" validation: Testing the ML model's predicted strategies in a simulated environment to measure "Time-to-Finish" delta against real-world strategies.
+The overall setup uses stacked ensembling. Different base learners make probability predictions, and a meta-learner combines them into the final output.
 
----
+## Project aim
 
-## 🛠 Methodology
+The goal is not just to copy historical pit stops, but to build a model that learns useful strategic patterns from race context, such as:
 
-### Race-Grouped Cross-Validation
-Standard k-fold CV is unsuitable for race data due to the high correlation between laps in the same event. We implement a **Grouped-Shuffle-Split** based on `race_id`. This ensures that if any lap of the "2023 Monaco GP" is in the validation set, *all* laps from that race are excluded from the training set, preventing temporal leakage.
+- tyre age and current compound
+- race progress
+- track position and gaps to nearby cars
+- traffic and possible undercut or overcut situations
+- safety car and virtual safety car phases
+- weather and wet or dry transitions
+- estimated rejoin gaps after a pit stop
 
-### Stacking Ensemble Architecture
-1.  **Base Layer:** SVM, Random Forest, XGBoost, ANN, and TCN are trained on raw features.
-2.  **Meta-Feature Generation:** OOF probabilities are generated for each base learner.
-3.  **Meta Layer:** An XGBoost meta-learner is trained on the concatenation of original features and base-learner probabilities.
+A lot of previous work in this area only looked at dry races or used evaluation setups that made the task easier than it would be in reality. This project tries to be stricter about that by using race-wise splits and holding out entire races for final case studies.
 
----
+## Data
 
-## 🚀 Reproduction Workflow
+The data mainly comes from the FastF1 API, covering seasons from 2018 to 2025.
 
-### 1. Environment Setup
+FastF1 was used because it provides much richer session data than basic race result tables, including lap timing, tyre information, weather, track status, and race control data. The raw session data is downloaded and stored in a SQLite database, then cleaned and turned into modelling datasets.
+
+There are two main processed datasets:
+
+- `dataset1.csv` for Stage 1 pit-stop prediction
+- `dataset2.csv` for Stage 2 compound prediction
+
+The Stage 1 dataset is lap-level and highly imbalanced, since most laps are non-pit laps.  
+The Stage 2 dataset only includes pit events, since compound choice only matters when a stop happens.
+
+## Modelling approach
+
+A range of tabular and sequential models were tested during development.
+
+These include:
+
+- XGBoost
+- Random Forest
+- SVM
+- feed-forward neural networks
+- sequential deep learning models such as TCN and recurrent variants
+
+The final system uses stacking, where base model probabilities are fed into an XGBoost meta-learner.
+
+For Stage 1, the main focus is strong rare-event prediction and good ranking of pit opportunities.  
+For Stage 2, the focus is choosing the most likely next compound once a stop is predicted.
+
+## Validation
+
+The project uses **5-fold race-wise cross-validation**, grouped by `race_id`.
+
+This means laps from the same race are never split across training and validation folds. That is important because random lap-level splitting leaks race-specific context and can make results look much better than they really are.
+
+Final evaluation is done on held-out races that are kept separate from model development.
+
+## Repository layout
+
+### `src/`
+
+Main modelling and training code.
+
+- `src/data/`  
+  Dataset schemas, fold handling, and sequence-building logic
+- `src/models/`  
+  Model definitions and factories for the different learners
+- `src/training/`  
+  Scripts for base model evaluation, stacking, and final training
+- `src/utils/`  
+  Utility scripts for hyperparameter tuning, threshold tuning, holdout evaluation, SHAP analysis, and ablation studies
+
+### `fastf1/`
+
+Data collection and database building.
+
+- `download_f1_data.py` downloads session data
+- `build_fastf1_db.py` builds the SQLite database
+- `db_clean.py` applies cleaning steps
+- `dataset_builder.py` creates the final modelling datasets
+
+### `data/`
+
+Stored data.
+
+- `data/raw/` contains the SQLite databases
+- `data/processed/` contains the processed CSV datasets and related outputs
+
+### `runs/`
+
+Saved experiment outputs.
+
+### VSE
+copied from heilmeiers directory.
+code changes were made in VSE/racesim/
+
+This includes:
+
+- tuned hyperparameters
+- trained model artifacts
+- holdout predictions and metrics
+- SHAP outputs
+- ablation results
+- confusion matrices
+- SMOTE experiments for Stage 2
+
+## Typical workflow
+
+### 1. Set up the environment
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Hyperparameter Optimization
-To optimize the Stage 1 TCN model (requires GPU/TensorFlow):
+### 2. Build the processed datasets
+
 ```bash
-python -m src.utils.tune_optuna \
-    --data_stage1 data/processed/output1.csv \
-    --task binary \
-    --model tcn \
-    --n_trials 200 \
-    --outdir runs/tuning_tcn
+python fastf1/dataset_builder.py
 ```
 
-### 3. Training the Frozen Pipeline
+### 3. Tune a model
+
+Example for Stage 1 XGBoost:
+
+```bash
+python -m src.utils.tune_hyperparameters \
+    --data_stage1 data/processed/dataset1.csv \
+    --task binary \
+    --model xgb \
+    --n_trials 100 \
+    --outdir runs/tuning
+```
+
+### 4. Train the final pipeline
+
 ```bash
 python -m src.training.train_final \
-    --data_stage1 data/processed/output1.csv \
-    --data_stage2 data/processed/output2.csv \
-    --run_name march_final_v1 \
+    --data_stage1 data/processed/dataset1.csv \
+    --data_stage2 data/processed/dataset2.csv \
+    --run_name final_run \
     --verbose
 ```
 
-### 4. SHAP Interpretability Analysis
+### 5. Run holdout evaluation and interpretation
+
 ```bash
-python -m src.utils.SHAP_eval_b --model_path results/runs_final/stage1_meta.joblib
+python -m src.utils.evaluate_holdout \
+    --data_stage1 data/processed/dataset1.csv \
+    --data_stage2 data/processed/dataset2.csv
 ```
 
----
+```bash
+python -m src.utils.SHAP_eval --model_path runs/final_run/stage1_binary/artifacts/...
+```
 
-## 📊 Evaluation Metrics
-*   **Stage 1:** F1-Score, PR-AUC (Priority due to class imbalance), and Brier Score (for calibration).
-*   **Stage 2:** Macro-Averaged F1, Balanced Accuracy, and Top-2 Accuracy.
+## Metrics
 
-## 📝 Citation
-If using this research in an academic context, please cite the associated PhD thesis:
-*(Citation details to be finalized upon publication)*
+Because pit stops are rare, standard accuracy is not very useful for Stage 1.
+
+### Stage 1
+
+Main metrics are:
+
+- PR-AUC
+- F1-score
+- precision and recall
+- log loss or calibration-focused metrics where relevant
+
+### Stage 2
+
+Main metrics are:
+
+- macro F1
+- balanced accuracy
+- top-k style accuracy where useful
+
+## Notes
+
+A few extra things in the repository are there for analysis rather than the final deployed pipeline, including:
+
+- SHAP-based interpretation
+- base and meta ablation studies
+- SMOTE experiments for Stage 2
+- holdout race case studies
+- comparison against race simulation outputs
+
+## Overall
+
+The point of this project is to build a pit-stop decision system that works from the information available up to the current lap, rather than using future information or simplified offline assumptions.
+
+So the repository is really a mix of:
+
+- data engineering
+- feature engineering
+- imbalanced classification
+- sequential modelling
+- ensemble learning
+- evaluation in a motorsport strategy setting
