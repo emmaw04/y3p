@@ -65,7 +65,7 @@ for name, strats in cases:
     results[name] = run_case(name, strats)
 
 print("="*50)
-print("MONTE CARLO RESULTS (Mean Race Times in seconds, 100 runs)")
+print("MONTE CARLO RESULTS (Mean Race Times in seconds, 5 runs)")
 print("="*50)
 
 header_row = f"{'Driver':<5}" + "".join([f" | {name[:20]:<20}" for name, _ in cases])
@@ -80,9 +80,9 @@ for d in drivers:
     print(row_str)
     rows.append(row_str)
 
-with open("final_results_montecarlo.txt", "w") as f:
+with open("final_results_montecarlo_5runs.txt", "w") as f:
     f.write("="*50 + "\n")
-    f.write("MONTE CARLO RESULTS (Mean Race Times in seconds, 100 runs)\n")
+    f.write("MONTE CARLO RESULTS (Mean Race Times in seconds, 5 runs)\n")
     f.write("="*50 + "\n")
     f.write(header_row + "\n")
     for r in rows:
