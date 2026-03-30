@@ -1,0 +1,137 @@
+race=2, driver=4
+
+=== TP/FP event laps ===
+lap=19   event_type=FP  final_p_pit=0.349724  race_progress_pct=32.76
+lap=23   event_type=FP  final_p_pit=0.331040  race_progress_pct=39.66
+lap=24   event_type=FP  final_p_pit=0.479066  race_progress_pct=41.38
+lap=26   event_type=TP  final_p_pit=0.871387  race_progress_pct=44.83
+
+--- Matching XGB SHAP rows ---
+
+lap 19
+  rank= 1  event=FP  feature=lap_time                             shap=-0.000158  abs= 0.000158  value=90.222
+  rank= 2  event=FP  feature=rejoin_gap_ahead_est_s               shap=-0.000081  abs= 0.000081  value=2.6704999999999472
+  rank= 3  event=FP  feature=race_progress                        shap=-0.000075  abs= 0.000075  value=0.3275862068965517
+  rank= 4  event=FP  feature=lapno                                shap=-0.000072  abs= 0.000072  value=19.0
+  rank= 5  event=FP  feature=tyre_age                             shap=-0.000071  abs= 0.000071  value=21.0
+  rank= 6  event=FP  feature=interval                             shap= 0.000023  abs= 0.000023  value=0.5519999999996799
+  rank= 7  event=FP  feature=tyre_age_diff_to_ahead               shap= 0.000006  abs= 0.000006  value=20.0
+  rank= 8  event=FP  feature=gap_behind_s                         shap=-0.000002  abs= 0.000002  value=2.369000000000142
+  rank= 9  event=FP  feature=n_cars_within_5s_ahead               shap= 0.000000  abs= 0.000000  value=0.0
+  rank=10  event=FP  feature=rejoin_gap_behind_est_s              shap= 0.000000  abs= 0.000000  value=6.456750000000056
+
+lap 23
+  rank= 1  event=FP  feature=lap_time                             shap=-0.000150  abs= 0.000150  value=89.328
+  rank= 2  event=FP  feature=race_progress                        shap=-0.000089  abs= 0.000089  value=0.396551724137931
+  rank= 3  event=FP  feature=tyre_age                             shap=-0.000056  abs= 0.000056  value=25.0
+  rank= 4  event=FP  feature=rejoin_gap_ahead_est_s               shap=-0.000052  abs= 0.000052  value=3.16150000000016
+  rank= 5  event=FP  feature=lapno                                shap=-0.000043  abs= 0.000043  value=23.0
+  rank= 6  event=FP  feature=rejoin_gap_behind_est_s              shap=-0.000040  abs= 0.000040  value=0.6944999999996071
+  rank= 7  event=FP  feature=tyre_age_diff_to_ahead               shap= 0.000009  abs= 0.000009  value=20.0
+  rank= 8  event=FP  feature=gap_behind_s                         shap=-0.000007  abs= 0.000007  value=3.2489999999997963
+  rank= 9  event=FP  feature=interval                             shap=-0.000003  abs= 0.000003  value=0.9939999999996872
+  rank=10  event=FP  feature=n_cars_within_5s_ahead               shap= 0.000000  abs= 0.000000  value=0.0
+
+lap 24
+  rank= 1  event=FP  feature=lap_time                             shap=-0.000154  abs= 0.000154  value=89.301
+  rank= 2  event=FP  feature=race_progress                        shap=-0.000082  abs= 0.000082  value=0.4137931034482758
+  rank= 3  event=FP  feature=tyre_age                             shap=-0.000049  abs= 0.000049  value=26.0
+  rank= 4  event=FP  feature=rejoin_gap_ahead_est_s               shap=-0.000041  abs= 0.000041  value=1.991500000000087
+  rank= 5  event=FP  feature=lapno                                shap=-0.000038  abs= 0.000038  value=24.0
+  rank= 6  event=FP  feature=interval                             shap=-0.000028  abs= 0.000028  value=10.951000000000022
+  rank= 7  event=FP  feature=gap_behind_s                         shap=-0.000017  abs= 0.000017  value=7.163000000000011
+  rank= 8  event=FP  feature=rejoin_gap_behind_est_s              shap=-0.000017  abs= 0.000017  value=2.550499999999829
+  rank= 9  event=FP  feature=tyre_age_diff_to_ahead               shap=-0.000003  abs= 0.000003  value=20.0
+  rank=10  event=FP  feature=n_cars_within_5s_ahead               shap= 0.000000  abs= 0.000000  value=0.0
+
+lap 26
+  rank= 1  event=TP  feature=rejoin_gap_ahead_est_s               shap=-0.000094  abs= 0.000094  value=3.6595000000002074
+  rank= 2  event=TP  feature=race_progress                        shap=-0.000090  abs= 0.000090  value=0.4482758620689655
+  rank= 3  event=TP  feature=tyre_age                             shap=-0.000072  abs= 0.000072  value=28.0
+  rank= 4  event=TP  feature=interval                             shap=-0.000047  abs= 0.000047  value=27.952999999999975
+  rank= 5  event=TP  feature=lapno                                shap=-0.000039  abs= 0.000039  value=26.0
+  rank= 6  event=TP  feature=lap_time                             shap=-0.000032  abs= 0.000032  value=118.52199999999992
+  rank= 7  event=TP  feature=tyre_age_diff_to_ahead               shap=-0.000020  abs= 0.000020  value=20.0
+  rank= 8  event=TP  feature=rejoin_gap_behind_est_s              shap=-0.000018  abs= 0.000018  value=6.014499999999771
+  rank= 9  event=TP  feature=gap_behind_s                         shap=-0.000018  abs= 0.000018  value=11.529999999999744
+  rank=10  event=TP  feature=n_cars_within_5s_ahead               shap= 0.000000  abs= 0.000000  value=0.0
+
+--- Matching TCN-GRU SHAP rows ---
+
+lap 19
+  rank= 1  event=FP  feature=position_6                           signed_sum=-0.420984  abs_sum= 0.971728
+  rank= 2  event=FP  feature=tyre_age                             signed_sum= 0.060284  abs_sum= 0.672114
+  rank= 3  event=FP  feature=race_progress                        signed_sum=-0.123904  abs_sum= 0.504013
+  rank= 4  event=FP  feature=position_8                           signed_sum= 0.057627  abs_sum= 0.360719
+  rank= 5  event=FP  feature=lapno                                signed_sum=-0.128568  abs_sum= 0.348145
+  rank= 6  event=FP  feature=tyre_age_diff_to_ahead               signed_sum= 0.311770  abs_sum= 0.345134
+  rank= 7  event=FP  feature=pit_stops_so_far_0                   signed_sum= 0.044290  abs_sum= 0.342463
+  rank= 8  event=FP  feature=current_compound_HARD                signed_sum= 0.120030  abs_sum= 0.318318
+  rank= 9  event=FP  feature=interval                             signed_sum= 0.003906  abs_sum= 0.302080
+  rank=10  event=FP  feature=pit_stops_so_far_3                   signed_sum= 0.190775  abs_sum= 0.292192
+
+lap 23
+  rank= 1  event=FP  feature=pit_stops_left                       signed_sum= 0.530260  abs_sum= 0.552888
+  rank= 2  event=FP  feature=position_5                           signed_sum=-0.399137  abs_sum= 0.454857
+  rank= 3  event=FP  feature=tyre_age                             signed_sum= 0.077741  abs_sum= 0.439777
+  rank= 4  event=FP  feature=race_progress                        signed_sum=-0.143454  abs_sum= 0.428862
+  rank= 5  event=FP  feature=lap_time                             signed_sum= 0.056942  abs_sum= 0.427687
+  rank= 6  event=FP  feature=lapno                                signed_sum=-0.091858  abs_sum= 0.336047
+  rank= 7  event=FP  feature=interval                             signed_sum= 0.021295  abs_sum= 0.330048
+  rank= 8  event=FP  feature=current_compound_HARD                signed_sum= 0.091614  abs_sum= 0.307489
+  rank= 9  event=FP  feature=position_10                          signed_sum= 0.052389  abs_sum= 0.290843
+  rank=10  event=FP  feature=position_6                           signed_sum= 0.197643  abs_sum= 0.225511
+
+lap 24
+  rank= 1  event=FP  feature=tyre_age                             signed_sum= 0.108688  abs_sum= 0.573943
+  rank= 2  event=FP  feature=pit_stops_left                       signed_sum= 0.361221  abs_sum= 0.377774
+  rank= 3  event=FP  feature=position_4                           signed_sum=-0.356290  abs_sum= 0.362081
+  rank= 4  event=FP  feature=interval                             signed_sum= 0.295064  abs_sum= 0.352132
+  rank= 5  event=FP  feature=lap_time                             signed_sum= 0.009803  abs_sum= 0.278020
+  rank= 6  event=FP  feature=current_compound_HARD                signed_sum= 0.066506  abs_sum= 0.183547
+  rank= 7  event=FP  feature=race_progress                        signed_sum=-0.038664  abs_sum= 0.139353
+  rank= 8  event=FP  feature=pit_stops_so_far_0                   signed_sum= 0.010184  abs_sum= 0.138133
+  rank= 9  event=FP  feature=position_5                           signed_sum= 0.135097  abs_sum= 0.136161
+  rank=10  event=FP  feature=position_2                           signed_sum= 0.010967  abs_sum= 0.132394
+
+lap 26
+  rank= 1  event=TP  feature=tyre_age                             signed_sum= 0.056175  abs_sum= 0.202130
+  rank= 2  event=TP  feature=lap_time                             signed_sum= 0.136073  abs_sum= 0.155241
+  rank= 3  event=TP  feature=pit_stops_left                       signed_sum= 0.139468  abs_sum= 0.152270
+  rank= 4  event=TP  feature=interval                             signed_sum= 0.092487  abs_sum= 0.127195
+  rank= 5  event=TP  feature=position_4                           signed_sum=-0.076124  abs_sum= 0.117891
+  rank= 6  event=TP  feature=position_6                           signed_sum= 0.012623  abs_sum= 0.047217
+  rank= 7  event=TP  feature=tyre_age_diff_to_ahead               signed_sum= 0.025681  abs_sum= 0.042464
+  rank= 8  event=TP  feature=current_compound_HARD                signed_sum= 0.027261  abs_sum= 0.040996
+  rank= 9  event=TP  feature=position_3                           signed_sum= 0.013767  abs_sum= 0.033438
+  rank=10  event=TP  feature=pit_stops_so_far_2                   signed_sum= 0.024121  abs_sum= 0.032892
+
+--- Top TCN-GRU lags for those laps ---
+
+lap 19
+  rank= 1  lag= 0  abs_shap_at_lag= 3.445805
+  rank= 2  lag= 1  abs_shap_at_lag= 2.483349
+  rank= 3  lag= 2  abs_shap_at_lag= 1.567077
+  rank= 4  lag= 4  abs_shap_at_lag= 0.425411
+  rank= 5  lag= 5  abs_shap_at_lag= 0.290368
+
+lap 23
+  rank= 1  lag= 0  abs_shap_at_lag= 2.781235
+  rank= 2  lag= 1  abs_shap_at_lag= 1.810190
+  rank= 3  lag= 2  abs_shap_at_lag= 0.947138
+  rank= 4  lag= 4  abs_shap_at_lag= 0.244188
+  rank= 5  lag= 3  abs_shap_at_lag= 0.201225
+
+lap 24
+  rank= 1  lag= 0  abs_shap_at_lag= 1.929334
+  rank= 2  lag= 1  abs_shap_at_lag= 1.303367
+  rank= 3  lag= 2  abs_shap_at_lag= 0.626208
+  rank= 4  lag= 3  abs_shap_at_lag= 0.170241
+  rank= 5  lag= 4  abs_shap_at_lag= 0.131473
+
+lap 26
+  rank= 1  lag= 0  abs_shap_at_lag= 0.701488
+  rank= 2  lag= 1  abs_shap_at_lag= 0.314879
+  rank= 3  lag= 2  abs_shap_at_lag= 0.142177
+  rank= 4  lag= 3  abs_shap_at_lag= 0.073668
+  rank= 5  lag= 4  abs_shap_at_lag= 0.034834

@@ -1,0 +1,60 @@
+TCN-GRU SHAP DEBUG REPORT
+=========================
+
+race_id=2
+driver_id=1
+lapno=13
+event_type=FP
+final_p_pit=0.334521889687
+tcn_gru_base_model_p_pit=0.972078382969
+effective_sequence_length=8
+window=8
+
+RAW SHAP TOTALS
+---------------
+sum_all_lags_all_features_including_mask = 0.422562973141
+sum_all_lags_all_features_excluding_mask = 0.425124848162
+mask_channel_sum = -0.002561875021
+
+TOP-K VS REST
+-------------
+top_10_signed_sum = 0.011240903783
+top_10_abs_sum = 4.572188385471
+rest_signed_sum = 0.413883944379
+rest_abs_sum = 2.405732346643
+
+TOP 10 FEATURES BY abs_sum_over_time
+----------------------------------------
+rank= 1  feature=position_1                                signed_sum=-0.159907564521  abs_sum= 1.565021656454
+rank= 2  feature=interval                                  signed_sum= 0.030707379105  abs_sum= 0.654360766755
+rank= 3  feature=tyre_age_diff_to_ahead_missing_1          signed_sum=-0.009189955890  abs_sum= 0.424208338372
+rank= 4  feature=race_progress                             signed_sum=-0.105066027114  abs_sum= 0.411041431507
+rank= 5  feature=current_compound_HARD                     signed_sum= 0.100205334136  abs_sum= 0.295846795430
+rank= 6  feature=position_3                                signed_sum= 0.075598280760  abs_sum= 0.293229634990
+rank= 7  feature=lapno                                     signed_sum=-0.077989452227  abs_sum= 0.276331029192
+rank= 8  feature=pit_stops_so_far_0                        signed_sum= 0.040770185195  abs_sum= 0.223274229109
+rank= 9  feature=current_compound_SOFT                     signed_sum= 0.020256952077  abs_sum= 0.216041992957
+rank=10  feature=pit_stops_left                            signed_sum= 0.095855772262  abs_sum= 0.212832510704
+
+TOP VALID LAGS BY ABS SHAP
+-------------------------
+rank= 1  lag= 0  abs_shap_at_lag=2.917784494182
+rank= 2  lag= 1  abs_shap_at_lag=2.280162133469
+rank= 3  lag= 2  abs_shap_at_lag=0.945573313824
+rank= 4  lag= 4  abs_shap_at_lag=0.259822506021
+rank= 5  lag= 3  abs_shap_at_lag=0.229610398130
+rank= 6  lag= 5  abs_shap_at_lag=0.152490684144
+rank= 7  lag= 7  abs_shap_at_lag=0.106397171642
+rank= 8  lag= 6  abs_shap_at_lag=0.086080030701
+
+NOTES
+-----
+1) This report does NOT include a TCN expected/base value, because GradientExplainer
+   may not expose it in the same way as TreeExplainer for this model/version.
+2) If top_k_signed_sum is much smaller than total_sum_no_mask, then the exported
+   long CSV is omitting a lot of signed contribution from non-top-k features.
+3) If mask_channel_sum is large, dropping the mask for interpretation changes the
+   additive story substantially.
+4) If total_sum_full / total_sum_no_mask looks implausibly small relative to the model
+   output, inspect whether GradientExplainer is behaving more like a ranking heuristic
+   than a numerically additive decomposition in this setup.

@@ -1,0 +1,41 @@
+race=53, driver=2
+
+=== TP/FP event laps ===
+lap=27   event_type=TP  final_p_pit=0.781323  race_progress_pct=40.91
+
+--- Matching XGB SHAP rows ---
+
+lap 27
+  rank= 1  event=TP  feature=lap_time                             shap=-0.000134  abs= 0.000134  value=86.64499999999953
+  rank= 2  event=TP  feature=rejoin_gap_ahead_est_s               shap=-0.000103  abs= 0.000103  value=9.149499999999987
+  rank= 3  event=TP  feature=race_progress                        shap=-0.000101  abs= 0.000101  value=0.4090909090909091
+  rank= 4  event=TP  feature=tyre_age                             shap=-0.000057  abs= 0.000057  value=31.0
+  rank= 5  event=TP  feature=interval                             shap= 0.000048  abs= 0.000048  value=0.4360000000006039
+  rank= 6  event=TP  feature=lapno                                shap=-0.000037  abs= 0.000037  value=27.0
+  rank= 7  event=TP  feature=n_cars_within_5s_ahead               shap=-0.000019  abs= 0.000019  value=2.0
+  rank= 8  event=TP  feature=tyre_age_diff_to_ahead               shap=-0.000015  abs= 0.000015  value=5.0
+  rank= 9  event=TP  feature=gap_behind_s                         shap=-0.000013  abs= 0.000013  value=13.095000000000256
+  rank=10  event=TP  feature=rejoin_gap_behind_est_s              shap= 0.000000  abs= 0.000000  value=6.456750000000056
+
+--- Matching TCN-GRU SHAP rows ---
+
+lap 27
+  rank= 1  event=TP  feature=tyre_age                             signed_sum=-0.003836  abs_sum= 1.110582
+  rank= 2  event=TP  feature=position_8                           signed_sum=-0.120210  abs_sum= 0.765546
+  rank= 3  event=TP  feature=interval                             signed_sum=-0.033845  abs_sum= 0.489768
+  rank= 4  event=TP  feature=current_compound_HARD                signed_sum= 0.088307  abs_sum= 0.378071
+  rank= 5  event=TP  feature=pit_stops_left                       signed_sum= 0.231647  abs_sum= 0.280480
+  rank= 6  event=TP  feature=lap_time                             signed_sum= 0.095377  abs_sum= 0.239763
+  rank= 7  event=TP  feature=pit_stops_so_far_0                   signed_sum= 0.011811  abs_sum= 0.203980
+  rank= 8  event=TP  feature=position_6                           signed_sum= 0.061573  abs_sum= 0.201096
+  rank= 9  event=TP  feature=n_cars_within_5s_ahead               signed_sum= 0.083551  abs_sum= 0.193792
+  rank=10  event=TP  feature=track_category_1                     signed_sum=-0.002456  abs_sum= 0.189072
+
+--- Top TCN-GRU lags for those laps ---
+
+lap 27
+  rank= 1  lag= 1  abs_shap_at_lag= 2.413709
+  rank= 2  lag= 0  abs_shap_at_lag= 1.940726
+  rank= 3  lag= 2  abs_shap_at_lag= 1.127971
+  rank= 4  lag= 4  abs_shap_at_lag= 0.263297
+  rank= 5  lag= 5  abs_shap_at_lag= 0.253636
