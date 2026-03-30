@@ -319,8 +319,11 @@ def add_undercut_features(df: pd.DataFrame) -> pd.DataFrame:
         df["pit_loss_est_s"] = DEFAULT_NET_PIT_LOSS_S
 
     # apply calculation per lap-group and join results back
-    rejoin_cols = df.groupby(["race_id", "lapno"], sort=False, group_keys=False).apply(_rejoin_gaps_one_lap, include_groups=False)
-    df = pd.concat([df, rejoin_cols], axis=1)
+    rejoin_cols = (
+        df.groupby(["race_id", "lapno"], sort=False, group_keys=False)
+        .apply(_rejoin_gaps_one_lap, include_groups=False)
+    )
+    df = df.join(rejoin_cols)
 
     # clean up temporary columns
     df = df.drop(
@@ -599,7 +602,7 @@ def add_fcy_status_table6(df: pd.DataFrame, fcy: pd.DataFrame) -> pd.DataFrame:
 
     df2 = pd.concat(out_frames, ignore_index=True)
     df2 = df2.sort_values(["race_id", "driver_id", "lapno"]).copy()
-    prev_phase = df2.groupby(["race_id", "driver_id"])["phase_type_end"].shift(1)
+    prev_phase = df2.groupby(["race_id", "driver_id"], sort=False)["phase_type_end"].shift(1)
 
     is_vsc = df2["phase_type_end"].eq("VSC")
     is_sc = df2["phase_type_end"].eq("SC")
@@ -912,19 +915,21 @@ def main() -> None:
     ap.add_argument("--db-less-clean", required=True, help="path to less clean sqlite db")
     args = ap.parse_args()
 
-    # process dataset 1
-    out1_path = Path(args.db_clean).with_name(Path(args.db_clean).stem + "_dataset.csv")
+    # process dataset 1 (from clean db)
+    out1_path = Path("data/processed/dataset1.csv")
+    out1_path.parent.mkdir(parents=True, exist_ok=True)
     df_clean_full = build_dataset(args.db_clean)
     ds1 = make_dataset_1(df_clean_full)
     ds1.to_csv(out1_path, index=False)
-    print(f"dataset 1 wrote {len(ds1)} rows to {out1_path}")
+    print(f"dataset 1 (tire strategy) wrote {len(ds1)} rows to {out1_path}")
 
-    # process dataset 2
-    out2_path = Path(args.db_less_clean).with_name(Path(args.db_less_clean).stem + "_dataset.csv")
+    # process dataset 2 (from less clean db)
+    out2_path = Path("data/processed/dataset2.csv")
+    out2_path.parent.mkdir(parents=True, exist_ok=True)
     df_less_full = build_dataset(args.db_less_clean)
     ds2 = make_dataset_2(df_less_full)
     ds2.to_csv(out2_path, index=False)
-    print(f"dataset 2 wrote {len(ds2)} rows to {out2_path}")
+    print(f"dataset 2 (pit events) wrote {len(ds2)} rows to {out2_path}")
 
 
 if __name__ == "__main__":
