@@ -35,7 +35,6 @@ from src.data.data import (
 )
 from src.data.preprocessing import build_preprocessor, PreprocessConfig, make_preprocessor_for_model
 from src.models.models import (
-    ModelConfig,
     build_model_pipeline,
     get_binary_base_learners,
     get_meta_binary_learners,
@@ -183,7 +182,6 @@ def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.n
     return meta_x
 
 
-def run_stage1_stacking(df1, x, y, cfg: ModelConfig, folds: list[tuple[np.ndarray, np.ndarray]], meta_model_name: str, outdir: Path):
     """handles the whole pipeline for stage 1 pit decision stacking"""
     outdir.mkdir(parents=True, exist_ok=True)
     
@@ -251,7 +249,6 @@ def run_stage1_stacking(df1, x, y, cfg: ModelConfig, folds: list[tuple[np.ndarra
     return summary
 
 
-def run_stage2_stacking(x, y, cfg: ModelConfig, folds: list[tuple[np.ndarray, np.ndarray]], meta_model_name: str, outdir: Path):
     """handles the pipeline for stage 2 compound decision stacking"""
     outdir.mkdir(parents=True, exist_ok=True)
     n_classes = len(COMPOUND_CLASSES)
@@ -335,7 +332,7 @@ def main():
 
     seed = 42
     n_splits = 5
-    cfg = ModelConfig(random_state=seed)
+    
 
     if args.only_stage in {"all", "stage1"}:
         if not args.data_stage1:

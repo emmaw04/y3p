@@ -2,217 +2,80 @@
 
 This repository contains the code for my third-year project on predicting Formula 1 pit stop strategy from historical race data.
 
-The project focuses on the online version of the problem: at the end of each lap, given the current race situation, should a driver pit now or stay out, and if they pit, which compound should they switch to?
-
-Rather than trying to predict a full race strategy in one go, the system works lap by lap. This makes it much closer to how strategy decisions actually happen during a race.
-
-## What the model does
-
-The final system is split into two stages.
-
-### Stage 1: pit or no pit
-
-A binary classifier predicts the probability that a driver should pit at the end of the current lap.
-
-### Stage 2: next compound
-
-If Stage 1 predicts a pit stop, a second model predicts the tyre compound for the next stint.
-
-The overall setup uses stacked ensembling. Different base learners make probability predictions, and a meta-learner combines them into the final output.
-
-## Project aim
-
-The goal is not just to copy historical pit stops, but to build a model that learns useful strategic patterns from race context, such as:
-
-- tyre age and current compound
-- race progress
-- track position and gaps to nearby cars
-- traffic and possible undercut or overcut situations
-- safety car and virtual safety car phases
-- weather and wet or dry transitions
-- estimated rejoin gaps after a pit stop
-
-A lot of previous work in this area only looked at dry races or used evaluation setups that made the task easier than it would be in reality. This project tries to be stricter about that by using race-wise splits and holding out entire races for final case studies.
-
-## Data
-
-The data mainly comes from the FastF1 API, covering seasons from 2018 to 2025.
-
-FastF1 was used because it provides much richer session data than basic race result tables, including lap timing, tyre information, weather, track status, and race control data. The raw session data is downloaded and stored in a SQLite database, then cleaned and turned into modelling datasets.
-
-There are two main processed datasets:
-
-- `dataset1.csv` for Stage 1 pit-stop prediction
-- `dataset2.csv` for Stage 2 compound prediction
-
-The Stage 1 dataset is lap-level and highly imbalanced, since most laps are non-pit laps.  
-The Stage 2 dataset only includes pit events, since compound choice only matters when a stop happens.
-
-## Modelling approach
-
-A range of tabular and sequential models were tested during development.
-
-These include:
-
-- XGBoost
-- Random Forest
-- SVM
-- feed-forward neural networks
-- sequential deep learning models such as TCN and recurrent variants
-
-The final system uses stacking, where base model probabilities are fed into an XGBoost meta-learner.
-
-For Stage 1, the main focus is strong rare-event prediction and good ranking of pit opportunities.  
-For Stage 2, the focus is choosing the most likely next compound once a stop is predicted.
-
-## Validation
-
-The project uses **5-fold race-wise cross-validation**, grouped by `race_id`.
-
-This means laps from the same race are never split across training and validation folds. That is important because random lap-level splitting leaks race-specific context and can make results look much better than they really are.
-
-Final evaluation is done on held-out races that are kept separate from model development.
-
-## Repository layout
-
-### `src/`
-
-Main modelling and training code.
-
-- `src/data/`  
-  Dataset schemas, fold handling, and sequence-building logic
-- `src/models/`  
-  Model definitions and factories for the different learners
-- `src/training/`  
-  Scripts for base model evaluation, stacking, and final training
-- `src/utils/`  
-  Utility scripts for hyperparameter tuning, threshold tuning, holdout evaluation, SHAP analysis, and ablation studies
-
-### `fastf1/`
-
-Data collection and database building.
-
-- `download_f1_data.py` downloads session data
-- `build_fastf1_db.py` builds the SQLite database
-- `db_clean.py` applies cleaning steps
-- `dataset_builder.py` creates the final modelling datasets
-
-### `data/`
-
-Stored data.
-
-- `data/raw/` contains the SQLite databases
-- `data/processed/` contains the processed CSV datasets and related outputs
-
-### `runs/`
-
-Saved experiment outputs.
-
-### VSE
-copied from heilmeiers directory.
-code changes were made in VSE/racesim/
-
-This includes:
-
-- tuned hyperparameters
-- trained model artifacts
-- holdout predictions and metrics
-- SHAP outputs
-- ablation results
-- confusion matrices
-- SMOTE experiments for Stage 2
-
-## Typical workflow
-
-### 1. Set up the environment
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Build the processed datasets
-
-```bash
-python fastf1/dataset_builder.py
-```
-
-### 3. Tune a model
-
-Example for Stage 1 XGBoost:
-
-```bash
-python -m src.utils.tune_hyperparameters \
-    --data_stage1 data/processed/dataset1.csv \
-    --task binary \
-    --model xgb \
-    --n_trials 100 \
-    --outdir runs/tuning
-```
-
-### 4. Train the final pipeline
-
-```bash
-python -m src.training.train_final \
-    --data_stage1 data/processed/dataset1.csv \
-    --data_stage2 data/processed/dataset2.csv \
-    --run_name final_run \
-    --verbose
-```
-
-### 5. Run holdout evaluation and interpretation
-
-```bash
-python -m src.utils.evaluate_holdout \
-    --data_stage1 data/processed/dataset1.csv \
-    --data_stage2 data/processed/dataset2.csv
-```
-
-```bash
-python -m src.utils.SHAP_eval --model_path runs/final_run/stage1_binary/artifacts/...
-```
-
-## Metrics
-
-Because pit stops are rare, standard accuracy is not very useful for Stage 1.
-
-### Stage 1
-
-Main metrics are:
-
-- PR-AUC
-- F1-score
-- precision and recall
-- log loss or calibration-focused metrics where relevant
-
-### Stage 2
-
-Main metrics are:
-
-- macro F1
-- balanced accuracy
-- top-k style accuracy where useful
-
-## Notes
-
-A few extra things in the repository are there for analysis rather than the final deployed pipeline, including:
-
-- SHAP-based interpretation
-- base and meta ablation studies
-- SMOTE experiments for Stage 2
-- holdout race case studies
-- comparison against race simulation outputs
-
-## Overall
-
-The point of this project is to build a pit-stop decision system that works from the information available up to the current lap, rather than using future information or simplified offline assumptions.
-
-So the repository is really a mix of:
-
-- data engineering
-- feature engineering
-- imbalanced classification
-- sequential modelling
-- ensemble learning
-- evaluation in a motorsport strategy setting
+# Environment Setup
+You need python version 3.9.6 installed (an older version to be compatible with the python version required to run Heilmeier's simulator). All required packages are listed in the `requirements.txt` file.
+
+## Overview of folders + files
+
+### `/data`
+Where all the datasets and databases are stored
+- `raw/`: The databases constructed and used for constructing datasets
+  - `f1_database.sqlite`: The original SQLite database built from data queried from the FastF1 API
+  - `f1_database__clean.sqlite`: The f1_database.sqlite cleaned according to the cleaning steps required for the stage 1 dataset (outlined in the report)
+  - `f1_database__less_clean.sqlite`: The f1_database.sqlite cleaned according to the cleaning steps required for the stage 2 dataset (outlined in the report, not as rigorous as the steps for stage 1 of the model)
+- `processed/`: The datasets used for model training
+  - `dataset1.csv`: The dataset used to train stage 1 of the model (pit/no pit)
+  - `dataset2.csv`: The dataset used to train stage 2 of the model (tyre compound)
+  - `pit_stops_left_dataset/`: stores datasets identical to data/processed/dataset1.csv and data/processed/dataset2.csv except they store the pit_stops_left feature for which some informal experimentation was carried out to determine how beneficial the feature is, used for experiments and not included in the final report
+  - `SMOTE/`: oversampled datasets used for exploratory experiments on the effect of SMOTE oversampling. These datasets were not used in the final reported results. In each version, the SOFT, MEDIUM, and INTERMEDIATE compound classes were upsampled to match the size of the dominant HARD class. Separate variants were then created in which the WET class was either left unchanged or upsampled by 100%, 200%, 300%, 400%, or 500%.
+  - `pit_stop_loss`: stores the estimated net time loss of making a pit stop at each circuit
+
+### `/fastf1`
+Scripts specifically for pulling, parsing, and cleaning the raw FastF1 data.
+- `download_f1_data.py`: queries the fastf1 api to fetch all historical formula 1 data across all races in 2018-2025 seasons
+- `build_fastf1_db.py`: takes the parquet filed generated by download_f1_data.py and compiles the data into a structural relational SQLite database 
+- `db_clean.py`: takes the database created by build_fastf1_db.py and carries out two sets of data cleaning steps (as outlined in the final report), to produce two new databases (one more rigorously cleaned than the other)
+- `dataset_builder.py`: takes the two new databases and constructs two datasets for them (the database more rigorously cleaned is used to construct the stage 1 dataset with a larger feature set, the less rigorously cleaned dataset is used to construct the stage 2 dataset)
+
+### `/src`
+The core source code for the development and evaluation of the final machine learning pipeline
+- `data/`: Data loading and preprocessing file
+  - `data.py`: loads the datasets, handles type casting, and removes the holdout races to be used in evaluation so they're never seen during training. build sequences from tabular lap data to be used by the sequential models
+  - `preprocessing.py`: defines how the data is preprocessed (scaled and encoded) based on the specific model
+- `models/`: where the model architectures are defined
+  - `models.py`: defines factories for creating all the models used in the project
+- `training/`: scripts used to evaluate and train the final models
+  - `evaluate_base.py`: tests the performance of a single base model in isolation using 5 fold cross validation
+  - `evaluate_stack.py`: tests the performance of the full stacking ensemble using 5 fold cross validation. first trains the base models to generate out of fold predictions, then trains the meta learner on those predictions. 
+  - `train_final.py`: trains the final model to be used for evaluation. generates OOF predictions from the base learners to train the meta learner, then retrains all base models on the entire dataset to maximise their learning before saving them as .joblib and .keras files
+- `utils/`: Helper scripts for tuning, ablation studies, etc
+  - `base_ablation_eval.py`: conducts ablation studies on the base learners for both stage 1 and stage 2. It systematically removes a group of related features, retrains the base models without this group, then measures the performance drop
+  - `compute_net_pit_loss_by_track.py`: a script that queries the sqlite database to calculate the actual time penalty of taking a pit stop for each specific track. it considers the pit lane time and the sector times of cars driving past. the resulting track specific net time losses calculated are used to construct the databases
+  - `evaluate_holdout.py`: the script for testing the final models against the holdout races, 
+  - `make_confusion_matrices.py`: reads the final out of fold predictions and generates visual confusion matrixes for stage 1 and stage 2 meta learners
+  - `meta_ablation_eval.py`: conducts ablation on the meta learners, drops the predictions of individual base models to measure how much each base learner contributes to the final ensemble's accuracy
+  - `report_oof.py`: reads the out of fold predictions for the final model and reports model performance across different race contexts (wet, dry, less seen tracks, etc)
+  - `run_simulations.py`: automates running the virtual strategy engineer simulation. it programmatically modifies the simulation configuration file to test different scenarios, and aggregates the Monte Carlo mean race time results
+  - `smote_generator.py`: a data proprocessing script that generates oversampled datasets for the stage 2 task using SMOTENC. multiple versions of the dataset with verying multipliers for the WET compound class (x1 to x6) to help balance thr training data for the models
+  - `tune_hyperparameters.py`: uses Optuna to handle tuning for all models in the project
+  - `tune_meta_threshold.py`: optimises the decision boundary for the stage 1 meta learner to maximise F1
+
+### `/runs`
+where all the outputs, logs, and trained model artifacts get saved when scripts are run.
+- `tuning/`: stores the results of hyperparameter tuning. contains subdirectories for different model architectures and stages of the model (binary for stage 1, multiclass for stage 2), which contain a JSON file which saves the optimal hyperparameter configurations found for that specific model
+- `final_run/`: Stores the final, production-ready models and overall validation metrics presented in the thesis.
+  - `manifest.json`: stores metadata about the exact configuration used to train the final model to ensure the final run is reproducible
+  - `oof_slice_metrics.csv`: contains the OOF evaluation metrics for each different race context ()
+  - `stage1_binary/`: stores the artifacts for stage 1 of the model
+    - `artifacts/`: Directory containing the saved model files (e.g., `lstm_model.keras`, `tcn_gru_model.keras`, etc.), configuration JSONs (`feature_columns.json`, `meta_threshold.json`), OOF predictions (`oof_predictions.csv`), and Precision-Recall curve plots (`pr_curve_*.png`).
+  - `stage2_multiclass/`: stores the artifacts for stage 2 of the model
+    - `artifacts/`: Directory containing the saved model files (e.g., `tcn_gru_model.keras`, etc.), configuration JSONs (`classes.json`, `feature_columns.json`), OOF predictions (`oof_predictions.csv`), and base vs. meta summary CSVs.
+  - `confusion_matrix/`: stores the confusion matrixes for stage 1 and 2 of the final model
+- `holdout_run/`: stores the results of evaluation of the final models on the holdout races which were strictly separated and never seen by the models during training or cross validation. the file holdout_stage1_lap_probs.csv stores the 
+- `ablation/`: stores the outputs of ablation studies which involved removing groups of input features to understand their contributions to the overall model performance. *_meta_ablation folders explore the impact that removing each base learner and the additional race context have on the meta learners performance. *_base_ablation folders explore the impact that removing different feature groups has on the base learners performance.
+- `simulation_runs/`: stores the result of simulating the 2019 austrian grand prix following the final models pit stop predictions to 
+- `SMOTE_metrics/`: stores the evaluation results from experiments testing different SMOTE strategies. this wasn't fully completed so isn't mentioned in the final report
+
+### `/VSE`
+Submodule from the github repository 'https://github.com/TUMFTM/race-simulation' created by Heilmeier, this is the simulation environment for counterfactual evaluation of the model.
+- `main_racesim.py`: 
+- `main_train_rl_agent_dqn.py`: 
+- `machine_learning/` & `machine_learning_rl_training/`: 
+- `racesim/`
+- `racesim_basic/`: 
+
+The files that I edited were:
+`VSE/main_racesim.py` 
+`VSE/racesim/src/mcs_analysis.py`
+`VSE/racesim/src/vse.py`
+`VSE/racesim/input/parameters/pars_Spielberg_2019.ini`

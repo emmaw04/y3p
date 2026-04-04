@@ -35,7 +35,6 @@ from src.data.data import (
 )
 from src.data.preprocessing import make_preprocessor_for_model
 from src.models.models import (
-    ModelConfig,
     build_model_pipeline,
     get_binary_base_learners,
     get_multiclass_base_learners,
@@ -80,7 +79,7 @@ def run_tabular_cv(x, y, task: str, model_name: str, outdir: Path):
     """run k fold cross validation for our tabular models"""
     seed = 42
     n_splits = 5
-    cfg = ModelConfig(random_state=seed)
+    
     
     num_cols, cat_cols = infer_feature_types(x)
     
@@ -144,7 +143,7 @@ def run_seq_cv(df, task: str, model_name: str, outdir: Path):
     seed = 42
     n_splits = 5
     seq_len = 8 if task == "binary" else 12
-    cfg = ModelConfig(random_state=seed)
+    
     
     df = df.reset_index(drop=True)
     keys = df[["race_id", "driver_id", "lapno"]].copy()

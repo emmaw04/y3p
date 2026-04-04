@@ -29,7 +29,6 @@ from src.data.data import (
 )
 from src.data.preprocessing import build_preprocessor, PreprocessConfig, make_preprocessor_for_model
 from src.models.models import (
-    ModelConfig,
     build_model_pipeline,
     make_stage1_xgb,
     make_stage1_svm,
@@ -507,7 +506,7 @@ def main():
     
     seed = 42
     n_splits = 5
-    cfg = ModelConfig(random_state=seed)
+    
 
     manifest = {
         "seed": seed,

@@ -61,7 +61,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 
 from src.models.models import (
-    ModelConfig,
     make_stage1_svm,
     make_stage1_xgb,
     make_tcn_binary,

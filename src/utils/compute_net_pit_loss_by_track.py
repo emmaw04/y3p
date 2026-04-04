@@ -2,16 +2,10 @@
 
 import sqlite3
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
 DB_PATH = "data/raw/f1_database.sqlite"
-
-# put your holdout race ids here if you want to exclude them
-EXCLUDE_RACE_IDS = set()
-
-
 
 def normalize_compound(x):
     if x is None or pd.isna(x):
@@ -29,12 +23,9 @@ def normalize_compound(x):
         return "WET"
     return s
 
-
 conn = sqlite3.connect(DB_PATH)
 
-# -----------------------------
 # actual pit stops with next-lap pit exit
-# -----------------------------
 stops_sql = """
 SELECT
     l.race_id,
@@ -67,11 +58,9 @@ WHERE l.pitintimenum IS NOT NULL
 
 stops = pd.read_sql_query(stops_sql, conn)
 
-# -----------------------------
 # non-pit laps for track-level S1/S3 medians, derived from session_ms
 # s1_s = current sector1session_ms - previous lap sector3session_ms
 # s3_s = current sector3session_ms - current sector2session_ms
-# -----------------------------
 laps_sql = """
 SELECT
     l.race_id,
@@ -112,9 +101,7 @@ if EXCLUDE_RACE_IDS:
     print(f"after holdout exclusion, stop rows: {len(stops)}")
     print(f"after holdout exclusion, timed laps: {len(laps)}")
 
-# -----------------------------
 # derive stop-level quantities
-# -----------------------------
 for c in ["pit_in_ms", "pit_out_ms", "s2_end_ms", "lap_end_ms", "next_s1_end_ms", "pitstopduration"]:
     stops[c] = pd.to_numeric(stops[c], errors="coerce")
 
@@ -128,12 +115,8 @@ stops = stops.loc[
 ].copy()
 print(f"after dry-stop filter: {len(stops)}")
 
-
-
 # exclude FCY/SC pit entries
-# do this in python by re-reading fcyphases if needed would be awkward here,
-# so keep v2 simple first; you can add FCY filtering later once baseline works
-
+# do this in python by re-reading fcyphases if needed would be awkward here
 stops["entry_frac"] = (stops["pit_in_ms"] - stops["s2_end_ms"]) / (stops["lap_end_ms"] - stops["s2_end_ms"])
 stops["exit_frac"] = (stops["pit_out_ms"] - stops["lap_end_ms"]) / (stops["next_s1_end_ms"] - stops["lap_end_ms"])
 stops["abs_pit_window_s"] = (stops["pit_out_ms"] - stops["pit_in_ms"]) / 1000.0
@@ -145,9 +128,7 @@ stops = stops.loc[
 ].copy()
 print(f"after fraction/window sanity filters: {len(stops)}")
 
-# -----------------------------
 # derive clean sector times from session_ms
-# -----------------------------
 for c in ["sector1session_ms", "sector2session_ms", "sector3session_ms", "prev_lap_end_ms", "racetime"]:
     laps[c] = pd.to_numeric(laps[c], errors="coerce")
 
@@ -171,9 +152,7 @@ laps = laps.loc[
 ].copy()
 print(f"after sector sanity filters: {len(laps)}")
 
-# -----------------------------
 # aggregate by track
-# -----------------------------
 stop_agg = (
     stops.groupby("race_track", as_index=True)
     .agg(
@@ -236,10 +215,7 @@ net_dict = {
 
 default_net = round(float(table["net_pit_loss_s"].median()), 3) if len(table) else np.nan
 
-print("\nPaste this into dataset_builder.py:\n")
 print("NET_PIT_LOSS_BY_TRACK_S: dict[str, float] = {")
 for k, v in net_dict.items():
     print(f'    "{k}": {v},')
 print("}")
-print(f"\nDEFAULT_NET_PIT_LOSS_S = {default_net}")
-print(f"\nWrote full table to {out_csv}")

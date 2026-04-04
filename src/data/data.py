@@ -1,18 +1,13 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 import warnings
-
 import numpy as np
 import pandas as pd
 
 
-# -----------------------------
 # Constants
-# -----------------------------
-
 COMPOUND_CLASSES: Tuple[str, ...] = ("HARD", "MEDIUM", "SOFT", "INTERMEDIATE", "WET")
 COMPOUND_TO_INT: Dict[str, int] = {c: i for i, c in enumerate(COMPOUND_CLASSES)}
 INT_TO_COMPOUND: Dict[int, str] = {i: c for c, i in COMPOUND_TO_INT.items()}

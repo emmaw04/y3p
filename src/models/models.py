@@ -2,39 +2,33 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable, Dict
-
 from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
-
 from xgboost import XGBClassifier
 from scikeras.wrappers import KerasClassifier
 from tensorflow import keras
 from tensorflow.keras import layers
 
-
-# shared bits
-
+# shared helpers
 @dataclass(frozen=True)
 class ModelConfig:
-    """small config object used across the model factories"""
-
+    """small config object used across the model factories
+    ensures seed number is consistent across classes
+    """
     random_state: int = 42
     n_jobs: int = -1
     use_class_weight: bool = False
 
-
 def build_model_pipeline(preprocessor, estimator: BaseEstimator) -> Pipeline:
     """wraps preprocessing and the estimator together so each fold fits both from scratch"""
-
     return Pipeline([
         ("preprocess", preprocessor),
         ("model", estimator),
     ])
-
 
 def _make_keras_classifier(
     cfg: ModelConfig,
@@ -65,7 +59,6 @@ def _make_keras_classifier(
         random_state=cfg.random_state,
     )
 
-
 def _compile_binary_seq_model(
     model: "keras.Model",
     *,
@@ -90,7 +83,6 @@ def _compile_binary_seq_model(
         ],
     )
     return model
-
 
 def _compile_multiclass_seq_model(
     model: "keras.Model",
@@ -176,7 +168,8 @@ def _tcn_residual_block(x, *, filters: int, kernel_size: int, dilation: int, dro
 
     return layers.Add()([shortcut, x])
 
-# stage 1 tabular
+
+# stage 1 tabular factories
 
 def make_stage1_rf(cfg: ModelConfig) -> BaseEstimator:
     """returns the tuned random forest for stage 1
@@ -274,17 +267,7 @@ def make_stage1_ann(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def get_stage1_tabular_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
-    """registry for the stage 1 tabular models"""
-
-    return {
-        "rf": make_stage1_rf(cfg),
-        "xgb": make_stage1_xgb(cfg),
-        "svm": make_stage1_svm(cfg),
-        "ann": make_stage1_ann(cfg),
-    }
-
-# stage 1 sequential
+# stage 1 sequential builder functions
 
 def _build_tcn_binary(
     seq_len: int,
@@ -458,47 +441,6 @@ def _build_gru_binary(
     return _compile_binary_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
 
-def make_tcn_binary(cfg: ModelConfig, *, seq_len: int = 12) -> BaseEstimator:
-    """returns the stage 1 tcn classifier
-
-    the seq_len argument is kept for compatibility even though the fitted shape is read at runtime
-    """
-
-    return _make_binary_seq_classifier(cfg, _build_tcn_binary, batch_size=128)
-
-
-def make_tcn_gru_binary(cfg: ModelConfig) -> BaseEstimator:
-    """returns the stage 1 tcn gru classifier"""
-
-    return _make_binary_seq_classifier(cfg, _build_tcn_gru_binary, batch_size=128)
-
-
-def make_lstm_binary(cfg: ModelConfig) -> BaseEstimator:
-    """returns the stage 1 lstm classifier"""
-
-    return _make_binary_seq_classifier(cfg, _build_lstm_binary, batch_size=32)
-
-
-def make_gru_binary(cfg: ModelConfig) -> BaseEstimator:
-    """returns the stage 1 gru classifier"""
-
-    return _make_binary_seq_classifier(cfg, _build_gru_binary, batch_size=32)
-
-
-def get_stage1_sequential_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
-    """registry for the stage 1 sequence models"""
-
-    return {
-        "tcn": make_tcn_binary(cfg),
-        "tcn_gru": make_tcn_gru_binary(cfg),
-        "lstm": make_lstm_binary(cfg),
-        "gru": make_gru_binary(cfg),
-        "hybrid_vse": make_hybrid_vse_binary(cfg),
-    }
-
-
-# stage 1 four lap hybrid
-
 def _build_vse_hybrid_binary(
     seq_len: int,
     n_features: int,
@@ -527,12 +469,65 @@ def _build_vse_hybrid_binary(
 
     return _compile_binary_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
+
+# stage 1 sequential public factories
+
+def make_tcn_binary(cfg: ModelConfig) -> BaseEstimator:
+    """returns the stage 1 tcn classifier"""
+
+    return _make_binary_seq_classifier(cfg, _build_tcn_binary, batch_size=128)
+
+
+def make_tcn_gru_binary(cfg: ModelConfig) -> BaseEstimator:
+    """returns the stage 1 tcn gru classifier"""
+
+    return _make_binary_seq_classifier(cfg, _build_tcn_gru_binary, batch_size=128)
+
+
+def make_lstm_binary(cfg: ModelConfig) -> BaseEstimator:
+    """returns the stage 1 lstm classifier"""
+
+    return _make_binary_seq_classifier(cfg, _build_lstm_binary, batch_size=32)
+
+
+def make_gru_binary(cfg: ModelConfig) -> BaseEstimator:
+    """returns the stage 1 gru classifier"""
+
+    return _make_binary_seq_classifier(cfg, _build_gru_binary, batch_size=32)
+
+
 def make_hybrid_vse_binary(cfg: ModelConfig) -> BaseEstimator:
     """returns the single end-to-end hybrid sequence model for stage 1"""
+
     return _make_binary_seq_classifier(cfg, _build_vse_hybrid_binary)
 
 
-# stage 2 tabular
+# stage 1 registries
+
+def get_stage1_tabular_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
+    """registry for the stage 1 tabular models"""
+
+    return {
+        "rf": make_stage1_rf(cfg),
+        "xgb": make_stage1_xgb(cfg),
+        "svm": make_stage1_svm(cfg),
+        "ann": make_stage1_ann(cfg),
+    }
+
+
+def get_stage1_sequential_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
+    """registry for the stage 1 sequence models"""
+
+    return {
+        "tcn": make_tcn_binary(cfg),
+        "tcn_gru": make_tcn_gru_binary(cfg),
+        "lstm": make_lstm_binary(cfg),
+        "gru": make_gru_binary(cfg),
+        "hybrid_vse": make_hybrid_vse_binary(cfg),
+    }
+
+
+# stage 2 tabular factories
 
 def make_stage2_ffnn(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     """returns the stage 2 feed forward network
@@ -628,18 +623,7 @@ def make_stage2_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     )
 
 
-def get_stage2_tabular_models(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
-    """registry for the stage 2 tabular models"""
-
-    return {
-        "ann": make_stage2_ffnn(cfg, n_classes=n_classes),
-        "rf": make_stage2_rf(cfg),
-        "svm": make_stage2_svm(cfg),
-        "xgb": make_stage2_xgb(cfg, n_classes=n_classes),
-    }
-
-
-# stage 2 sequential
+# stage 2 sequential builder functions
 
 def _build_tcn_multiclass(
     seq_len: int,
@@ -795,6 +779,8 @@ def _build_gru_multiclass(
     return _compile_multiclass_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
 
 
+# stage 2 sequential public factories
+
 def make_tcn_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     """returns the stage 2 tcn classifier"""
 
@@ -819,6 +805,19 @@ def make_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     return _make_multiclass_seq_classifier(cfg, _build_gru_multiclass, n_classes=n_classes, batch_size=128)
 
 
+# stage 2 registries
+
+def get_stage2_tabular_models(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
+    """registry for the stage 2 tabular models"""
+
+    return {
+        "ann": make_stage2_ffnn(cfg, n_classes=n_classes),
+        "rf": make_stage2_rf(cfg),
+        "svm": make_stage2_svm(cfg),
+        "xgb": make_stage2_xgb(cfg, n_classes=n_classes),
+    }
+
+
 def get_stage2_sequential_models(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
     """registry for the stage 2 sequence models"""
 
@@ -830,7 +829,7 @@ def get_stage2_sequential_models(cfg: ModelConfig, *, n_classes: int) -> Dict[st
     }
 
 
-#binary meta learners
+# meta learners
 
 def make_meta_binary_mlp(cfg: ModelConfig) -> BaseEstimator:
     """returns the binary mlp meta learner used on stacked stage 1 outputs"""
@@ -879,8 +878,6 @@ def make_meta_binary_xgb(cfg: ModelConfig) -> BaseEstimator:
         random_state=cfg.random_state,
     )
 
-#multiclass meta learners
-
 def make_meta_multiclass_mlp(cfg: ModelConfig) -> BaseEstimator:
     """returns the multiclass mlp meta learner used on stacked stage 2 outputs"""
 
@@ -895,7 +892,6 @@ def make_meta_multiclass_mlp(cfg: ModelConfig) -> BaseEstimator:
         random_state=cfg.random_state,
     )
 
-
 def make_meta_multiclass_lr(cfg: ModelConfig) -> BaseEstimator:
     """returns the multiclass logistic regression meta learner"""
 
@@ -908,7 +904,6 @@ def make_meta_multiclass_lr(cfg: ModelConfig) -> BaseEstimator:
         class_weight=None,
         random_state=cfg.random_state,
     )
-
 
 def make_meta_multiclass_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     """returns the multiclass xgboost meta learner"""
@@ -930,7 +925,6 @@ def make_meta_multiclass_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimat
         random_state=cfg.random_state,
     )
 
-
 def get_meta_binary_learners(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
     """registry for the binary meta learners"""
 
@@ -940,7 +934,6 @@ def get_meta_binary_learners(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
         "xgb": make_meta_binary_xgb(cfg),
     }
 
-
 def get_meta_multiclass_learners(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
     """registry for the multiclass meta learners"""
 
@@ -949,63 +942,3 @@ def get_meta_multiclass_learners(cfg: ModelConfig, *, n_classes: int) -> Dict[st
         "lr": make_meta_multiclass_lr(cfg),
         "xgb": make_meta_multiclass_xgb(cfg, n_classes=n_classes),
     }
-
-
-# backward compatible names for the rest of the codebase
-
-def make_rf_binary(cfg: ModelConfig) -> BaseEstimator:
-    """kept so the existing evaluation code still works"""
-
-    return make_stage1_rf(cfg)
-
-
-def make_xgb_binary(cfg: ModelConfig) -> BaseEstimator:
-    """kept so the existing evaluation code still works"""
-
-    return make_stage1_xgb(cfg)
-
-
-def make_svm_binary(cfg: ModelConfig, *, kernel: str = "rbf") -> BaseEstimator:
-    """kept so the existing evaluation code still works"""
-
-    if kernel != "rbf":
-        raise ValueError("only the rbf svm is kept in the submission version")
-    return make_stage1_svm(cfg)
-
-
-def make_rf_multiclass(cfg: ModelConfig) -> BaseEstimator:
-    """kept so the existing evaluation code still works"""
-
-    return make_stage2_rf(cfg)
-
-
-def make_xgb_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
-    """kept so the existing evaluation code still works"""
-
-    return make_stage2_xgb(cfg, n_classes=n_classes)
-
-
-def make_svm_multiclass(cfg: ModelConfig, *, kernel: str = "rbf") -> BaseEstimator:
-    """kept so the existing evaluation code still works"""
-
-    if kernel != "rbf":
-        raise ValueError("only the rbf svm is kept in the submission version")
-    return make_stage2_svm(cfg)
-
-
-def make_ann_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
-    """kept so the existing evaluation code still works"""
-
-    return make_stage2_ffnn(cfg, n_classes=n_classes)
-
-
-def get_binary_base_learners(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
-    """kept so the existing evaluation code still works"""
-
-    return get_stage1_tabular_models(cfg)
-
-
-def get_multiclass_base_learners(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
-    """kept so the existing evaluation code still works"""
-
-    return get_stage2_tabular_models(cfg, n_classes=n_classes)

@@ -46,7 +46,6 @@ from src.data.data import (
 
 from src.data.preprocessing import build_preprocessor, PreprocessConfig, make_preprocessor_for_model
 from src.models.models import (
-    ModelConfig,
     build_model_pipeline,
     get_binary_base_learners,
     get_stage1_sequential_models,
@@ -157,7 +156,6 @@ def collect_oof_base_probs_tabular(
     y: pd.Series,
     folds: List[Tuple[np.ndarray, np.ndarray]],
     *,
-    cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int] = None,
     verbose: bool = False,
@@ -216,7 +214,6 @@ def collect_oof_seq_models(
     df: pd.DataFrame,
     folds: List[Tuple[np.ndarray, np.ndarray]],
     *,
-    cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int] = None,
     seq_len: int,
@@ -354,7 +351,6 @@ def build_meta_table(
     y: pd.Series,
     folds: List[Tuple[np.ndarray, np.ndarray]],
     *,
-    cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int] = None,
     seq_len: int,
@@ -432,7 +428,6 @@ def run_meta_ablation_cv(
     meta_df: pd.DataFrame,
     folds_meta: List[Tuple[np.ndarray, np.ndarray]],
     *,
-    cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int],
     ablation_specs: Dict[str, List[str]],

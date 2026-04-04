@@ -1,5 +1,5 @@
 """
-Automates the retrieval and serialization of Formula 1 session telemetry, lap timing, and metadata from the FastF1 API.
+automates the retrieval and serialization of Formula 1 session telemetry, lap timing, and metadata from the FastF1 API.
 Stores data in a hierarchical way Year / Event / Session / [Feature].parquet
 stores all information in a folder called 'f1_data'
 """
