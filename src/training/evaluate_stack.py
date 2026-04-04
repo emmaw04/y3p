@@ -3,7 +3,6 @@ evaluates different meta learners for the stacking ensemble.
 we collect out of fold predictions from the base models and use them to train a meta model
 for either stage 1 pit decision or stage 2 compound decision.
 """
-
 import argparse
 import json
 from pathlib import Path
@@ -20,7 +19,6 @@ from sklearn.metrics import (
     log_loss,
     roc_auc_score,
 )
-
 from src.data.data import (
     COMPOUND_CLASSES,
     COMPOUND_TO_INT,
@@ -43,7 +41,6 @@ from src.models.models import (
     get_stage1_sequential_models,
 )
 
-
 def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray) -> dict[str, float]:
     """calc standard binary metrics"""
     y_pred = (proba_pos >= 0.5).astype(int)
@@ -55,7 +52,6 @@ def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray) -> dict[st
         "logloss": float(log_loss(y_true, proba_pos, labels=[0, 1])),
     }
 
-
 def compute_multiclass_metrics(y_true: np.ndarray, proba: np.ndarray) -> dict[str, float]:
     """calc standard multiclass metrics"""
     y_pred = np.argmax(proba, axis=1)
@@ -66,13 +62,11 @@ def compute_multiclass_metrics(y_true: np.ndarray, proba: np.ndarray) -> dict[st
         "logloss": float(log_loss(y_true, proba, labels=labels)),
     }
 
-
-def summarize(metrics_list: list[dict[str, Any]], keys: list[str]) -> dict[str, float]:
+def summarise(metrics_list: list[dict[str, Any]], keys: list[str]) -> dict[str, float]:
     """get the mean of each metric across all folds"""
     if not metrics_list:
         return {f"{k}_mean": float("nan") for k in keys}
     return {f"{k}_mean": float(np.mean([m[k] for m in metrics_list])) for k in keys}
-
 
 def get_tcn_oof_preds(df1: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray]], cfg: ModelConfig) -> tuple[np.ndarray, np.ndarray]:
     """
@@ -139,7 +133,6 @@ def get_tcn_oof_preds(df1: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarra
 
     return oof_pred, oof_eff_len
 
-
 def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.ndarray:
     """
     trains base tabular models on the folds and grabs their out of fold predictions
@@ -181,7 +174,7 @@ def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.n
 
     return meta_x
 
-
+def run_stage1_stacking():
     """handles the whole pipeline for stage 1 pit decision stacking"""
     outdir.mkdir(parents=True, exist_ok=True)
     

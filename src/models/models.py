@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Callable, Dict
 from sklearn.base import BaseEstimator
@@ -99,55 +98,6 @@ def _compile_multiclass_seq_model(
     return model
 
 
-def _make_binary_seq_classifier(
-    cfg: ModelConfig,
-    build_fn: Callable,
-    *,
-    batch_size: int = 512,
-) -> BaseEstimator:
-    """shared wrapper for the stage 1 sequence models"""
-
-    def model_fn(meta):
-        _, seq_len, n_features = meta["X_shape_"]
-        keras.utils.set_random_seed(cfg.random_state)
-        return build_fn(int(seq_len), int(n_features))
-
-    return _make_keras_classifier(
-        cfg,
-        model_fn,
-        epochs=80,
-        batch_size=batch_size,
-        monitor="val_pr_auc",
-        mode="max",
-        patience=10,
-    )
-
-
-def _make_multiclass_seq_classifier(
-    cfg: ModelConfig,
-    build_fn: Callable,
-    *,
-    n_classes: int,
-    batch_size: int = 512,
-) -> BaseEstimator:
-    """shared wrapper for the stage 2 sequence models"""
-
-    def model_fn(meta):
-        _, seq_len, n_features = meta["X_shape_"]
-        keras.utils.set_random_seed(cfg.random_state)
-        return build_fn(int(seq_len), int(n_features), int(n_classes))
-
-    return _make_keras_classifier(
-        cfg,
-        model_fn,
-        epochs=80,
-        batch_size=batch_size,
-        monitor="val_acc",
-        mode="max",
-        patience=10,
-    )
-
-
 def _tcn_residual_block(x, *, filters: int, kernel_size: int, dilation: int, dropout: float):
     """basic residual block used by the tcn models"""
 
@@ -173,8 +123,6 @@ def _tcn_residual_block(x, *, filters: int, kernel_size: int, dilation: int, dro
 
 def make_stage1_rf(cfg: ModelConfig) -> BaseEstimator:
     """returns the tuned random forest for stage 1
-
-    this is the main tree ensemble for lap level pit stop prediction
     """
 
     return RandomForestClassifier(
@@ -192,8 +140,6 @@ def make_stage1_rf(cfg: ModelConfig) -> BaseEstimator:
 
 def make_stage1_xgb(cfg: ModelConfig) -> BaseEstimator:
     """returns the tuned xgboost model for stage 1
-
-    this is the boosted tree baseline for binary pit stop prediction
     """
 
     return XGBClassifier(
@@ -217,8 +163,6 @@ def make_stage1_xgb(cfg: ModelConfig) -> BaseEstimator:
 
 def make_stage1_svm(cfg: ModelConfig) -> BaseEstimator:
     """returns the stage 1 svm
-
-    this is the tabular margin based classifier with probability output enabled
     """
 
     return SVC(
@@ -229,7 +173,6 @@ def make_stage1_svm(cfg: ModelConfig) -> BaseEstimator:
         class_weight="balanced",
         random_state=cfg.random_state,
     )
-
 
 def make_stage1_ann(cfg: ModelConfig) -> BaseEstimator:
     """returns the tuned stage 1 artificial neural network"""
@@ -266,247 +209,280 @@ def make_stage1_ann(cfg: ModelConfig) -> BaseEstimator:
         patience=10,
     )
 
+# stage 1 sequential factories
 
-# stage 1 sequential builder functions
+def make_tcn_binary(cfg: ModelConfig) -> BaseEstimator:
+    """Stage 1 TCN classifier."""
 
-def _build_tcn_binary(
-    seq_len: int,
-    n_features: int,
-    filters: int = 64,
-    kernel_size: int = 4,
-    dropout: float = 0.15117968234330592,
-    pooling: str = "last",
-    learning_rate: float = 0.0009484229044417891,
-    focal_gamma: float = 1.0,
-    focal_alpha: float = 0.75,
-) -> "keras.Model":
-    """builds the binary tcn
+    def model_fn(meta):
+        _, seq_len, n_features = meta["X_shape_"]
+        keras.utils.set_random_seed(cfg.random_state)
 
-    this is a causal conv front end followed by residual tcn blocks
-    then global pooling and a small dense head
-    """
+        x_in = layers.Input(shape=(int(seq_len), int(n_features)))
 
-    x_in = layers.Input(shape=(seq_len, n_features))
+        x = layers.Conv1D(64, 4, padding="causal", dilation_rate=1)(x_in)
+        x = layers.LayerNormalization()(x)
+        x = layers.Activation("relu")(x)
 
-    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
-    x = layers.LayerNormalization()(x)
-    x = layers.Activation("relu")(x)
+        for d in [1, 2, 4, 8]:
+            x = _tcn_residual_block(
+                x,
+                filters=64,
+                kernel_size=4,
+                dilation=d,
+                dropout=0.15117968234330592,
+            )
 
-    for d in [1, 2, 4, 8]:
-        x = _tcn_residual_block(
-            x,
-            filters=filters,
-            kernel_size=kernel_size,
-            dilation=d,
-            dropout=dropout,
+        x = layers.Lambda(lambda z: z[:, -1, :])(x)
+        x = layers.Dense(64, activation="relu")(x)
+        x = layers.Dropout(0.2)(x)
+        y_out = layers.Dense(1, activation="sigmoid")(x)
+
+        return _compile_binary_seq_model(
+            keras.Model(x_in, y_out),
+            learning_rate=0.0009484229044417891,
+            use_focal=True,
+            focal_gamma=1.0,
+            focal_alpha=0.75,
         )
 
-    if pooling == "gap":
-        x = layers.GlobalAveragePooling1D()(x)
-    elif pooling == "last":
-        x = layers.Lambda(lambda z: z[:, -1, :])(x)
-        
-    x = layers.Dense(64, activation="relu")(x)
-    x = layers.Dropout(0.2)(x)
-    y_out = layers.Dense(1, activation="sigmoid")(x)
+    early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_pr_auc",
+        mode="max",
+        patience=10,
+        restore_best_weights=True,
+    )
 
-    model = keras.Model(x_in, y_out)
-    return _compile_binary_seq_model(
-        model,
-        learning_rate=learning_rate,
-        use_focal=True,
-        focal_gamma=focal_gamma,
-        focal_alpha=focal_alpha,
+    return KerasClassifier(
+        model=model_fn,
+        epochs=80,
+        batch_size=128,
+        validation_split=0.1,
+        callbacks=[early_stop],
+        verbose=1,
+        random_state=cfg.random_state,
     )
 
 
-def _build_tcn_gru_binary(
-    seq_len: int,
-    n_features: int,
-    filters: int = 64,
-    kernel_size: int = 2,
-    dropout: float = 0.0444341795866854,
-    rnn_units: int = 16,
-    rnn_dropout: float = 0.2741761381775658,
-    learning_rate: float = 0.0014409354395782717,
-) -> "keras.Model":
-    """builds the binary tcn gru model
+def make_tcn_gru_binary(cfg: ModelConfig) -> BaseEstimator:
+    """Stage 1 TCN-GRU classifier."""
 
-    this starts with tcn style conv blocks then hands the sequence to a gru head
-    """
+    def model_fn(meta):
+        _, seq_len, n_features = meta["X_shape_"]
+        keras.utils.set_random_seed(cfg.random_state)
 
-    x_in = layers.Input(shape=(seq_len, n_features))
+        x_in = layers.Input(shape=(int(seq_len), int(n_features)))
 
-    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
-    x = layers.LayerNormalization()(x)
-    x = layers.Activation("relu")(x)
+        x = layers.Conv1D(64, 2, padding="causal", dilation_rate=1)(x_in)
+        x = layers.LayerNormalization()(x)
+        x = layers.Activation("relu")(x)
 
-    for d in [1, 2, 4, 8]:
-        x = _tcn_residual_block(
-            x,
-            filters=filters,
-            kernel_size=kernel_size,
-            dilation=d,
-            dropout=dropout,
+        for d in [1, 2, 4, 8]:
+            x = _tcn_residual_block(
+                x,
+                filters=64,
+                kernel_size=2,
+                dilation=d,
+                dropout=0.0444341795866854,
+            )
+
+        x = layers.GRU(
+            16,
+            return_sequences=False,
+            dropout=0.2741761381775658,
+            recurrent_dropout=0.0,
+            kernel_regularizer=keras.regularizers.l2(5e-4),
+        )(x)
+
+        x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+        x = layers.Dropout(0.2)(x)
+        y_out = layers.Dense(1, activation="sigmoid")(x)
+
+        return _compile_binary_seq_model(
+            keras.Model(x_in, y_out),
+            learning_rate=0.0014409354395782717,
         )
 
-    x = layers.GRU(
-        rnn_units,
-        return_sequences=False,
-        dropout=rnn_dropout,
-        recurrent_dropout=0.0,
-        kernel_regularizer=keras.regularizers.l2(5e-4),
-    )(x)
+    early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_pr_auc",
+        mode="max",
+        patience=10,
+        restore_best_weights=True,
+    )
 
-    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
-    x = layers.Dropout(0.2)(x)
-    y_out = layers.Dense(1, activation="sigmoid")(x)
-
-    return _compile_binary_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
-
-
-def _build_lstm_binary(
-    seq_len: int,
-    n_features: int,
-    rnn_units: int = 64,
-    rnn_dropout: float = 0.03852451305608232,
-    learning_rate: float = 0.0007454170873871039,
-) -> "keras.Model":
-    """builds the binary lstm
-
-    this is a stacked lstm with pooling and a small dense output head
-    """
-
-    x_in = layers.Input(shape=(seq_len, n_features))
-
-    x = layers.LSTM(
-        rnn_units,
-        return_sequences=True,
-        dropout=rnn_dropout,
-        recurrent_dropout=0.0,
-        kernel_regularizer=keras.regularizers.l2(5e-4),
-    )(x_in)
-    x = layers.LSTM(
-        rnn_units // 2,
-        return_sequences=True,
-        dropout=rnn_dropout,
-        recurrent_dropout=0.0,
-        kernel_regularizer=keras.regularizers.l2(5e-4),
-    )(x)
-
-    x = layers.LayerNormalization()(x)
-    x = layers.GlobalAveragePooling1D()(x)
-    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
-    x = layers.Dropout(0.2)(x)
-    y_out = layers.Dense(1, activation="sigmoid")(x)
-
-    return _compile_binary_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
-
-
-def _build_gru_binary(
-    seq_len: int,
-    n_features: int,
-    rnn_units: int = 64,
-    rnn_dropout: float = 0.010142639375770673,
-    learning_rate: float = 0.0009731654271003453,
-) -> "keras.Model":
-    """builds the binary gru
-
-    this is the same general idea as the lstm model but using gru layers
-    """
-
-    x_in = layers.Input(shape=(seq_len, n_features))
-
-    x = layers.GRU(
-        rnn_units,
-        return_sequences=True,
-        dropout=rnn_dropout,
-        recurrent_dropout=0.0,
-        kernel_regularizer=keras.regularizers.l2(5e-4),
-    )(x_in)
-    x = layers.GRU(
-        rnn_units // 2,
-        return_sequences=True,
-        dropout=rnn_dropout,
-        recurrent_dropout=0.0,
-        kernel_regularizer=keras.regularizers.l2(5e-4),
-    )(x)
-
-    x = layers.LayerNormalization()(x)
-    x = layers.GlobalAveragePooling1D()(x)
-    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
-    x = layers.Dropout(0.2)(x)
-    y_out = layers.Dense(1, activation="sigmoid")(x)
-
-    return _compile_binary_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
-
-
-def _build_vse_hybrid_binary(
-    seq_len: int,
-    n_features: int,
-    rnn_units: int = 32,
-    rnn_dropout: float = 0.2,
-    learning_rate: float = 1e-3,
-) -> "keras.Model":
-    """
-    builds the four lap hybrid model as taken from Heilmeier et al.'s proposed VSE model
-    uses a time distributed feed forward network to extract a probability per lap,
-    which then feeds directly into an lstm head.
-    """
-    x_in = layers.Input(shape=(seq_len, n_features))
-    reg = keras.regularizers.l2(5e-4)
-
-    # ffnn applied to each lap in the sequence independently
-    x = layers.TimeDistributed(layers.Dense(64, activation="relu", kernel_regularizer=reg))(x_in)
-    x = layers.TimeDistributed(layers.Dense(64, activation="relu", kernel_regularizer=reg))(x)
-    x = layers.TimeDistributed(layers.Dense(1, activation="sigmoid"))(x)
-
-    # lstm head processes the sequence of single-lap probabilities
-    x = layers.LSTM(rnn_units, return_sequences=False, dropout=rnn_dropout, recurrent_dropout=0.0)(x)
-    x = layers.Dense(32, activation="relu")(x)
-    x = layers.Dropout(0.2)(x)
-    y_out = layers.Dense(1, activation="sigmoid")(x)
-
-    return _compile_binary_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
-
-
-# stage 1 sequential public factories
-
-def make_tcn_binary(cfg: ModelConfig) -> BaseEstimator:
-    """returns the stage 1 tcn classifier"""
-
-    return _make_binary_seq_classifier(cfg, _build_tcn_binary, batch_size=128)
-
-
-def make_tcn_gru_binary(cfg: ModelConfig) -> BaseEstimator:
-    """returns the stage 1 tcn gru classifier"""
-
-    return _make_binary_seq_classifier(cfg, _build_tcn_gru_binary, batch_size=128)
+    return KerasClassifier(
+        model=model_fn,
+        epochs=80,
+        batch_size=128,
+        validation_split=0.1,
+        callbacks=[early_stop],
+        verbose=1,
+        random_state=cfg.random_state,
+    )
 
 
 def make_lstm_binary(cfg: ModelConfig) -> BaseEstimator:
-    """returns the stage 1 lstm classifier"""
+    """Stage 1 LSTM classifier."""
 
-    return _make_binary_seq_classifier(cfg, _build_lstm_binary, batch_size=32)
+    def model_fn(meta):
+        _, seq_len, n_features = meta["X_shape_"]
+        keras.utils.set_random_seed(cfg.random_state)
+
+        x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+        x = layers.LSTM(
+            64,
+            return_sequences=True,
+            dropout=0.03852451305608232,
+            recurrent_dropout=0.0,
+            kernel_regularizer=keras.regularizers.l2(5e-4),
+        )(x_in)
+        x = layers.LSTM(
+            32,
+            return_sequences=True,
+            dropout=0.03852451305608232,
+            recurrent_dropout=0.0,
+            kernel_regularizer=keras.regularizers.l2(5e-4),
+        )(x)
+
+        x = layers.LayerNormalization()(x)
+        x = layers.GlobalAveragePooling1D()(x)
+        x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+        x = layers.Dropout(0.2)(x)
+        y_out = layers.Dense(1, activation="sigmoid")(x)
+
+        return _compile_binary_seq_model(
+            keras.Model(x_in, y_out),
+            learning_rate=0.0007454170873871039,
+        )
+
+    early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_pr_auc",
+        mode="max",
+        patience=10,
+        restore_best_weights=True,
+    )
+
+    return KerasClassifier(
+        model=model_fn,
+        epochs=80,
+        batch_size=32,
+        validation_split=0.1,
+        callbacks=[early_stop],
+        verbose=1,
+        random_state=cfg.random_state,
+    )
 
 
 def make_gru_binary(cfg: ModelConfig) -> BaseEstimator:
-    """returns the stage 1 gru classifier"""
+    """Stage 1 GRU classifier."""
 
-    return _make_binary_seq_classifier(cfg, _build_gru_binary, batch_size=32)
+    def model_fn(meta):
+        _, seq_len, n_features = meta["X_shape_"]
+        keras.utils.set_random_seed(cfg.random_state)
+
+        x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+        x = layers.GRU(
+            64,
+            return_sequences=True,
+            dropout=0.010142639375770673,
+            recurrent_dropout=0.0,
+            kernel_regularizer=keras.regularizers.l2(5e-4),
+        )(x_in)
+        x = layers.GRU(
+            32,
+            return_sequences=True,
+            dropout=0.010142639375770673,
+            recurrent_dropout=0.0,
+            kernel_regularizer=keras.regularizers.l2(5e-4),
+        )(x)
+
+        x = layers.LayerNormalization()(x)
+        x = layers.GlobalAveragePooling1D()(x)
+        x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+        x = layers.Dropout(0.2)(x)
+        y_out = layers.Dense(1, activation="sigmoid")(x)
+
+        return _compile_binary_seq_model(
+            keras.Model(x_in, y_out),
+            learning_rate=0.0009731654271003453,
+        )
+
+    early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_pr_auc",
+        mode="max",
+        patience=10,
+        restore_best_weights=True,
+    )
+
+    return KerasClassifier(
+        model=model_fn,
+        epochs=80,
+        batch_size=32,
+        validation_split=0.1,
+        callbacks=[early_stop],
+        verbose=1,
+        random_state=cfg.random_state,
+    )
 
 
 def make_hybrid_vse_binary(cfg: ModelConfig) -> BaseEstimator:
-    """returns the single end-to-end hybrid sequence model for stage 1"""
+    """Stage 1 hybrid VSE classifier."""
 
-    return _make_binary_seq_classifier(cfg, _build_vse_hybrid_binary)
+    def model_fn(meta):
+        _, seq_len, n_features = meta["X_shape_"]
+        keras.utils.set_random_seed(cfg.random_state)
 
+        x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+        reg = keras.regularizers.l2(5e-4)
+
+        x = layers.TimeDistributed(
+            layers.Dense(64, activation="relu", kernel_regularizer=reg)
+        )(x_in)
+        x = layers.TimeDistributed(
+            layers.Dense(64, activation="relu", kernel_regularizer=reg)
+        )(x)
+        x = layers.TimeDistributed(
+            layers.Dense(1, activation="sigmoid")
+        )(x)
+
+        x = layers.LSTM(
+            32,
+            return_sequences=False,
+            dropout=0.2,
+            recurrent_dropout=0.0,
+        )(x)
+        x = layers.Dense(32, activation="relu")(x)
+        x = layers.Dropout(0.2)(x)
+        y_out = layers.Dense(1, activation="sigmoid")(x)
+
+        return _compile_binary_seq_model(
+            keras.Model(x_in, y_out),
+            learning_rate=1e-3,
+        )
+
+    early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_pr_auc",
+        mode="max",
+        patience=10,
+        restore_best_weights=True,
+    )
+
+    return KerasClassifier(
+        model=model_fn,
+        epochs=80,
+        batch_size=512,
+        validation_split=0.1,
+        callbacks=[early_stop],
+        verbose=1,
+        random_state=cfg.random_state,
+    )
 
 # stage 1 registries
 
 def get_stage1_tabular_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
     """registry for the stage 1 tabular models"""
-
     return {
         "rf": make_stage1_rf(cfg),
         "xgb": make_stage1_xgb(cfg),
@@ -514,10 +490,8 @@ def get_stage1_tabular_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
         "ann": make_stage1_ann(cfg),
     }
 
-
 def get_stage1_sequential_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
     """registry for the stage 1 sequence models"""
-
     return {
         "tcn": make_tcn_binary(cfg),
         "tcn_gru": make_tcn_gru_binary(cfg),
@@ -526,13 +500,9 @@ def get_stage1_sequential_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
         "hybrid_vse": make_hybrid_vse_binary(cfg),
     }
 
-
 # stage 2 tabular factories
-
 def make_stage2_ffnn(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
-    """returns the stage 2 feed forward network
-
-    this is the main dense multiclass baseline for compound prediction
+    """the stage 2 feed forward network
     """
 
     def build_ffnn(input_dim: int) -> "keras.Model":
@@ -566,9 +536,7 @@ def make_stage2_ffnn(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
 
 
 def make_stage2_rf(cfg: ModelConfig) -> BaseEstimator:
-    """returns the tuned random forest for stage 2
-
-    this is the multiclass tree ensemble for tyre compound prediction
+    """the tuned random forest for stage 2
     """
 
     return RandomForestClassifier(
@@ -585,11 +553,8 @@ def make_stage2_rf(cfg: ModelConfig) -> BaseEstimator:
 
 
 def make_stage2_svm(cfg: ModelConfig) -> BaseEstimator:
-    """returns the stage 2 svm
-
-    this is the multiclass tabular svm with probability output
+    """stage 2 svm
     """
-
     return SVC(
         C=27.461363284183133,
         kernel="rbf",
@@ -602,7 +567,7 @@ def make_stage2_svm(cfg: ModelConfig) -> BaseEstimator:
 
 
 def make_stage2_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
-    """returns the tuned xgboost model for stage 2"""
+    """xgboost model for stage 2"""
  
     return XGBClassifier(
         n_estimators=444,
@@ -622,194 +587,224 @@ def make_stage2_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
         random_state=cfg.random_state,
     )
 
-
-# stage 2 sequential builder functions
-
-def _build_tcn_multiclass(
-    seq_len: int,
-    n_features: int,
-    n_classes: int,
-    filters: int = 32,
-    kernel_size: int = 3,
-    dropout: float = 0.3189536660208673,
-    pooling: str = "last",
-    learning_rate: float = 0.0012208142144753873,
-) -> "keras.Model":
-    """builds the multiclass tcn for stage 2"""
-
-    x_in = layers.Input(shape=(seq_len, n_features))
-
-    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
-    x = layers.LayerNormalization()(x)
-    x = layers.Activation("relu")(x)
-
-    for d in [1, 2, 4, 8]:
-        x = _tcn_residual_block(
-            x,
-            filters=filters,
-            kernel_size=kernel_size,
-            dilation=d,
-            dropout=dropout,
-        )
-
-    if pooling == "gap":
-        x = layers.GlobalAveragePooling1D()(x)
-    elif pooling == "last":
-        x = layers.Lambda(lambda z: z[:, -1, :])(x)
-        
-    x = layers.Dense(64, activation="relu")(x)
-    x = layers.Dropout(0.2)(x)
-    y_out = layers.Dense(n_classes, activation="softmax")(x)
-
-    return _compile_multiclass_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
-
-
-def _build_tcn_gru_multiclass(
-    seq_len: int,
-    n_features: int,
-    n_classes: int,
-    filters: int = 32,
-    kernel_size: int = 3,
-    dropout: float = 0.1421548856945066,
-    rnn_units: int = 64,
-    rnn_dropout: float = 0.0010077077435941516,
-    learning_rate: float = 0.0006671159654368591,
-) -> "keras.Model":
-    """builds the multiclass tcn gru model for stage 2"""
-
-    x_in = layers.Input(shape=(seq_len, n_features))
-
-    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
-    x = layers.LayerNormalization()(x)
-    x = layers.Activation("relu")(x)
-
-    for d in [1, 2, 4, 8]:
-        x = _tcn_residual_block(
-            x,
-            filters=filters,
-            kernel_size=kernel_size,
-            dilation=d,
-            dropout=dropout,
-        )
-
-    x = layers.GRU(
-        rnn_units,
-        return_sequences=False,
-        dropout=rnn_dropout,
-        recurrent_dropout=0.0,
-        kernel_regularizer=keras.regularizers.l2(5e-4),
-    )(x)
-
-    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
-    x = layers.Dropout(0.2)(x)
-    y_out = layers.Dense(n_classes, activation="softmax")(x)
-
-    return _compile_multiclass_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
-
-
-def _build_lstm_multiclass(
-    seq_len: int,
-    n_features: int,
-    n_classes: int,
-    rnn_units: int = 32,
-    rnn_dropout: float = 0.25791781440280437,
-    learning_rate: float = 0.0008962278983461516,
-) -> "keras.Model":
-    """builds the multiclass lstm for stage 2"""
-
-    x_in = layers.Input(shape=(seq_len, n_features))
-
-    x = layers.LSTM(
-        rnn_units,
-        return_sequences=True,
-        dropout=rnn_dropout,
-        recurrent_dropout=0.0,
-        kernel_regularizer=keras.regularizers.l2(5e-4),
-    )(x_in)
-    x = layers.LSTM(
-        rnn_units // 2,
-        return_sequences=True,
-        dropout=rnn_dropout,
-        recurrent_dropout=0.0,
-        kernel_regularizer=keras.regularizers.l2(5e-4),
-    )(x)
-
-    x = layers.LayerNormalization()(x)
-    x = layers.GlobalAveragePooling1D()(x)
-    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
-    x = layers.Dropout(0.2)(x)
-    y_out = layers.Dense(n_classes, activation="softmax")(x)
-
-    return _compile_multiclass_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
-
-
-def _build_gru_multiclass(
-    seq_len: int,
-    n_features: int,
-    n_classes: int,
-    rnn_units: int = 32,
-    rnn_dropout: float = 0.16754040659127542,
-    learning_rate: float = 0.0008375958618273803,
-) -> "keras.Model":
-    """builds the multiclass gru for stage 2"""
-
-    x_in = layers.Input(shape=(seq_len, n_features))
-
-    x = layers.GRU(
-        rnn_units,
-        return_sequences=True,
-        dropout=rnn_dropout,
-        recurrent_dropout=0.0,
-        kernel_regularizer=keras.regularizers.l2(5e-4),
-    )(x_in)
-    x = layers.GRU(
-        rnn_units // 2,
-        return_sequences=True,
-        dropout=rnn_dropout,
-        recurrent_dropout=0.0,
-        kernel_regularizer=keras.regularizers.l2(5e-4),
-    )(x)
-
-    x = layers.LayerNormalization()(x)
-    x = layers.GlobalAveragePooling1D()(x)
-    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
-    x = layers.Dropout(0.2)(x)
-    y_out = layers.Dense(n_classes, activation="softmax")(x)
-
-    return _compile_multiclass_seq_model(keras.Model(x_in, y_out), learning_rate=learning_rate)
-
-
-# stage 2 sequential public factories
+# stage 2 sequential model factories
 
 def make_tcn_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
-    """returns the stage 2 tcn classifier"""
+    """Stage 2 TCN classifier."""
 
-    return _make_multiclass_seq_classifier(cfg, _build_tcn_multiclass, n_classes=n_classes, batch_size=128)
+    def model_fn(meta):
+        _, seq_len, n_features = meta["X_shape_"]
+        keras.utils.set_random_seed(cfg.random_state)
+
+        x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+        x = layers.Conv1D(32, 3, padding="causal", dilation_rate=1)(x_in)
+        x = layers.LayerNormalization()(x)
+        x = layers.Activation("relu")(x)
+
+        for d in [1, 2, 4, 8]:
+            x = _tcn_residual_block(
+                x,
+                filters=32,
+                kernel_size=3,
+                dilation=d,
+                dropout=0.3189536660208673,
+            )
+
+        x = layers.Lambda(lambda z: z[:, -1, :])(x)
+        x = layers.Dense(64, activation="relu")(x)
+        x = layers.Dropout(0.2)(x)
+        y_out = layers.Dense(n_classes, activation="softmax")(x)
+
+        return _compile_multiclass_seq_model(
+            keras.Model(x_in, y_out),
+            learning_rate=0.0012208142144753873,
+        )
+
+    early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_acc",
+        mode="max",
+        patience=10,
+        restore_best_weights=True,
+    )
+
+    return KerasClassifier(
+        model=model_fn,
+        epochs=80,
+        batch_size=128,
+        validation_split=0.1,
+        callbacks=[early_stop],
+        verbose=1,
+        random_state=cfg.random_state,
+    )
 
 
 def make_tcn_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
-    """returns the stage 2 tcn gru classifier"""
+    """Stage 2 TCN-GRU classifier."""
 
-    return _make_multiclass_seq_classifier(cfg, _build_tcn_gru_multiclass, n_classes=n_classes, batch_size=128)
+    def model_fn(meta):
+        _, seq_len, n_features = meta["X_shape_"]
+        keras.utils.set_random_seed(cfg.random_state)
+
+        x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+        x = layers.Conv1D(32, 3, padding="causal", dilation_rate=1)(x_in)
+        x = layers.LayerNormalization()(x)
+        x = layers.Activation("relu")(x)
+
+        for d in [1, 2, 4, 8]:
+            x = _tcn_residual_block(
+                x,
+                filters=32,
+                kernel_size=3,
+                dilation=d,
+                dropout=0.1421548856945066,
+            )
+
+        x = layers.GRU(
+            64,
+            return_sequences=False,
+            dropout=0.0010077077435941516,
+            recurrent_dropout=0.0,
+            kernel_regularizer=keras.regularizers.l2(5e-4),
+        )(x)
+
+        x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+        x = layers.Dropout(0.2)(x)
+        y_out = layers.Dense(n_classes, activation="softmax")(x)
+
+        return _compile_multiclass_seq_model(
+            keras.Model(x_in, y_out),
+            learning_rate=0.0006671159654368591,
+        )
+
+    early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_acc",
+        mode="max",
+        patience=10,
+        restore_best_weights=True,
+    )
+
+    return KerasClassifier(
+        model=model_fn,
+        epochs=80,
+        batch_size=128,
+        validation_split=0.1,
+        callbacks=[early_stop],
+        verbose=1,
+        random_state=cfg.random_state,
+    )
 
 
 def make_lstm_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
-    """returns the stage 2 lstm classifier"""
+    """Stage 2 LSTM classifier."""
 
-    return _make_multiclass_seq_classifier(cfg, _build_lstm_multiclass, n_classes=n_classes, batch_size=32)
+    def model_fn(meta):
+        _, seq_len, n_features = meta["X_shape_"]
+        keras.utils.set_random_seed(cfg.random_state)
+
+        x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+        x = layers.LSTM(
+            32,
+            return_sequences=True,
+            dropout=0.25791781440280437,
+            recurrent_dropout=0.0,
+            kernel_regularizer=keras.regularizers.l2(5e-4),
+        )(x_in)
+        x = layers.LSTM(
+            16,
+            return_sequences=True,
+            dropout=0.25791781440280437,
+            recurrent_dropout=0.0,
+            kernel_regularizer=keras.regularizers.l2(5e-4),
+        )(x)
+
+        x = layers.LayerNormalization()(x)
+        x = layers.GlobalAveragePooling1D()(x)
+        x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+        x = layers.Dropout(0.2)(x)
+        y_out = layers.Dense(n_classes, activation="softmax")(x)
+
+        return _compile_multiclass_seq_model(
+            keras.Model(x_in, y_out),
+            learning_rate=0.0008962278983461516,
+        )
+
+    early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_acc",
+        mode="max",
+        patience=10,
+        restore_best_weights=True,
+    )
+
+    return KerasClassifier(
+        model=model_fn,
+        epochs=80,
+        batch_size=32,
+        validation_split=0.1,
+        callbacks=[early_stop],
+        verbose=1,
+        random_state=cfg.random_state,
+    )
 
 
 def make_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
-    """returns the stage 2 gru classifier"""
+    """Stage 2 GRU classifier."""
 
-    return _make_multiclass_seq_classifier(cfg, _build_gru_multiclass, n_classes=n_classes, batch_size=128)
+    def model_fn(meta):
+        _, seq_len, n_features = meta["X_shape_"]
+        keras.utils.set_random_seed(cfg.random_state)
 
+        x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+        x = layers.GRU(
+            32,
+            return_sequences=True,
+            dropout=0.16754040659127542,
+            recurrent_dropout=0.0,
+            kernel_regularizer=keras.regularizers.l2(5e-4),
+        )(x_in)
+        x = layers.GRU(
+            16,
+            return_sequences=True,
+            dropout=0.16754040659127542,
+            recurrent_dropout=0.0,
+            kernel_regularizer=keras.regularizers.l2(5e-4),
+        )(x)
+
+        x = layers.LayerNormalization()(x)
+        x = layers.GlobalAveragePooling1D()(x)
+        x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+        x = layers.Dropout(0.2)(x)
+        y_out = layers.Dense(n_classes, activation="softmax")(x)
+
+        return _compile_multiclass_seq_model(
+            keras.Model(x_in, y_out),
+            learning_rate=0.0008375958618273803,
+        )
+
+    early_stop = keras.callbacks.EarlyStopping(
+        monitor="val_acc",
+        mode="max",
+        patience=10,
+        restore_best_weights=True,
+    )
+
+    return KerasClassifier(
+        model=model_fn,
+        epochs=80,
+        batch_size=128,
+        validation_split=0.1,
+        callbacks=[early_stop],
+        verbose=1,
+        random_state=cfg.random_state,
+    )
 
 # stage 2 registries
 
 def get_stage2_tabular_models(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
-    """registry for the stage 2 tabular models"""
-
+    """tabular models registry"""
     return {
         "ann": make_stage2_ffnn(cfg, n_classes=n_classes),
         "rf": make_stage2_rf(cfg),
@@ -819,8 +814,7 @@ def get_stage2_tabular_models(cfg: ModelConfig, *, n_classes: int) -> Dict[str, 
 
 
 def get_stage2_sequential_models(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
-    """registry for the stage 2 sequence models"""
-
+    """sequential models registry"""
     return {
         "tcn": make_tcn_multiclass(cfg, n_classes=n_classes),
         "tcn_gru": make_tcn_gru_multiclass(cfg, n_classes=n_classes),
@@ -829,10 +823,10 @@ def get_stage2_sequential_models(cfg: ModelConfig, *, n_classes: int) -> Dict[st
     }
 
 
-# meta learners
+# meta learner factories
 
 def make_meta_binary_mlp(cfg: ModelConfig) -> BaseEstimator:
-    """returns the binary mlp meta learner used on stacked stage 1 outputs"""
+    """binary mlp meta learner"""
 
     return MLPClassifier(
         hidden_layer_sizes=(128, 64),
@@ -847,7 +841,7 @@ def make_meta_binary_mlp(cfg: ModelConfig) -> BaseEstimator:
 
 
 def make_meta_binary_lr(cfg: ModelConfig) -> BaseEstimator:
-    """returns the binary logistic regression meta learner"""
+    """binary logistic regression meta learner"""
 
     return LogisticRegression(
         penalty="l2",
@@ -860,7 +854,7 @@ def make_meta_binary_lr(cfg: ModelConfig) -> BaseEstimator:
 
 
 def make_meta_binary_xgb(cfg: ModelConfig) -> BaseEstimator:
-    """returns the binary xgboost meta learner"""
+    """binary xgboost meta learner"""
 
     return XGBClassifier(
         n_estimators=650,
@@ -879,8 +873,7 @@ def make_meta_binary_xgb(cfg: ModelConfig) -> BaseEstimator:
     )
 
 def make_meta_multiclass_mlp(cfg: ModelConfig) -> BaseEstimator:
-    """returns the multiclass mlp meta learner used on stacked stage 2 outputs"""
-
+    """multiclass mlp meta learner"""
     return MLPClassifier(
         hidden_layer_sizes=(32,),
         activation="relu",
@@ -893,8 +886,7 @@ def make_meta_multiclass_mlp(cfg: ModelConfig) -> BaseEstimator:
     )
 
 def make_meta_multiclass_lr(cfg: ModelConfig) -> BaseEstimator:
-    """returns the multiclass logistic regression meta learner"""
-
+    """multiclass logistic regression meta learner"""
     return LogisticRegression(
         penalty="l2",
         C=0.08933948320060756,
@@ -906,8 +898,7 @@ def make_meta_multiclass_lr(cfg: ModelConfig) -> BaseEstimator:
     )
 
 def make_meta_multiclass_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
-    """returns the multiclass xgboost meta learner"""
-
+    """multiclass xgboost meta learner"""
     return XGBClassifier(
         n_estimators=338,
         max_depth=3,
@@ -925,9 +916,10 @@ def make_meta_multiclass_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimat
         random_state=cfg.random_state,
     )
 
+
+#meta learner registries
 def get_meta_binary_learners(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
     """registry for the binary meta learners"""
-
     return {
         "mlp": make_meta_binary_mlp(cfg),
         "lr": make_meta_binary_lr(cfg),
@@ -936,7 +928,6 @@ def get_meta_binary_learners(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
 
 def get_meta_multiclass_learners(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
     """registry for the multiclass meta learners"""
-
     return {
         "mlp": make_meta_multiclass_mlp(cfg),
         "lr": make_meta_multiclass_lr(cfg),

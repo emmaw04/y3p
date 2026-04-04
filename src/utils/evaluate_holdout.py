@@ -1,4 +1,4 @@
-# note to self: this script is for evaluating the final model on the holdout races.
+#this script is for evaluating the final model on the holdout races.
 # it's been simplified to use hardcoded paths instead of command line arguments
 # and the docstrings are just informal notes.
 
@@ -25,13 +25,13 @@ import shap
 
 HOLDOUT_RACE_IDS = [2, 24, 53, 73, 75]
 
-# note to self: hardcoded paths and the optimal threshold i found earlier
+#hardcoded paths and the optimal threshold i found earlier
 STAGE1_CSV = Path("data/processed/dataset1.csv")
 ARTIFACTS_ROOT = Path("runs/final_run")
 OUTDIR = Path("runs/holdout_run")
 PIT_THRESHOLD = 0.264
 
-# note to self: shap settings
+#shap settings
 XGB_SHAP_BG_SIZE = 300
 META_SHAP_BG_SIZE = 300
 TCN_GRU_SHAP_BG_SIZE = 64
@@ -39,7 +39,7 @@ TOP_K = 10
 RNG_SEED = 42
 
 def _race_metrics(y_true: np.ndarray, y_score: np.ndarray, threshold: float) -> Dict[str, float]:
-    # note to self: calculate a bunch of metrics for a given race
+    #calculate a bunch of metrics for a given race
     y_true = np.asarray(y_true).astype(int)
     y_score = np.asarray(y_score).astype(float)
     y_pred = (y_score >= threshold).astype(int)
@@ -55,14 +55,14 @@ def _race_metrics(y_true: np.ndarray, y_score: np.ndarray, threshold: float) -> 
         "pr_auc": np.nan,
     }
 
-    # note to self: auc scores need both classes to be present
+    #auc scores need both classes to be present
     if len(np.unique(y_true)) == 2:
         out["roc_auc"] = float(roc_auc_score(y_true, y_score))
         out["pr_auc"] = float(average_precision_score(y_true, y_score))
     return out
 
 def _segments_from_bool_mask(x: np.ndarray, mask: np.ndarray) -> List[Tuple[float, float]]:
-    # note to self: this finds contiguous true segments in a boolean mask for plotting
+    #this finds contiguous true segments in a boolean mask for plotting
     x = np.asarray(x, dtype=float)
     mask = np.asarray(mask, dtype=bool)
     if not len(x):
@@ -81,13 +81,13 @@ def _segments_from_bool_mask(x: np.ndarray, mask: np.ndarray) -> List[Tuple[floa
     if in_seg:
         segs.append((seg_start, x[-1]))
 
-    # note to self: make single point segments visible on the plot
+    #make single point segments visible on the plot
     return [(a, min(100.0, b + 0.5)) if a == b else (a, b) for a, b in segs]
 
 def _make_left_padded_sequences_from_rows(
     keys_df: pd.DataFrame, X_row: np.ndarray, window: int, add_timestep_mask: bool = False
 ) -> Tuple[np.ndarray, np.ndarray]:
-    # note to self: builds the sequences needed for the rnn models
+    #builds the sequences needed for the rnn models
     X_row = np.asarray(X_row)
     N, F = X_row.shape
 
@@ -116,12 +116,12 @@ def _make_left_padded_sequences_from_rows(
     return X_seq, eff_len
 
 def _safe_predict_proba(pipe, X: pd.DataFrame) -> np.ndarray:
-    # note to self: a wrapper for sklearn's predict_proba to make sure it returns the right shape
+    #a wrapper for sklearn's predict_proba to make sure it returns the right shape
     proba = pipe.predict_proba(X)
     return np.asarray(proba, dtype=float)
 
 def _keras_predict_proba(model: tf.keras.Model, X_np: np.ndarray) -> np.ndarray:
-    # note to self: a wrapper for keras predict to get probabilities
+    #a wrapper for keras predict to get probabilities
     y = model.predict(X_np, batch_size=4096, verbose=0)
     y = np.asarray(y)
     if y.ndim == 2 and y.shape[1] == 1:
@@ -304,25 +304,25 @@ def main():
     for c in ["race_id", "driver_id", "lapno"]:
         df1[c] = pd.to_numeric(df1[c], errors="coerce").astype("Int64")
 
-    # note to self: clean up string columns, checking for type first
+    #clean up string columns, checking for type first
     for c in ["race_track", "current_compound", "fcy_status", "compound", "nextcompound"]:
         if c in df1.columns:
             df1[c] = df1[c].apply(lambda x: x.strip().upper() if isinstance(x, str) else x)
 
-    # note to self: filter down to just the holdout races
+    #filter down to just the holdout races
     holdout_set = set(int(x) for x in HOLDOUT_RACE_IDS)
     dfh = df1[df1["race_id"].isin(list(holdout_set))].copy()
     dfh = dfh.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort").reset_index(drop=True)
     if dfh.empty:
         raise ValueError(f"no holdout rows found in {STAGE1_CSV} for races {HOLDOUT_RACE_IDS}")
 
-    # note to self: non-holdout rows for shap backgrounds
+    #non-holdout rows for shap backgrounds
     df_bg = df1[~df1["race_id"].isin(list(holdout_set))].copy()
     df_bg = df_bg.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort").reset_index(drop=True)
     if df_bg.empty:
         raise ValueError("no non-holdout rows available for SHAP background")
 
-    # note to self: load all the model artifacts
+    #load all the model artifacts
     stage1_art = ARTIFACTS_ROOT / "stage1_binary" / "artifacts"
     x1_cols = json.loads((stage1_art / "feature_columns.json").read_text())["columns"]
     base_svm = load(stage1_art / "base_svm_pipeline.joblib")
@@ -333,15 +333,15 @@ def main():
     tcn_gru_model = tf.keras.models.load_model(stage1_art / "tcn_gru_model.keras", compile=False)
     meta_pipe = load(stage1_art / "meta_pipeline.joblib")
 
-    # note to self: prepare the raw feature set
+    #prepare the raw feature set
     X_raw = _prepare_raw_features(dfh, x1_cols)
 
-    # note to self: generate predictions from all the base models
+    #generate predictions from all the base models
     p_svm = _safe_predict_proba(base_svm, X_raw)[:, 1]
     p_xgb = _safe_predict_proba(base_xgb, X_raw)[:, 1]
     keys_df = dfh[["race_id", "driver_id", "lapno"]]
 
-    # note to self: generate predictions for the lstm model
+    #generate predictions for the lstm model
     X_lstm_row = lstm_pre.transform(X_raw)
     X_lstm_row = _to_dense(X_lstm_row)
     expected_T_lstm = lstm_model.input_shape[1]
@@ -350,7 +350,7 @@ def main():
     )
     p_lstm = _keras_predict_proba(lstm_model, X_seq_lstm)
 
-    # note to self: generate predictions for the tcn_gru model
+    #generate predictions for the tcn_gru model
     X_tcn_gru_row = tcn_gru_pre.transform(X_raw)
     X_tcn_gru_row = _to_dense(X_tcn_gru_row)
     expected_T_tcn_gru = tcn_gru_model.input_shape[1]
@@ -359,18 +359,18 @@ def main():
     )
     tcn_gru_proba = _keras_predict_proba(tcn_gru_model, X_seq_tcn_gru)
 
-    # note to self: combine raw features and base model predictions for the meta model
+    #combine raw features and base model predictions for the meta model
     X_meta = X_raw.copy()
     X_meta["p_svm"] = p_svm
     X_meta["p_xgb"] = p_xgb
     X_meta["p_lstm"] = p_lstm
     X_meta["p_tcn_gru"] = tcn_gru_proba
 
-    # note to self: get final predictions from the meta model
+    #get final predictions from the meta model
     proba = _safe_predict_proba(meta_pipe, X_meta)[:, 1]
     pit_pred = (proba >= PIT_THRESHOLD).astype(int)
 
-    # note to self: build the final output dataframe
+    #build the final output dataframe
     out = dfh[["race_id", "driver_id", "lapno"]].copy()
     out["race_progress_pct"] = (pd.to_numeric(dfh["race_progress"], errors="coerce") * 100.0).fillna(0).astype(float)
     out["y_pit"] = pd.to_numeric(dfh["y_pit"], errors="coerce").fillna(0).astype(int)
@@ -390,18 +390,18 @@ def main():
         "",
     )
 
-    # note to self: save the lap-level predictions
+    #save the lap-level predictions
     out_path = OUTDIR / "holdout_stage1_lap_probs.csv"
     out.to_csv(out_path, index=False)
     print(f"wrote: {out_path}")
 
-    # note to self: save just the tp/fp event laps
+    #save just the tp/fp event laps
     event_rows = out[out["pit_pred"] == 1].copy()
     event_rows_path = OUTDIR / "holdout_stage1_tp_fp_events.csv"
     event_rows.to_csv(event_rows_path, index=False)
     print(f"wrote: {event_rows_path}")
 
-    # note to self: shap only on final predicted positive laps (i.e. TP or FP)
+    #shap only on final predicted positive laps (i.e. TP or FP)
     explain_idx = np.flatnonzero(out["pit_pred"].to_numpy() == 1)
 
     if len(explain_idx) > 0:
@@ -446,7 +446,7 @@ def main():
         # =========================================================
         # META SHAP
         # =========================================================
-        # note to self: need background meta features too
+        #need background meta features too
         X_bg_raw_meta = _prepare_raw_features(df_bg, x1_cols)
         p_svm_bg = _safe_predict_proba(base_svm, X_bg_raw_meta)[:, 1]
         p_xgb_bg = _safe_predict_proba(base_xgb, X_bg_raw_meta)[:, 1]
@@ -505,7 +505,7 @@ def main():
         # =========================================================
         # TCN-GRU SHAP
         # =========================================================
-        # note to self: build background sequences from non-holdout rows first, then sample
+        #build background sequences from non-holdout rows first, then sample
         X_bg_tcn_row_full = _to_dense(tcn_gru_pre.transform(X_bg_raw_full))
         X_bg_seq_full, _ = _make_left_padded_sequences_from_rows(
             keys_bg, X_bg_tcn_row_full, window=expected_T_tcn_gru, add_timestep_mask=True
@@ -526,7 +526,7 @@ def main():
         tcn_raw_vals = tcn_explainer.shap_values(X_seq_tcn_gru[explain_idx])
         tcn_raw_vals = _squeeze_binary_shap_array(tcn_raw_vals)  # shape -> (n_events, T, F_plus_mask)
 
-        # note to self: drop the added timestep mask channel from interpretation
+        #drop the added timestep mask channel from interpretation
         tcn_vals = tcn_raw_vals[:, :, :-1]
 
         # aggregate over time so it becomes interpretable
@@ -556,7 +556,7 @@ def main():
                     "abs_shap_sum_over_time": float(tcn_feat_abs[local_i, j]),
                 })
 
-            # note to self: also save which recent lags mattered most
+            #also save which recent lags mattered most
             window = tcn_vals.shape[1]
             L = int(tcn_effective_len[global_i])
             valid_start = window - L
@@ -578,7 +578,7 @@ def main():
                     "abs_shap_at_lag": float(tcn_time_abs[local_i, pos]),
                 })
 
-            # note to self: simple heatmap plot for each event
+            #simple heatmap plot for each event
             top_plot_idx = feat_order[:min(8, len(feat_order))]
             heat = tcn_vals[local_i, :, top_plot_idx].T
             driver_dir = shap_dir / "tcn_gru_plots" / f"race_{int(row['race_id'])}" / f"driver_{int(row['driver_id'])}"
@@ -620,7 +620,7 @@ def main():
     else:
         print("no final predicted positive laps found, so no TP/FP SHAP was run")
 
-    # note to self: now make the plots for each driver in each race
+    # now make the plots for each driver in each race
     plots_dir = OUTDIR / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)
 
@@ -670,7 +670,7 @@ def main():
         plt.savefig(fig_path, dpi=200)
         plt.close()
 
-    # note to self: calculate and save metrics per race
+    #calculate and save metrics per race
     metric_rows = [
         {"race_id": int(rid), **_race_metrics(g["y_pit"].to_numpy(), g["p_pit"].to_numpy(), threshold=PIT_THRESHOLD)}
         for rid, g in out.groupby("race_id", sort=False)

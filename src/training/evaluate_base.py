@@ -246,47 +246,41 @@ def run_seq_cv(df, task: str, model_name: str, outdir: Path):
     }, fold_metrics
 
 
-def main():
-    ap = argparse.ArgumentParser(description="evaluate a single model on stage1 or stage2 data")
-    ap.add_argument("--data_stage1", help="path to the binary pit classification dataset")
-    ap.add_argument("--data_stage2", help="path to the multiclass compound dataset")
-    ap.add_argument("--task", choices=["binary", "multiclass"], required=True, help="binary for pit timing, multiclass for compound")
-    ap.add_argument("--model", required=True, help="which model architecture to run")
-    ap.add_argument("--outdir", default="runs/base", help="where to save the experiment artifacts")
-    args = ap.parse_args()
+def main() -> None:
+    data_stage1 = "data/processed/dataset1.csv"
+    data_stage2 = "data/processed/dataset2.csv"
+    task = "binary" # "binary"/"multiclass"
+    model = "xgb" # e.g. "xgb", "rf", "svm", "lstm", "tcn_gru", "hybrid_vse"
+    outdir_base = "runs/base"
 
-    outdir = Path(args.outdir) / args.task / args.model
+    outdir = Path(outdir_base) / task / model
     outdir.mkdir(parents=True, exist_ok=True)
 
     seq_models = {"tcn", "gru", "lstm", "tcn_gru", "hybrid_vse"}
 
-    if args.task == "binary":
-        if not args.data_stage1:
-            raise ValueError("need --data_stage1 for the binary task")
-            
-        df = load_stage1_dataset(args.data_stage1)
-        if args.model.lower() in seq_models:
-            summary, fold_metrics = run_seq_cv(df, args.task, args.model.lower(), outdir)
+    if task == "binary":
+        df = load_stage1_dataset(data_stage1)
+        if model.lower() in seq_models:
+            summary, fold_metrics = run_seq_cv(df, task, model.lower(), outdir)
         else:
             x, y = get_stage1_xy(df)
-            summary, fold_metrics = run_tabular_cv(x, y, args.task, args.model.lower(), outdir)
+            summary, fold_metrics = run_tabular_cv(x, y, task, model.lower(), outdir)
 
-    elif args.task == "multiclass":
-        if not args.data_stage2:
-            raise ValueError("need --data_stage2 for the multiclass task")
-            
-        df = load_stage2_dataset(args.data_stage2, strict=True)
-        if args.model.lower() in seq_models:
+    elif task == "multiclass":
+        df = load_stage2_dataset(data_stage2)
+        if model.lower() in seq_models:
             df = encode_y_compound(df, col="y_compound", out_col="y_compound_encoded")
-            summary, fold_metrics = run_seq_cv(df, args.task, args.model.lower(), outdir)
+            summary, fold_metrics = run_seq_cv(df, task, model.lower(), outdir)
         else:
             x, y = get_stage2_xy(df)
-            summary, fold_metrics = run_tabular_cv(x, y, args.task, args.model.lower(), outdir)
-            
+            summary, fold_metrics = run_tabular_cv(x, y, task, model.lower(), outdir)
+
+    else:
+        raise ValueError("must be 'binary' or 'multiclass'")
+
     (outdir / "fold_metrics.json").write_text(json.dumps(fold_metrics, indent=2))
     (outdir / "summary.json").write_text(json.dumps(summary, indent=2))
     print(json.dumps(summary, indent=2))
-
 
 if __name__ == "__main__":
     main()

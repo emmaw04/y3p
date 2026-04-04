@@ -1,24 +1,19 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple
-
+from typing import Optional, Sequence
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.preprocessing import OrdinalEncoder
-import numpy as np
-
 
 @dataclass(frozen=True)
 class PreprocessConfig:
     scale_numeric: bool = True
     numeric_impute_strategy: str = "median"
     categorical_impute_strategy: str = "most_frequent"
-    onehot_drop: Optional[str] = None          # set "first" if you want drop-first
-    sparse_onehot: bool = True                 # keep sparse for speed/memory
-
+    onehot_drop: Optional[str] = None
+    sparse_onehot: bool = True
 
 def build_preprocessor(
     num_cols: Sequence[str],
@@ -48,9 +43,6 @@ def build_preprocessor(
         verbose_feature_names_out=False,
     )
 
-
-# src/preprocessing.py
-
 def make_preprocessor_for_model(model_name: str, num_cols: Sequence[str], cat_cols: Sequence[str]) -> ColumnTransformer:
     model = model_name.lower()
 
@@ -58,9 +50,7 @@ def make_preprocessor_for_model(model_name: str, num_cols: Sequence[str], cat_co
     if model in {"ann", "hybrid_vse"}:
         return make_preprocessor_for_keras(num_cols, cat_cols)
 
-    if model in {"tcn", "gru", "lstm", "tcn_gru"}:
-        # TCN probably still needs one-hot because it’s learning temporal patterns in that space,
-        # but you can also ordinal encode if you want consistency
+    if model in {"tcn", "gru", "lstm", "tcn_gru"}: # TCN needs one-hot
         return build_preprocessor(num_cols, cat_cols, PreprocessConfig(scale_numeric=True, sparse_onehot=False))
 
     if model in {"svm"}:
