@@ -4,11 +4,9 @@ combines the logic from tune_8_optuna and tune_optuna into one clean flow.
 handles both tabular and sequential models for both stages.
 """
 
-import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Any
 import numpy as np
 import optuna
 import pandas as pd
@@ -32,7 +30,6 @@ from sklearn.preprocessing import label_binarize
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-
 from src.data.data import (
     COMPOUND_CLASSES,
     HOLDOUT_RACE_IDS,
@@ -59,7 +56,6 @@ from src.models.models import (
 )
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
-
 from src.models.models import (
     make_stage1_svm,
     make_stage1_xgb,
@@ -79,6 +75,16 @@ from src.models.models import (
     _build_tcn_multiclass,
     _build_vse_hybrid_binary,
 )
+
+#hardcoded tuning values
+DATA_STAGE1 = "../../data/processed/dataset1.csv"
+DATA_STAGE2 = "../../data/processed/dataset2.csv"
+TASK = "binary" #binary or multiclass
+MODEL = "xgb" #rf, xgb, svm, ann, tcn, gry, lstm, tcn_gru, hybrid_vse, meta_lr, meta_xgb, meta_mlp
+N_TRIALS = 100
+OUTDIR = "runs/tuning"
+SEED = 42
+N_SPLITS = 5
 
 def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> dict[str, float]:
     """unified metric computation for both binary and multiclass tasks"""
@@ -133,7 +139,6 @@ def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> d
             "logloss": float(log_loss(y_true, proba_norm, labels=labels)),
         }
 
-
 def mean_metric_dict(metric_dicts: list[dict[str, float]]) -> dict[str, float]:
     keys = metric_dicts[0].keys()
     return {
@@ -152,7 +157,6 @@ def suggest_rf_params(trial: optuna.Trial) -> dict[str, Any]:
         "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
         "n_jobs": -1,
     }
-
 
 def suggest_xgb_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
     params = {
@@ -186,7 +190,6 @@ def suggest_svm_params(trial: optuna.Trial) -> dict[str, Any]:
         "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
     }
 
-
 def suggest_ann_params(trial: optuna.Trial) -> dict[str, Any]:
     return {
         "n_layers": trial.suggest_int("n_layers", 1, 2),
@@ -196,7 +199,6 @@ def suggest_ann_params(trial: optuna.Trial) -> dict[str, Any]:
         "learning_rate": trial.suggest_float("learning_rate", 1e-4, 3e-3, log=True),
         "batch_size": trial.suggest_categorical("batch_size", [32, 64, 128, 256]),
     }
-
 
 def build_ann_model(params: dict, input_dim: int, n_classes: int) -> keras.Model:
     reg = keras.regularizers.l2(params["l2"])
@@ -217,7 +219,6 @@ def build_ann_model(params: dict, input_dim: int, n_classes: int) -> keras.Model
         metrics=[keras.metrics.SparseCategoricalAccuracy(name="acc")],
     )
     return model
-
 
 def build_cached_folds(x: pd.DataFrame, y: pd.Series, folds: list, pre_name: str) -> list:
     """precomputes all tabular preprocessing so trials run much faster"""
@@ -240,7 +241,6 @@ def build_cached_folds(x: pd.DataFrame, y: pd.Series, folds: list, pre_name: str
         cached.append((xt_tr, y_tr, xt_va, y_va, tr_idx, va_idx))
 
     return cached
-
 
 def objective_tabular(trial: optuna.Trial, cached_folds: list, model_name: str, is_binary: bool, n_classes: int, seed: int) -> float:
     if model_name == "rf":
@@ -324,7 +324,6 @@ def objective_tabular(trial: optuna.Trial, cached_folds: list, model_name: str, 
     trial.set_user_attr("cv_metrics", mean_metrics)
     return mean_metrics["logloss"]
 
-
 def suggest_seq_params(trial: optuna.Trial, model_name: str, is_binary: bool) -> dict[str, Any]:
     params = {
         "learning_rate": trial.suggest_float("learning_rate", 1e-4, 2e-3, log=True),
@@ -351,7 +350,6 @@ def suggest_seq_params(trial: optuna.Trial, model_name: str, is_binary: bool) ->
         params["rnn_dropout"] = trial.suggest_float("rnn_dropout", 0.0, 0.4)
 
     return params
-
 
 def build_cached_seq_folds(df: pd.DataFrame, x: pd.DataFrame, y: pd.Series, folds: list, seq_len: int) -> list:
     """precomputes and caches sequence windows so optuna runs much faster without recalculating every trial"""
@@ -722,45 +720,42 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
     trial.set_user_attr("cv_metrics", mean_metrics)
     return mean_metrics["logloss"]
 
-
-def main():
-    ap = argparse.ArgumentParser(description="tune hyperparameters for all models in both stages")
-    ap.add_argument("--data_stage1", help="path to stage 1 data")
-    ap.add_argument("--data_stage2", help="path to stage 2 data")
-    ap.add_argument("--task", choices=["binary", "multiclass"], required=True)
-    ap.add_argument("--model", choices=["rf", "xgb", "svm", "ann","tcn", "gru", "lstm", "tcn_gru", "hybrid_vse","meta_lr", "meta_xgb", "meta_mlp",],required=True,)
-    ap.add_argument("--n_trials", type=int, default=100)
-    ap.add_argument("--outdir", default="runs/tuning")
-    args = ap.parse_args()
-
-    outdir = Path(args.outdir)
+def main() -> None:
+    outdir = Path(OUTDIR)
     outdir.mkdir(parents=True, exist_ok=True)
-    
-    seed = 42
-    n_splits = 5
 
     seq_models = {"tcn", "gru", "lstm", "tcn_gru", "hybrid_vse"}
     meta_models = {"meta_lr", "meta_xgb", "meta_mlp"}
 
-    is_seq = args.model in seq_models
-    is_meta = args.model in meta_models
-    is_binary = args.task == "binary"
+    valid_tasks = {"binary", "multiclass"}
+    valid_models = {"rf", "xgb", "svm", "ann","tcn", "gru", "lstm", "tcn_gru", "hybrid_vse","meta_lr", "meta_xgb", "meta_mlp",}
+
+    if TASK not in valid_tasks:
+        raise ValueError(f"invalid TASK={TASK!r}; must be one of {sorted(valid_tasks)}")
+    if MODEL not in valid_models:
+        raise ValueError(f"invalid MODEL={MODEL!r}; must be one of {sorted(valid_models)}")
+
+    is_seq = MODEL in seq_models
+    is_meta = MODEL in meta_models
+    is_binary = TASK == "binary"
 
     if is_binary:
-        if not args.data_stage1:
-            raise ValueError("need --data_stage1")
-        df = load_stage1_dataset(args.data_stage1)
+        if not DATA_STAGE1:
+            raise ValueError("DATA_STAGE1 must be set for binary tuning")
+
+        df = load_stage1_dataset(DATA_STAGE1)
         df = df.loc[~df["race_id"].isin(HOLDOUT_RACE_IDS)].copy()
         x, y = get_stage1_xy(df)
-        fb = make_race_group_folds(df, target_col="y_pit", n_splits=n_splits, seed=seed)
+        fb = make_race_group_folds(df, target_col="y_pit", n_splits=N_SPLITS, seed=SEED)
         n_classes = 2
+
     else:
-        if args.model == "hybrid_vse":
-            raise ValueError("hybrid_vse is only for binary stage 1")
-            
-        if args.data_stage1 and is_seq:
+        if MODEL == "hybrid_vse":
+            raise ValueError("hybrid_vse is only valid for binary stage 1")
+
+        if DATA_STAGE1 and is_seq:
             # build stage 2 sequence data directly from stage 1 lap-level data
-            df = load_stage1_dataset(args.data_stage1)
+            df = load_stage1_dataset(DATA_STAGE1)
             df = df.loc[~df["race_id"].isin(HOLDOUT_RACE_IDS)].copy()
 
             df = df.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort").reset_index(drop=True)
@@ -775,44 +770,63 @@ def main():
             ).copy()
             y = df["y_compound_encoded"].fillna(-1).astype(int)
 
-            fb = make_race_group_folds(df, target_col="y_compound_encoded", n_splits=n_splits, seed=seed)
-        elif args.data_stage2:
-            # Normal stage 2 tabular data, or fallback for tuning sequence models on oversampled SMOTE datasets
-            df = load_stage2_dataset(args.data_stage2, strict=True)
+            fb = make_race_group_folds(
+                df,
+                target_col="y_compound_encoded",
+                n_splits=N_SPLITS,
+                seed=SEED,
+            )
+
+        elif DATA_STAGE2:
+            # normal stage 2 tabular data, or fallback for tuning sequence models on SMOTE data
+            df = load_stage2_dataset(DATA_STAGE2, strict=True)
             df = df.loc[~df["race_id"].isin(HOLDOUT_RACE_IDS)].copy()
             df = encode_y_compound(df, col="y_compound", out_col="y_compound_encoded")
             x, y = get_stage2_xy(df)
-            fb = make_race_group_folds(df, target_col="y_compound_encoded", n_splits=n_splits, seed=seed)
+            fb = make_race_group_folds(
+                df,
+                target_col="y_compound_encoded",
+                n_splits=N_SPLITS,
+                seed=SEED,
+            )
         else:
-            raise ValueError("need --data_stage1 or --data_stage2")
-            
+            raise ValueError("for multiclass tuning, set DATA_STAGE1 or DATA_STAGE2")
+
         n_classes = len(COMPOUND_CLASSES)
 
-    sampler = TPESampler(seed=seed)
+    sampler = TPESampler(seed=SEED)
     pruner = MedianPruner(n_startup_trials=10)
-    study_name = f"{args.task}_{args.model}"
-    
-    study = optuna.create_study(direction="minimize", sampler=sampler, pruner=pruner, study_name=study_name)
+    study_name = f"{TASK}_{MODEL}"
+
+    study = optuna.create_study(
+        direction="minimize",
+        sampler=sampler,
+        pruner=pruner,
+        study_name=study_name,
+    )
 
     if is_meta:
         meta_folds = build_meta_folds(
-            df, x, y, fb.folds,
+            df,
+            x,
+            y,
+            fb.folds,
             is_binary=is_binary,
             n_classes=n_classes,
-            seed=seed,
+            seed=SEED,
         )
         study.optimize(
-            lambda t: objective_meta(t, meta_folds, args.model, is_binary, n_classes, seed),
-            n_trials=args.n_trials,
+            lambda t: objective_meta(t, meta_folds, MODEL, is_binary, n_classes, SEED),
+            n_trials=N_TRIALS,
             show_progress_bar=True,
         )
 
     elif not is_seq:
-        pre_name = args.model
+        pre_name = MODEL
         cached_folds = build_cached_folds(x, y, fb.folds, pre_name)
         study.optimize(
-            lambda t: objective_tabular(t, cached_folds, args.model, is_binary, n_classes, seed),
-            n_trials=args.n_trials,
+            lambda t: objective_tabular(t, cached_folds, MODEL, is_binary, n_classes, SEED),
+            n_trials=N_TRIALS,
             show_progress_bar=True,
         )
 
@@ -820,8 +834,8 @@ def main():
         seq_len = 8 if is_binary else 12
         cached_folds = build_cached_seq_folds(df, x, y, fb.folds, seq_len)
         study.optimize(
-            lambda t: objective_seq(t, cached_folds, args.model, is_binary, n_classes, seed),
-            n_trials=args.n_trials,
+            lambda t: objective_seq(t, cached_folds, MODEL, is_binary, n_classes, SEED),
+            n_trials=N_TRIALS,
             show_progress_bar=True,
         )
 
@@ -830,71 +844,11 @@ def main():
         "best_logloss": float(study.best_value),
         "best_metrics": study.best_trial.user_attrs.get("cv_metrics", {}),
         "best_params": study.best_params,
-        "n_trials": len(study.trials)
+        "n_trials": len(study.trials),
     }
 
     (outdir / f"{study_name}_best.json").write_text(json.dumps(best_obj, indent=2))
     print(json.dumps(best_obj, indent=2))
 
-
 if __name__ == "__main__":
     main()
-
-
-"""
-commands to run:
-
-binary base learners
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model ann --n_trials 100
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model rf --n_trials 100
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model xgb --n_trials 100
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model svm --n_trials 100
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model tcn --n_trials 100
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model tcn_gru --n_trials 100
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model gru --n_trials 100
-python -m src.utils.tune_hyperparameters --data_stage1 data/processed/dataset1.csv --task binary --model lstm --n_trials 100
-
-multiclass base learners
-python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model ann --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model rf --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model xgb --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model svm --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model tcn --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model tcn_gru --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model gru --n_trials 50
-python -m src.utils.tune_hyperparameters --data_stage2 data/processed/dataset2.csv --task multiclass --model lstm --n_trials 50
-
-binary meta learners
-python -m src.utils.tune_hyperparameters \
-  --data_stage1 data/processed/dataset1.csv \
-  --task binary \
-  --model meta_lr \
-  --n_trials 100
-python -m src.utils.tune_hyperparameters \
-  --data_stage1 data/processed/dataset1.csv \
-  --task binary \
-  --model meta_xgb \
-  --n_trials 100
-python -m src.utils.tune_hyperparameters \
-  --data_stage1 data/processed/dataset1.csv \
-  --task binary \
-  --model meta_mlp \
-  --n_trials 100
-
-multiclass meta learners
-python -m src.utils.tune_hyperparameters \
-  --data_stage2 data/processed/dataset2.csv \
-  --task multiclass \
-  --model meta_lr \
-  --n_trials 50
-python -m src.utils.tune_hyperparameters \
-  --data_stage2 data/processed/dataset2.csv \
-  --task multiclass \
-  --model meta_xgb \
-  --n_trials 50
-python -m src.utils.tune_hyperparameters \
-  --data_stage2 data/processed/dataset2.csv \
-  --task multiclass \
-  --model meta_mlp \
-  --n_trials 50
-"""

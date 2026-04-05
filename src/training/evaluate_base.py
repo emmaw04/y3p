@@ -36,8 +36,8 @@ from src.data.data import (
 from src.data.preprocessing import make_preprocessor_for_model
 from src.models.models import (
     build_model_pipeline,
-    get_binary_base_learners,
-    get_multiclass_base_learners,
+    get_stage1_tabular_models,
+    get_stage2_tabular_models,
     get_stage1_sequential_models,
     get_stage2_sequential_models,
 )
@@ -101,9 +101,9 @@ def run_tabular_cv(x, y, task: str, model_name: str, outdir: Path):
         
         # fresh instance per fold to avoid any leakage
         if task == "binary":
-            est = get_binary_base_learners(cfg)[model_name]
+            est = get_stage1_tabular_models(cfg)[model_name]
         else:
-            est = get_multiclass_base_learners(cfg, n_classes=k_classes)[model_name]
+            est = get_stage2_tabular_models(cfg, n_classes=k_classes)[model_name]
             
         pre = make_preprocessor_for_model(model_name, num_cols=num_cols, cat_cols=cat_cols)
         pipe = build_model_pipeline(pre, est)

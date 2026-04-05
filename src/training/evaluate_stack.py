@@ -34,11 +34,12 @@ from src.data.data import (
 from src.data.preprocessing import build_preprocessor, PreprocessConfig, make_preprocessor_for_model
 from src.models.models import (
     build_model_pipeline,
-    get_binary_base_learners,
+    get_stage1_tabular_models,
     get_meta_binary_learners,
     get_meta_multiclass_learners,
-    get_multiclass_base_learners,
+    get_stage2_tabular_models,
     get_stage1_sequential_models,
+    get_stage2_sequential_models,
 )
 
 def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray) -> dict[str, float]:
@@ -178,7 +179,7 @@ def run_stage1_stacking():
     """handles the whole pipeline for stage 1 pit decision stacking"""
     outdir.mkdir(parents=True, exist_ok=True)
     
-    base_models = get_binary_base_learners(cfg)
+    base_models = get_stage1_tabular_models(cfg)
     names = list(base_models.keys())
     
     print("starting stage 1 tabular base models")
@@ -246,7 +247,7 @@ def run_stage1_stacking():
     outdir.mkdir(parents=True, exist_ok=True)
     n_classes = len(COMPOUND_CLASSES)
     
-    base_models = get_multiclass_base_learners(cfg, n_classes=n_classes)
+    base_models = get_stage2_tabular_models(cfg, n_classes=n_classes)
     names = list(base_models.keys())
     
     print("starting stage 2 tabular base models")

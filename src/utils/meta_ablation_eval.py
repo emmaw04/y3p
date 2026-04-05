@@ -14,9 +14,8 @@ from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Optional, Set
+from typing import Any, Dict, List, Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -27,7 +26,6 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
-    confusion_matrix,
 )
 from sklearn.preprocessing import label_binarize
 
@@ -61,11 +59,9 @@ def vprint(verbose: bool, *args, **kwargs) -> None:
     if verbose:
         print(*args, **kwargs, flush=True)
 
-
 def _ensure_dir(p: Path) -> Path:
     p.mkdir(parents=True, exist_ok=True)
     return p
-
 
 def _write_json(path: Path, obj: Any) -> None:
     path.write_text(json.dumps(obj, indent=2, default=str))
@@ -74,7 +70,6 @@ def _write_json(path: Path, obj: Any) -> None:
 def _safe_logloss_binary(y_true: np.ndarray, proba_pos: np.ndarray) -> float:
     p = np.clip(proba_pos.astype(float), 1e-15, 1 - 1e-15)
     return float(log_loss(y_true, p, labels=[0, 1]))
-
 
 def _safe_logloss_multi(y_true: np.ndarray, proba: np.ndarray, labels: np.ndarray) -> float:
     p = np.clip(proba.astype(float), 1e-15, 1 - 1e-15)

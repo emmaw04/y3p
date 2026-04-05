@@ -916,7 +916,6 @@ def make_meta_multiclass_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimat
         random_state=cfg.random_state,
     )
 
-
 #meta learner registries
 def get_meta_binary_learners(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
     """registry for the binary meta learners"""

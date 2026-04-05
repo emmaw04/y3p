@@ -457,17 +457,6 @@ class FoldBundle:
     folds: List[Tuple[np.ndarray, np.ndarray]] 
     fold_race_ids: List[List[int]] # stores a list of folds where each fold is a list of race ids belonging to it
 
-def _group_label_counts(y: np.ndarray, n_classes: int) -> np.ndarray:
-    """
-    quickly counts up how many of each class we have in a group
-    """
-    out = np.zeros((n_classes,), dtype=float)
-    for v in y:
-        if np.isnan(v):
-            continue
-        out[int(v)] += 1.0
-    return out
-
 def make_race_group_folds(
     df: pd.DataFrame,
     *,

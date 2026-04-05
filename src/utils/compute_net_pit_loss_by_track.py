@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-
 import sqlite3
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from src.data.data import HOLDOUT_RACE_IDS
 
 DB_PATH = "data/raw/f1_database.sqlite"
 
-def normalize_compound(x):
+def normalise_compound(x):
+    """
+    standardise compound names
+    """
     if x is None or pd.isna(x):
         return None
     s = str(x).strip().upper()
@@ -25,7 +28,7 @@ def normalize_compound(x):
 
 conn = sqlite3.connect(DB_PATH)
 
-# actual pit stops with next-lap pit exit
+#get all pit stops
 stops_sql = """
 SELECT
     l.race_id,
@@ -58,9 +61,7 @@ WHERE l.pitintimenum IS NOT NULL
 
 stops = pd.read_sql_query(stops_sql, conn)
 
-# non-pit laps for track-level S1/S3 medians, derived from session_ms
-# s1_s = current sector1session_ms - previous lap sector3session_ms
-# s3_s = current sector3session_ms - current sector2session_ms
+#get all clean dry non pit laps where the S1 and S3 times are not null
 laps_sql = """
 SELECT
     l.race_id,
@@ -92,35 +93,37 @@ WHERE l.sector1session_ms IS NOT NULL
 laps = pd.read_sql_query(laps_sql, conn)
 conn.close()
 
+#sanity check
 print(f"raw stop rows: {len(stops)}")
 print(f"raw timed laps: {len(laps)}")
 
-if EXCLUDE_RACE_IDS:
-    stops = stops.loc[~stops["race_id"].isin(EXCLUDE_RACE_IDS)].copy()
-    laps = laps.loc[~laps["race_id"].isin(EXCLUDE_RACE_IDS)].copy()
+#exclude holdout races from timings
+if HOLDOUT_RACE_IDS:
+    stops = stops.loc[~stops["race_id"].isin(HOLDOUT_RACE_IDS)].copy()
+    laps = laps.loc[~laps["race_id"].isin(HOLDOUT_RACE_IDS)].copy()
     print(f"after holdout exclusion, stop rows: {len(stops)}")
     print(f"after holdout exclusion, timed laps: {len(laps)}")
 
-# derive stop-level quantities
+#convert timing columns to numeric
 for c in ["pit_in_ms", "pit_out_ms", "s2_end_ms", "lap_end_ms", "next_s1_end_ms", "pitstopduration"]:
     stops[c] = pd.to_numeric(stops[c], errors="coerce")
 
-stops["compound_norm"] = stops["compound"].map(normalize_compound)
-stops["nextcompound_norm"] = stops["nextcompound"].map(normalize_compound)
+#ensure compounds are consistent
+stops["compound_norm"] = stops["compound"].map(normalise_compound)
+stops["nextcompound_norm"] = stops["nextcompound"].map(normalise_compound)
 
-# dry-only stops
+#keep dry only pit stops (switch from dry tyre to dry tyre)
 stops = stops.loc[
     ~stops["compound_norm"].isin({"INTERMEDIATE", "WET"})
     & ~stops["nextcompound_norm"].isin({"INTERMEDIATE", "WET"})
 ].copy()
-print(f"after dry-stop filter: {len(stops)}")
+print(f"after dry-stop filter: {len(stops)}") #sanity check
 
-# exclude FCY/SC pit entries
-# do this in python by re-reading fcyphases if needed would be awkward here
-stops["entry_frac"] = (stops["pit_in_ms"] - stops["s2_end_ms"]) / (stops["lap_end_ms"] - stops["s2_end_ms"])
-stops["exit_frac"] = (stops["pit_out_ms"] - stops["lap_end_ms"]) / (stops["next_s1_end_ms"] - stops["lap_end_ms"])
-stops["abs_pit_window_s"] = (stops["pit_out_ms"] - stops["pit_in_ms"]) / 1000.0
+stops["entry_frac"] = (stops["pit_in_ms"] - stops["s2_end_ms"]) / (stops["lap_end_ms"] - stops["s2_end_ms"]) #tells you how far through sector 3 the car was when it entered the pits
+stops["exit_frac"] = (stops["pit_out_ms"] - stops["lap_end_ms"]) / (stops["next_s1_end_ms"] - stops["lap_end_ms"]) #tells you how far through sector 1 of the next lap the driver was when they exited the pits
+stops["abs_pit_window_s"] = (stops["pit_out_ms"] - stops["pit_in_ms"]) / 1000.0 #total observed time from pit entry to exit in seconds
 
+#keeps pit stops with a valid pit duration and pit stops that have a valid pitintime and pitouttime
 stops = stops.loc[
     stops["entry_frac"].between(0.0, 1.0, inclusive="both")
     & stops["exit_frac"].between(0.0, 1.0, inclusive="both")
@@ -132,87 +135,67 @@ print(f"after fraction/window sanity filters: {len(stops)}")
 for c in ["sector1session_ms", "sector2session_ms", "sector3session_ms", "prev_lap_end_ms", "racetime"]:
     laps[c] = pd.to_numeric(laps[c], errors="coerce")
 
-laps["compound_norm"] = laps["compound"].map(normalize_compound)
+laps["compound_norm"] = laps["compound"].map(normalise_compound)
 
-# non-pit, dry, accurate laps
+# keep dry non pit laps that are accurate
 laps = laps.loc[
     laps["pitintimenum"].isna()
     & ~laps["compound_norm"].isin({"INTERMEDIATE", "WET"})
     & (laps["is_deleted"].fillna(0).astype(int) == 0)
     & (laps["is_accurate"].fillna(1).astype(int) == 1)
 ].copy()
-print(f"after clean non-pit dry filter: {len(laps)}")
+print(f"after clean non-pit dry filter: {len(laps)}") #sanity
 
+#get sector 1 and sector 3 durations
 laps["s1_s"] = (laps["sector1session_ms"] - laps["prev_lap_end_ms"]) / 1000.0
 laps["s3_s"] = (laps["sector3session_ms"] - laps["sector2session_ms"]) / 1000.0
 
+#remove non pit laps where sector 1 and 3 durations are implausible
 laps = laps.loc[
     laps["s1_s"].between(5.0, 60.0, inclusive="both")
     & laps["s3_s"].between(5.0, 60.0, inclusive="both")
 ].copy()
 print(f"after sector sanity filters: {len(laps)}")
 
-# aggregate by track
+# aggregate stop data by track
 stop_agg = (
     stops.groupby("race_track", as_index=True)
     .agg(
-        n_stops=("pit_lap", "size"),
-        entry_frac_med=("entry_frac", "median"),
-        exit_frac_med=("exit_frac", "median"),
-        abs_pit_window_med_s=("abs_pit_window_s", "median"),
+        n_stops=("pit_lap", "size"), #number of dry pit stops
+        entry_frac_med=("entry_frac", "median"), #median pit entry detection
+        exit_frac_med=("exit_frac", "median"), #median pit exit detection
+        abs_pit_window_med_s=("abs_pit_window_s", "median"), #median absolute pit window
     )
 )
 
+#aggregate sector data by track
 sector_agg = (
     laps.groupby("race_track", as_index=True)
     .agg(
-        n_clean_laps=("lapno", "size"),
-        s1_med_s=("s1_s", "median"),
-        s3_med_s=("s3_s", "median"),
+        n_clean_laps=("lapno", "size"), #number of clean dry laps per track
+        s1_med_s=("s1_s", "median"), #median sector 1 time
+        s3_med_s=("s3_s", "median"), #median sector 2 time
     )
 )
 
-table = stop_agg.join(sector_agg, how="inner").copy()
+table = stop_agg.join(sector_agg, how="inner").copy() #join stop data and sector data by track
 
-print(f"tracks with stop medians: {len(stop_agg)}")
-print(f"tracks with sector medians: {len(sector_agg)}")
-print(f"tracks in final joined table: {len(table)}")
-
-table["no_stop_window_s"] = (
+table["no_stop_window_s"] = ( #calculate how long it would take in s for a driver to cover the same amount of track the pit lane covers (given the driver hasn't pitted)
     (1.0 - table["entry_frac_med"]) * table["s3_med_s"]
     + table["exit_frac_med"] * table["s1_med_s"]
 )
 
+#compute net pit loss
 table["net_pit_loss_s"] = table["abs_pit_window_med_s"] - table["no_stop_window_s"]
 
 table = table.sort_index().reset_index()
-
-out_csv = Path("net_pit_loss_by_track.csv")
-table.to_csv(out_csv, index=False)
-
-print("\nTrack-level results:\n")
-print(
-    table[
-        [
-            "race_track",
-            "n_stops",
-            "n_clean_laps",
-            "entry_frac_med",
-            "exit_frac_med",
-            "abs_pit_window_med_s",
-            "s1_med_s",
-            "s3_med_s",
-            "no_stop_window_s",
-            "net_pit_loss_s",
-        ]
-    ].round(3).to_string(index=False)
-)
 
 net_dict = {
     row["race_track"]: round(float(row["net_pit_loss_s"]), 3)
     for _, row in table.iterrows()
 }
 
+#compute median pit loss across tracks as a fallback value
 default_net = round(float(table["net_pit_loss_s"].median()), 3) if len(table) else np.nan
 
 print("NET_PIT_LOSS_BY_TRACK_S: dict[str, float] = {")

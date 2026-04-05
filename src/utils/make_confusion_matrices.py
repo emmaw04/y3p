@@ -1,22 +1,19 @@
 # src/utils/make_confusion_matrices.py
 from __future__ import annotations
-
 from pathlib import Path
-
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
-# hard-coded paths
+# hard coded paths
 STAGE1_INPUT = Path("runs/final_run/stage1_binary/artifacts/oof_predictions.csv")
 STAGE2_INPUT = Path("runs/final_run/stage2_multiclass/artifacts/oof_predictions.csv")
 OUTPUT_DIR = Path("runs/confusion_matrix")
 
-# hard-coded settings
-STAGE1_THRESHOLD = 0.312  # set this to your chosen threshold
+# hard coded settings
+STAGE1_THRESHOLD = 0.264
 STAGE1_LABELS_NUM = [0, 1]
 STAGE1_LABELS_TEXT = ["No pit", "Pit"]
-
 STAGE2_LABELS = ["HARD", "MEDIUM", "SOFT", "INTERMEDIATE", "WET"]
 STAGE2_PROB_COLS = [f"meta_proba_c{i}" for i in range(len(STAGE2_LABELS))]
 
@@ -28,8 +25,10 @@ def save_confusion_matrix_csv_and_plot(
     csv_path: Path,
     png_path: Path,
     title: str,
-    figsize: tuple[float, float] = (7, 6),
-) -> None:
+    figsize: tuple[float, float] = (7, 6),):
+    """
+    takes a confusion matrix, save it as a csv, plot it and save it as a png
+    """
     cm_df = pd.DataFrame(cm, index=csv_labels, columns=csv_labels)
     cm_df.to_csv(csv_path)
 
@@ -43,7 +42,7 @@ def save_confusion_matrix_csv_and_plot(
         values_format="d",
     )
 
-    # label the colour bar clearly
+    # label the colour bar
     if disp.im_ is not None and disp.im_.colorbar is not None:
         disp.im_.colorbar.set_label("Count")
 
@@ -58,16 +57,16 @@ def save_confusion_matrix_csv_and_plot(
     plt.close(fig)
 
 
-def main() -> None:
+def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # stage 1
     df1 = pd.read_csv(STAGE1_INPUT)
-    y_true_stage1 = df1["y_pit"]
-    y_pred_stage1 = (df1["meta_proba"] >= STAGE1_THRESHOLD).astype(int)
+    y_true_stage1 = df1["y_pit"] #extract labels
+    y_pred_stage1 = (df1["meta_proba"] >= STAGE1_THRESHOLD).astype(int) #extract predicted probabilities and convert them into hard predictions
 
     cm_stage1 = confusion_matrix(y_true_stage1, y_pred_stage1, labels=STAGE1_LABELS_NUM)
-    save_confusion_matrix_csv_and_plot(
+    save_confusion_matrix_csv_and_plot( #compute stage 1 confusion matrix
         cm=cm_stage1,
         csv_labels=STAGE1_LABELS_TEXT,
         plot_labels=STAGE1_LABELS_TEXT,
@@ -85,7 +84,7 @@ def main() -> None:
     )
 
     cm_stage2 = confusion_matrix(y_true_stage2, y_pred_stage2, labels=STAGE2_LABELS)
-    save_confusion_matrix_csv_and_plot(
+    save_confusion_matrix_csv_and_plot( #compute stage 2 confusion matrix
         cm=cm_stage2,
         csv_labels=STAGE2_LABELS,
         plot_labels=STAGE2_LABELS,

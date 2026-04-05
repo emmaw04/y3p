@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 from sklearn.metrics import (
@@ -12,26 +10,18 @@ from sklearn.metrics import (
     recall_score,
 )
 
-# Hardcoded paths
+#hardcoded paths
 STAGE1_PATH = Path("runs/final_run/stage1_binary/artifacts/oof_predictions.csv")
 STAGE2_PATH = Path("runs/final_run/stage2_multiclass/artifacts/oof_predictions.csv")
 OUT_PATH = Path("runs/final_run/oof_slice_metrics.csv")
 
-# Hardcoded decision rules
+#hardcoded decision rules
 PIT_THRESHOLD = 0.3120
 COMPOUND_LABELS = ["HARD", "MEDIUM", "SOFT", "INTERMEDIATE", "WET"]
-META_COLS_STAGE2 = [f"meta_proba_c{i}" for i in range(len(COMPOUND_LABELS))]
+META_COLS_STAGE2 = [f"meta_proba_c{i}" for i in range(len(COMPOUND_LABELS))] #the probability columns expected in the stage 2 OOF probabilities file
+GP_COL = "race_track"
 
-# We need one GP-name-like column in stage1 so we can map names -> race_id.
-GP_COL_CANDIDATES = [
-    "grand_prix",
-    "race_name",
-    "race_track",
-    "location",
-    "event_name",
-]
-
-# Threshold chosen earlier: >= 6 appearances across 8 seasons = "more seen"
+#threshold chosen earlier >= 6 appearances across 8 seasons = more seen
 MORE_SEEN_GPS = {
     "Abu Dhabi Grand Prix",
     "Austrian Grand Prix",
@@ -74,60 +64,24 @@ LESS_SEEN_GPS = {
     "Tuscan Grand Prix",
 }
 
-
-def _require_columns(df: pd.DataFrame, cols: list[str], name: str) -> None:
+def _require_columns(df: pd.DataFrame, cols: list[str], name: str):
+    """
+    checks the dataframe has all the columns the script needs
+    """
     missing = [c for c in cols if c not in df.columns]
     if missing:
         raise ValueError(f"{name} is missing columns: {missing}")
 
-
-def _infer_gp_col(df: pd.DataFrame) -> str:
-    for col in GP_COL_CANDIDATES:
-        if col in df.columns:
-            return col
-    raise ValueError(
-        "Could not find a Grand Prix name column in stage1. "
-        f"Tried: {GP_COL_CANDIDATES}"
-    )
-
-
-def _race_ids_for_gp_names(stage1: pd.DataFrame, gp_names: set[str], gp_col: str) -> set[int]:
-    race_meta = stage1[["race_id", gp_col]].drop_duplicates().copy()
-
-    # Sanity check: each race_id should map to exactly one GP name
-    counts = race_meta.groupby("race_id")[gp_col].nunique()
-    bad_ids = counts[counts > 1].index.tolist()
-    if bad_ids:
-        raise ValueError(
-            f"Some race_id values map to multiple GP names in column '{gp_col}': {bad_ids[:10]}"
-        )
-
-    found_names = set(race_meta[gp_col].dropna().unique())
-    missing = sorted(gp_names - found_names)
-    if missing:
-        print(
-            f"Warning: {len(missing)} hardcoded GP names were not found in stage1 column '{gp_col}': "
-            f"{missing}"
-        )
-
-    return set(race_meta.loc[race_meta[gp_col].isin(gp_names), "race_id"].unique())
-
-
 def _race_slices(stage1: pd.DataFrame) -> dict[str, set[int]]:
-    gp_col = _infer_gp_col(stage1)
-
+    """
+    builds a dictionary of each slice and the race ids of races that belong to that slice
+    """
     race_ids = set(stage1["race_id"].unique())
     wet_races = set(stage1.loc[stage1["is_wet_race"] == 1, "race_id"].unique())
-    fcy_races = set(stage1.loc[stage1["fcy_status"] != 0, "race_id"].unique())
+    fcy_races = set(stage1.loc[stage1["fcy_status"] != 0, "race_id"].unique()) #finds all rows where there was at least one row with non zero fcy status
 
-    more_seen_races = _race_ids_for_gp_names(stage1, MORE_SEEN_GPS, gp_col)
-    less_seen_races = _race_ids_for_gp_names(stage1, LESS_SEEN_GPS, gp_col)
-
-    overlap = more_seen_races & less_seen_races
-    if overlap:
-        raise ValueError(
-            f"More-seen and less-seen race slices overlap on race_ids: {sorted(overlap)}"
-        )
+    more_seen_races = set(stage1.loc[stage1[GP_COL].isin(MORE_SEEN_GPS), "race_id"].unique())
+    less_seen_races = set(stage1.loc[stage1[GP_COL].isin(LESS_SEEN_GPS), "race_id"].unique())
 
     return {
         "all_races": race_ids,
@@ -139,16 +93,13 @@ def _race_slices(stage1: pd.DataFrame) -> dict[str, set[int]]:
         "less_seen_tracks": less_seen_races,
     }
 
-
 def _binary_metrics(df: pd.DataFrame) -> dict[str, float]:
+    """
+    computes metrics for stage 1 of the model
+    """
     y_true = df["y_pit"].astype(int).to_numpy()
     y_score = df["meta_proba"].astype(float).to_numpy()
-    y_pred = (y_score >= PIT_THRESHOLD).astype(int)
-
-    pr_auc = np.nan
-    if np.unique(y_true).size > 1 and y_true.sum() > 0:
-        pr_auc = float(average_precision_score(y_true, y_score))
-
+    y_pred = (y_score >= PIT_THRESHOLD).astype(int) #converts probs to hard predictions
     proba_2col = np.column_stack([1.0 - y_score, y_score])
 
     return {
@@ -158,31 +109,20 @@ def _binary_metrics(df: pd.DataFrame) -> dict[str, float]:
         "f1": float(f1_score(y_true, y_pred, zero_division=0)),
         "precision": float(precision_score(y_true, y_pred, zero_division=0)),
         "recall": float(recall_score(y_true, y_pred, zero_division=0)),
-        "pr_auc": pr_auc,
+        "pr_auc": float(average_precision_score(y_true, y_score)),
         "logloss": float(log_loss(y_true, proba_2col, labels=[0, 1])),
     }
 
 
 def _multiclass_metrics(df: pd.DataFrame) -> dict[str, float]:
+    """
+    computes metrics for stage 2 of the model
+    """
     label_to_idx = {label: i for i, label in enumerate(COMPOUND_LABELS)}
-    bad = sorted(set(df["y_compound"].dropna().unique()) - set(COMPOUND_LABELS))
-    if bad:
-        raise ValueError(
-            "Unexpected y_compound labels found. Update COMPOUND_LABELS to match training order: "
-            f"{bad}"
-        )
-
     y_true = df["y_compound"].map(label_to_idx).astype(int).to_numpy()
     y_score = df[META_COLS_STAGE2].astype(float).to_numpy()
     y_pred = y_score.argmax(axis=1)
-
     present = np.unique(y_true)
-    pr_auc = float(
-        np.mean([
-            average_precision_score((y_true == cls).astype(int), y_score[:, cls])
-            for cls in present
-        ])
-    )
 
     return {
         "rows": int(len(df)),
@@ -190,12 +130,15 @@ def _multiclass_metrics(df: pd.DataFrame) -> dict[str, float]:
         "f1": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
         "precision": float(precision_score(y_true, y_pred, average="macro", zero_division=0)),
         "recall": float(recall_score(y_true, y_pred, average="macro", zero_division=0)),
-        "pr_auc": pr_auc,
+        "pr_auc": float(
+        np.mean([average_precision_score((y_true == cls).astype(int), y_score[:, cls])for cls in present])),
         "logloss": float(log_loss(y_true, y_score, labels=list(range(len(COMPOUND_LABELS))))),
     }
 
-
 def _summarise(stage_name: str, df: pd.DataFrame, slices: dict[str, set[int]], metric_fn) -> pd.DataFrame:
+    """
+    computes metrics for each slice
+    """
     rows = []
     for slice_name, race_ids in slices.items():
         subset = df[df["race_id"].isin(race_ids)].copy()
@@ -205,7 +148,6 @@ def _summarise(stage_name: str, df: pd.DataFrame, slices: dict[str, set[int]], m
         row.update(metric_fn(subset))
         rows.append(row)
     return pd.DataFrame(rows)
-
 
 def main() -> None:
     stage1 = pd.read_csv(STAGE1_PATH)
@@ -229,7 +171,6 @@ def main() -> None:
     pd.set_option("display.max_columns", None)
     print(report.to_string(index=False))
     print(f"\nSaved: {OUT_PATH}")
-
 
 if __name__ == "__main__":
     main()

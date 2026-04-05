@@ -2,13 +2,12 @@
 generates smote upsampled datasets for stage 2 compound prediction.
 it takes the original dataset and creates 6 new datasets with different multipliers for the wet compound class.
 other minority classes are balanced to match the majority class count.
-outputs the final datasets in original units so they can be dropped into the pipeline seamlessly.
+outputs the final datasets in original units
 """
 
 import os
 from pathlib import Path
 from typing import Optional
-
 import numpy as np
 import pandas as pd
 from imblearn.over_sampling import SMOTENC
@@ -22,7 +21,7 @@ DATA_PATH = "data/processed/dataset2.csv"
 OUTDIR = "data/processed/SMOTE"
 SEED = 42
 
-WET_MULTIPLIERS = [
+WET_MULTIPLIERS = [ #what distinguishes all 6 datasets
     ("wet_x1", 1.0),
     ("wet_100", 2.0),
     ("wet_200", 3.0),
@@ -31,7 +30,7 @@ WET_MULTIPLIERS = [
     ("wet_500", 6.0),
 ]
 
-ID_COLS = ["race_id", "driver_id", "lapno"]
+ID_COLS = ["race_id", "driver_id", "lapno"] #columns to be removed when doing SMOTE, allows us to uniquely identify rows not used as inputs for the models
 
 
 def inverse_to_original_units(
@@ -42,7 +41,7 @@ def inverse_to_original_units(
 ) -> pd.DataFrame:
     """
     reverses the standard scaling and ordinal encoding so the smote outputs
-    look like the original dataset again.
+    look like the original dataset again
     """
     n_num = len(num_cols)
     n_cat = len(cat_cols)
@@ -55,7 +54,7 @@ def inverse_to_original_units(
 
     x_num_inv = scaler.inverse_transform(x_num)
 
-    # ensure categoricals map back nicely
+    # ensure categoricals map back nicely by rounding them
     x_cat_rounded = np.rint(x_cat).astype(int)
     x_cat_inv = enc.inverse_transform(x_cat_rounded.astype(float))
 
@@ -65,15 +64,14 @@ def inverse_to_original_units(
 
     return df_inv
 
-
 def build_sampling_strategy(y_enc: np.ndarray, wet_mult: float, wet_label: int) -> dict[int, int]:
     """
-    figures out exactly how many samples each class needs.
-    brings all minority classes up to the majority count, except for wet which is capped by the multiplier.
+    figures out exactly how many samples each class should have after oversampling
+    brings all minority classes up to the majority count, except for wet which is multiplied
     """
     counts = pd.Series(y_enc).value_counts().to_dict()
-    maj_label = max(counts, key=counts.get)
-    maj_count = counts[maj_label]
+    maj_label = max(counts, key=counts.get) 
+    maj_count = counts[maj_label] #gets number of entries in majority class
 
     strategy = {}
 
@@ -81,7 +79,7 @@ def build_sampling_strategy(y_enc: np.ndarray, wet_mult: float, wet_label: int) 
         if cls == maj_label:
             continue
 
-        if cls == wet_label:
+        if cls == wet_label: #if the class is wet dont upsample to hard, upsample according to the current multiplier
             wet_count = counts.get(wet_label, 0)
             if wet_count >= 2:
                 wet_target = int(min(round(wet_count * wet_mult), maj_count))
@@ -95,7 +93,7 @@ def build_sampling_strategy(y_enc: np.ndarray, wet_mult: float, wet_label: int) 
 
 
 def get_safe_k_neighbors(y_enc: np.ndarray, strategy: dict[int, int], k_max: int = 5) -> Optional[int]:
-    """smote needs enough neighbors to work with. this ensures we dont crash if a class is too rare."""
+    """fetches k neighbours safely (accounts for the wet class being so rare)"""
     if not strategy:
         return None
 
@@ -149,7 +147,7 @@ def build_resampled_metadata(
 
     out = pd.concat([meta_orig, synth_meta], ignore_index=True)
 
-    # restore integer-like id columns if present
+    # restore integer id columns
     for col in ["race_id", "driver_id", "lapno"]:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce").round().astype("Int64")
@@ -160,7 +158,7 @@ def build_resampled_metadata(
 def generate_smote_datasets():
     Path(OUTDIR).mkdir(parents=True, exist_ok=True)
 
-    print("loading dataset...")
+    print("loading dataset")
     df = pd.read_csv(DATA_PATH, na_values=[""])
 
     target = "y_compound"
@@ -173,6 +171,7 @@ def generate_smote_datasets():
     x_all = df.drop(columns=id_cols + [target], errors="ignore")
     y_all = df[target].astype(str)
 
+    #explicitly define which columns are numeric and which are categorical
     cat_cols = [
         "pit_stops_so_far",
         "current_compound",
@@ -196,10 +195,6 @@ def generate_smote_datasets():
         "rejoin_gap_behind_est_s",
     ]
 
-    # only keep columns that actually exist in the dataframe to prevent crashes
-    cat_cols = [c for c in cat_cols if c in x_all.columns]
-    num_cols = [c for c in num_cols if c in x_all.columns]
-
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", Pipeline([
@@ -220,12 +215,7 @@ def generate_smote_datasets():
     y_enc_all = le.fit_transform(y_all)
     class_names = list(le.classes_)
 
-    if "WET" not in class_names:
-        raise ValueError("wet compound missing from labels. smote generator expects wet.")
-
     wet_label = int(le.transform(["WET"])[0])
-
-    print("fitting preprocessor on full dataset...")
     x_full = preprocessor.fit_transform(x_all)
 
     for setting_name, wet_mult in WET_MULTIPLIERS:
@@ -245,16 +235,14 @@ def generate_smote_datasets():
         else:
             x_res, y_res = x_full, y_enc_all
 
-        print("  reversing transformations to save in original units...")
         df_features = inverse_to_original_units(x_res, preprocessor, num_cols, cat_cols)
         df_features[target] = le.inverse_transform(y_res)
 
-        print("  rebuilding metadata columns...")
         df_meta = build_resampled_metadata(meta_df, y_all, y_res, le, seed=SEED)
 
         df_out = pd.concat([df_meta.reset_index(drop=True), df_features.reset_index(drop=True)], axis=1)
 
-        # restore original column order exactly
+        # restore original column order
         missing_cols = [c for c in original_cols if c not in df_out.columns]
         if missing_cols:
             raise ValueError(f"output is missing expected columns: {missing_cols}")
