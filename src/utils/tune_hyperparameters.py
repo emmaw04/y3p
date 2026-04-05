@@ -759,12 +759,22 @@ def main():
             raise ValueError("hybrid_vse is only for binary stage 1")
             
         if args.data_stage1 and is_seq:
-            # The intended way to train stage 2 sequence models (using continuous lap data)
-            from src.data.data import load_stage2_seq_from_stage1
-            df = load_stage2_seq_from_stage1(args.data_stage1)
+            # build stage 2 sequence data directly from stage 1 lap-level data
+            df = load_stage1_dataset(args.data_stage1)
             df = df.loc[~df["race_id"].isin(HOLDOUT_RACE_IDS)].copy()
-            x = df.drop(columns=["y_pit", "y_compound", "y_compound_encoded", "race_id", "driver_id"], errors="ignore").copy()
+
+            df = df.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort").reset_index(drop=True)
+
+            next_comp = df.groupby(["race_id", "driver_id"], sort=False)["current_compound"].shift(-1)
+            df["y_compound"] = np.where(df["y_pit"].astype(int).to_numpy() == 1, next_comp, np.nan)
+            df = encode_y_compound(df, col="y_compound", out_col="y_compound_encoded")
+
+            x = df.drop(
+                columns=["y_pit", "y_compound", "y_compound_encoded", "race_id", "driver_id"],
+                errors="ignore",
+            ).copy()
             y = df["y_compound_encoded"].fillna(-1).astype(int)
+
             fb = make_race_group_folds(df, target_col="y_compound_encoded", n_splits=n_splits, seed=seed)
         elif args.data_stage2:
             # Normal stage 2 tabular data, or fallback for tuning sequence models on oversampled SMOTE datasets

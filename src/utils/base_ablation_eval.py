@@ -304,8 +304,6 @@ def main() -> None:
         seq_models = list(get_stage2_sequential_models(cfg, n_classes=n_classes).keys())
 
     folds = make_race_group_folds(df, target_col=target_col, n_splits=n_splits, seed=seed).folds
-    if smoke_test:
-        folds = folds[:1]
 
     available_cols = [c for c in X.columns if c not in {"race_id", "driver_id", "row_id", "y_pit", "y_compound", "y_compound_encoded"}]
     ablation_specs = make_ablation_specs(available_cols, feature_groups)

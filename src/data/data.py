@@ -64,12 +64,13 @@ def _normalize_compound_series(s: pd.Series, *, allow_null: bool) -> pd.Series:
     cleans up the tyre compound text making sure everything is uppercase and valid
     it throws an error if it sees something weird or if there are blanks when there shouldnt be
     """
-    s = s.replace({"": np.nan, "None": np.nan, "nan": np.nan})
-    s = s.apply(lambda x: x.strip().upper() if isinstance(x, str) else x)
+    s = s.replace({"": np.nan}) #replaces all empty/not defined tyres with nan
+    s = s.apply(lambda x: x.strip().upper() if isinstance(x, str) else x) #triple checks everything is valid
 
     if not allow_null and s.isna().any():
         raise ValueError("Compound column has missing values")
 
+    #check there aren't any incorrect compounds
     non_null = s.dropna().unique().tolist()
     unknown = [c for c in non_null if c not in COMPOUND_TO_INT]
     if unknown:
@@ -88,13 +89,15 @@ def build_feature_sequences(
     add_timestep_mask: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    turns our flat lap data into nice rolling windows for things like lstms
+    turns tabular lap data into sequences for our sequential models, the model making a decision at lap 8 will be fed a sequence of lap data from the 8 previous available laps (so laps 1-8 if they are all present)
     it groups by driver and race so we dont accidentally mix different races together
     """
+    #ensure we have the key columns which let us uniquely identify an entry in the dataset
     required = {"race_id", "driver_id", "lapno"}
     if not required.issubset(keys.columns):
         raise ValueError(f"keys must contain columns {sorted(required)}")
 
+    #double check inputs have the same number of rows
     n = len(keys)
     if X_all.shape[0] != n or len(y_all) != n:
         raise ValueError("keys, X_all, and y_all must have the same number of rows")
@@ -102,54 +105,55 @@ def build_feature_sequences(
     if not isinstance(y_all, pd.Series):
         y_all = pd.Series(y_all)
 
-    # keep track of the original row index before we start sorting things
+    # keep track of the original row index so we know each rows original location in X_all and y_all
     df_idx = keys[["race_id", "driver_id", "lapno"]].copy()
     df_idx["_row"] = np.arange(n, dtype=int)
-    df_idx = df_idx.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort")
+    df_idx = df_idx.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort") #sort by race, then driver, then lap
 
     d = X_all.shape[1]
-    d_out = d + 1 if add_timestep_mask else d
+    d_out = d + 1 if add_timestep_mask else d #add an extra dimension to store the mask that tells us how much of the sequence is real or padding
 
-    X_seq_list = []
-    y_seq_list = []
-    idx_last_list = []
-    seq_idx_list = []
-    eff_len_list = []
+    X_seq_list = [] #the sequence
+    y_seq_list = [] #the label for the sequence
+    idx_last_list = [] #the original row index for the last lap
+    seq_idx_list = [] #the original row indices for all laps in the sequence
+    eff_len_list = [] #how many real laps are in the sequence
 
-    # chunk the data up by driver per race
+    #split the data up by driver per race
     for (_, _), g in df_idx.groupby(["race_id", "driver_id"], sort=False):
-        g_rows = g["_row"].to_numpy(dtype=int)
+        g_rows = g["_row"].to_numpy(dtype=int) #get original row indices
 
         if len(g_rows) == 0:
             continue
 
-        if (not pad_left) and (len(g_rows) < seq_len):
+        if (not pad_left) and (len(g_rows) < seq_len): #if we choose not to pad sequences (we do choose to pad sequences in the final model) we skip groups shorter than the given sequence length
             continue
 
-        start_end = 0 if pad_left else (seq_len - 1)
+        start_end = 0 if pad_left else (seq_len - 1) #decides what lap the sequences can start from
 
-        for end in range(start_end, len(g_rows)):
+        for end in range(start_end, len(g_rows)): #slide a window through the drivers laps to get all possible sequences for a specific driver at a specific race
             if pad_left:
                 real = g_rows[max(0, end - seq_len + 1): end + 1]
                 n_pad = seq_len - len(real)
-                # use negative one for padding so we can spot it later
+                # use negative one for padding when there aren't a sequence of 8 laps
                 window = np.concatenate([np.full(n_pad, -1, dtype=int), real])
             else:
                 window = g_rows[end - seq_len + 1: end + 1]
 
-            real_mask = window != -1
+            real_mask = window != -1 #figure out which laps in the sequence are real and which are padding
             eff_len = int(np.sum(real_mask))
 
+            #create the feature matrix
             Xw = np.zeros((seq_len, d), dtype=np.float32)
             if eff_len > 0:
                 Xw[real_mask] = X_all[window[real_mask]].astype(np.float32, copy=False)
 
-            if add_timestep_mask:
+            if add_timestep_mask: #add a feature which explicitly tells the model what input is real and what is padding
                 mask = real_mask.astype(np.float32).reshape(seq_len, 1)
                 Xw = np.concatenate([Xw, mask], axis=1)
 
             X_seq_list.append(Xw)
-            y_seq_list.append(int(y_all.iloc[g_rows[end]]))
+            y_seq_list.append(int(y_all.iloc[g_rows[end]])) #attach the label for the final lap in the sequence
             idx_last_list.append(int(g_rows[end]))
             seq_idx_list.append(window)
             eff_len_list.append(eff_len)
@@ -181,7 +185,7 @@ def build_prob_sequences_4lap(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     takes the probability predictions and builds a sequence out of them
-    this is super handy for feeding stage one outputs into stage two models
+    used for implementing the VSE model that Heilmeier proposed (not included in the final model)
     """
     required = {"race_id", "driver_id", "lapno"}
     if not required.issubset(keys_df.columns):
@@ -234,31 +238,34 @@ def build_prob_sequences_4lap(
         np.stack(seq_idx_list, axis=0).astype(int),
     )
 
-# functions for loading datasets from disk
+# functions for loading datasets
 def load_stage1_dataset(path: Union[str, Path],*,exclude_holdouts: bool = True,) -> pd.DataFrame:
     """
     loads the data we need for the first stage which predicts if a pit stop happens
     cleans up the text columns and makes sure the numeric ones are actually numbers
     """
-    df = _read_any(path)
+    df = _read_any(path) #loads the csv file to a pandas dataframe
 
-    for col in ["race_id", "driver_id", "lapno", "y_pit"]:
+    for col in ["race_id", "driver_id", "lapno", "y_pit"]: #forces key columns to be integrers
         df[col] = pd.to_numeric(df[col], errors="raise").astype(int)
 
-    if exclude_holdouts:
+    if exclude_holdouts: #get rid of races that we exclude because they aren't good training examples of if we want to use them in evaluation
         df = _exclude_holdout_races(df)
 
-    df["current_compound"] = _normalize_compound_series(df["current_compound"], allow_null=True)
+    df["current_compound"] = _normalize_compound_series(df["current_compound"], allow_null=True) #normalises tyres
 
+    #normalise race track
     if "race_track" in df.columns:
         df["race_track"] = df["race_track"].replace({"": np.nan, "None": np.nan, "nan": np.nan})
         df["race_track"] = df["race_track"].apply(lambda x: x.strip() if isinstance(x, str) else x)
 
+    #normalise fcy
     if "fcy_status" in df.columns:
         df["fcy_status"] = df["fcy_status"].replace({"": np.nan, "None": np.nan, "nan": np.nan})
         df["fcy_status"] = df["fcy_status"].apply(lambda x: x.strip() if isinstance(x, str) else x)
         df["fcy_status"] = df["fcy_status"].astype("category")
 
+    #convert the relevant feature columns to numeric
     numeric_cols = [
         "race_progress",
         "position",
@@ -297,17 +304,18 @@ def load_stage2_dataset(
 ) -> pd.DataFrame:
     """
     grabs the data for the second stage which predicts the next tyre compound
-    it throws away rows where we dont know the next compound if strict is turned on
+    it throws away rows where we dont know the next compound if strict is true
     """
-    df = _read_any(path)
+    df = _read_any(path) #read csv file
 
-    df["race_id"] = pd.to_numeric(df["race_id"], errors="raise").astype(int)
+    for col in ["race_id", "driver_id", "lapno"]: #forces key columns to be integrers
+        df[col] = pd.to_numeric(df[col], errors="raise").astype(int)
 
-    if exclude_holdouts:
+    if exclude_holdouts: #remove races for evaluation
         df = _exclude_holdout_races(df)
 
+    #normalising tyres
     df["y_compound"] = _normalize_compound_series(df["y_compound"], allow_null=True)
-
     # drop the mystery compounds if we are being strict about it
     if strict and df["y_compound"].isna().any():
         n_missing = int(df["y_compound"].isna().sum())
@@ -316,13 +324,14 @@ def load_stage2_dataset(
             f"load stage two dataset dropped {n_missing} rows with missing y compound.",
             stacklevel=2,
         )
-
     df["current_compound"] = _normalize_compound_series(df["current_compound"], allow_null=True)
 
+    #clean race track attribute
     if "race_track" in df.columns:
         df["race_track"] = df["race_track"].replace({"": np.nan, "None": np.nan, "nan": np.nan})
         df["race_track"] = df["race_track"].apply(lambda x: x.strip() if isinstance(x, str) else x)
 
+    #ensure selected columns are numeric
     numeric_cols = [
         "race_progress",
         "pit_stops_so_far",
@@ -346,56 +355,18 @@ def load_stage2_dataset(
 
     return df
 
-def add_pit_next_compound_labels_from_stage1(
-    df: pd.DataFrame,
-    *,
-    pit_col: str = "y_pit",
-    compound_col: str = "current_compound",
-    out_col: str = "y_compound",
-) -> pd.DataFrame:
-    """
-    figures out what compound was put on next by looking at the next lap for the same driver
-    only sets a value if there was actually a pit stop on this lap
-    """
-    df2 = df.copy()
-    df2 = df2.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort").reset_index(drop=True)
-
-    next_comp = df2.groupby(["race_id", "driver_id"], sort=False)[compound_col].shift(-1)
-    df2[out_col] = np.where(df2[pit_col].astype(int).to_numpy() == 1, next_comp, np.nan)
-    df2[out_col] = _normalize_compound_series(df2[out_col], allow_null=True)
-
-    return df2
-
-
-
-
 def encode_y_compound(
     df: pd.DataFrame,
     col: str = "y_compound",
     out_col: str = "y_compound_encoded",
 ) -> pd.DataFrame:
     """
-    changes the text based compound names into integers that the models can understand
+    changes the text based compound names into integers that the models can understand, using the COMPOUND_TO_INT dictionary
     """
     df2 = df.copy()
     df2[col] = _normalize_compound_series(df2[col], allow_null=True)
     df2[out_col] = df2[col].map(COMPOUND_TO_INT)
     return df2
-
-def load_stage2_seq_from_stage1(path: Union[str, Path]) -> pd.DataFrame:
-    """
-    a neat wrapper to quickly load stage one data and add all the stage two stuff on top of it
-    """
-    df = load_stage1_dataset(path)
-    df = add_pit_next_compound_labels_from_stage1(
-        df,
-        pit_col="y_pit",
-        compound_col="current_compound",
-        out_col="y_compound",
-    )
-    df = encode_y_compound(df, col="y_compound", out_col="y_compound_encoded")
-    return df
-
 
 # splitting features from targets
 def make_xy(
@@ -404,7 +375,7 @@ def make_xy(
     drop_cols: Optional[Sequence[str]] = None,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     """
-    pulls the target column out into its own series and gets rid of any columns we dont want
+    pulls the target column and gets rid of any columns we dont want
     """
     drop_cols = list(drop_cols) if drop_cols is not None else []
     to_drop = set(drop_cols + [target_col])
@@ -420,9 +391,9 @@ def get_stage1_xy(
 ) -> Tuple[pd.DataFrame, pd.Series]:
     """
     grabs the features and target for predicting if someone pits
-    throws away stuff like race and driver ids since they arent features
+    throws away stuff like race id, driver ids, and lapno since they arent features and are just used to uniquely identify entries in the dataset
     """
-    default_drop = ["y_pit", "race_id", "driver_id"]
+    default_drop = ["y_pit", "race_id", "driver_id", "lapno"]
     if drop_cols is None:
         drop_cols = default_drop
     else:
@@ -437,13 +408,15 @@ def get_stage2_xy(
     encoded_target_col: str = "y_compound_encoded",
 ) -> Tuple[pd.DataFrame, pd.Series]:
     """
-    grabs the features and target for predicting which tyre gets put on
-    also drops rows where we dont know the answer
+    grabs the features and target for predicting which compound is selected
+    also drops rows where y_compound isnt defined
     """
+    #make sure compound labels are encoded
     df2 = encode_y_compound(df2, col="y_compound", out_col=encoded_target_col)
-    df2 = df2.loc[~df2[encoded_target_col].isna()].copy()
+    df2 = df2.loc[~df2[encoded_target_col].isna()].copy() #drop rows where the encoded target is missing
 
-    default_drop = ["y_compound", encoded_target_col, "race_id"]
+    #drop the label column and the columns used to uniquely identify each data entry
+    default_drop = ["y_compound", encoded_target_col, "race_id", "driver_id", "lapno"]
     if drop_cols is None:
         drop_cols = default_drop
     else:
@@ -458,8 +431,7 @@ def infer_feature_types(
     force_categorical: Optional[Sequence[str]] = None,
 ) -> Tuple[List[str], List[str]]:
     """
-    guesses which columns are numbers and which are categories
-    super helpful for things like one hot encoding or setting up tree models
+    determines which columns are treated as numeric and which are treated as categorical 
     """
     cat_set = set(CATEGORICAL_FEATURES)
     if force_categorical is not None:
@@ -476,12 +448,11 @@ def infer_feature_types(
 
     return num_cols, cat_cols
 
-
-#splitting data into chunks for training and validation
+#splitting data into training and validation (randomly shuffling races instead of laps to avoid temporal leakage)
 @dataclass(frozen=True)
 class FoldBundle:
     """
-    holds our split data ready for cross validation
+    holds the split data ready for cross validation
     """
     folds: List[Tuple[np.ndarray, np.ndarray]] 
     fold_race_ids: List[List[int]] # stores a list of folds where each fold is a list of race ids belonging to it
@@ -501,78 +472,45 @@ def make_race_group_folds(
     df: pd.DataFrame,
     *,
     group_col: str = "race_id",
-    target_col: str,
     n_splits: int = 5,
     seed: int = 42,
-    balance_labels: bool = True,
 ) -> FoldBundle:
     """
-    clumps laps together by their race so we dont train on a race and then validate on it
-    it also tries really hard to make sure each clump has roughly the same amount of stuff in it
+    keeps all rows from the same race in the same fold
+    and tries to keep folds similar in total size
     """
-    y_raw = df[target_col].to_numpy()
-
-    n_classes = None
-    if balance_labels:
-        uniq = pd.Series(y_raw).dropna().unique().tolist()
-        if uniq:
-            uniq_int = sorted({int(u) for u in uniq})
-            n_classes = max(uniq_int) + 1 if uniq_int else None
-
+    # group rows by race
     groups = df.groupby(group_col, sort=False).indices
     race_ids = list(groups.keys())
 
+    # shuffle races for reproducibility
     rng = np.random.default_rng(seed)
     rng.shuffle(race_ids)
 
+    # collect race sizes
     race_meta = []
     for rid in race_ids:
         idx = groups[rid]
         size = len(idx)
-        counts = _group_label_counts(y_raw[idx], n_classes) if (balance_labels and n_classes is not None) else None
-        race_meta.append((rid, size, counts))
+        race_meta.append((rid, size))
 
+    #order races to keep races with more laps first
     race_meta.sort(key=lambda t: t[1], reverse=True)
 
-    fold_sizes = np.zeros((n_splits,), dtype=float)
-    fold_counts = np.zeros((n_splits, n_classes), dtype=float) if (balance_labels and n_classes is not None) else None
+    # track current fold sizes and assigned races
+    fold_sizes = np.zeros(n_splits, dtype=float)
     fold_races: List[List[int]] = [[] for _ in range(n_splits)]
 
-    # figure out the overall balance of classes so we know what to aim for
-    if balance_labels and n_classes is not None:
-        global_counts = np.zeros((n_classes,), dtype=float)
-        for _, _, c in race_meta:
-            global_counts += c
-        global_props = global_counts / max(global_counts.sum(), 1.0)
-
-    #greedily add races into the folds trying to keep the number of laps even
-    for rid, size, counts in race_meta:
-        best_fold = None
-        best_score = None
-
-        for f in range(n_splits):
-            new_size = fold_sizes[f] + size
-            score = new_size
-
-            if balance_labels and n_classes is not None and counts is not None:
-                new_counts = fold_counts[f] + counts
-                new_props = new_counts / max(new_counts.sum(), 1.0)
-                label_score = np.sum(np.abs(new_props - global_props))
-                score = new_size + (label_score * (size * 0.05))
-
-            if best_score is None or score < best_score or (score == best_score and fold_sizes[f] < fold_sizes[best_fold]):
-                best_score = score
-                best_fold = f
-
+    # greedily assign each race to the currently smallest fold
+    for rid, size in race_meta:
+        best_fold = int(np.argmin(fold_sizes))
         fold_races[best_fold].append(int(rid))
         fold_sizes[best_fold] += size
-        if fold_counts is not None and counts is not None:
-            fold_counts[best_fold] += counts
 
+    # build train/validation index arrays
     folds: List[Tuple[np.ndarray, np.ndarray]] = []
     all_idx = np.arange(len(df))
 
-    # finally build the actual indices for training and validating
     for f in range(n_splits):
         valid_rids = set(fold_races[f])
         valid_mask = df[group_col].isin(valid_rids).to_numpy()
