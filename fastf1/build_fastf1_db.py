@@ -13,7 +13,6 @@ import re
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-
 import numpy as np
 import pandas as pd
 
@@ -22,6 +21,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(me
 logger = logging.getLogger(__name__)
 
 # full database schema
+# stores ad a dictionary of table names and their schema
 FULL_SCHEMA: Dict[str, str] = {
     "drivers": """
         CREATE TABLE IF NOT EXISTS drivers (
@@ -217,7 +217,7 @@ FULL_SCHEMA: Dict[str, str] = {
     """,
 }
 
-# some indexes to make queries run faster later on
+#commands to create indexes to later speed up queries
 SCHEMA_INDICES: List[str] = [
     "CREATE INDEX IF NOT EXISTS idx_sessions_race ON sessions(race_id)",
     "CREATE INDEX IF NOT EXISTS idx_laps_race_driver ON laps(race_id, driver_id)",
@@ -348,7 +348,7 @@ def td_to_s(val: Any) -> Optional[float]:
     # handle nulls and nans
     if val is None or (isinstance(val, float) and np.isnan(val)):
         return None
-    # try to just get total seconds natively
+    # try to just get total seconds
     try:
         return float(val.total_seconds())
     except Exception:
@@ -358,10 +358,8 @@ def td_to_s(val: Any) -> Optional[float]:
         except Exception:
             return None
 
-
 def time_to_ms(val: Any) -> Optional[int]:
     """convert a timedelta like or numeric value to integer milliseconds"""
-    # short circuit on null
     if val is None:
         return None
     try:
@@ -369,7 +367,7 @@ def time_to_ms(val: Any) -> Optional[int]:
             return None
     except Exception:
         pass
-    # check for total seconds method
+    # check for total seconds
     if hasattr(val, "total_seconds"):
         try:
             return int(val.total_seconds() * 1000)
@@ -378,46 +376,39 @@ def time_to_ms(val: Any) -> Optional[int]:
     # try parsing it as a float
     try:
         x = float(val)
-        # heuristic assumes values greater than one million are already ms
-        return int(x) if x > 1e6 else int(x * 1000)
+        return int(x * 1000)
     except Exception:
         return None
-
 
 def _safe_read_parquet(path: Path) -> Optional[pd.DataFrame]:
     """safely read a parquet file and normalise column names to lowercase"""
     try:
-        # load it up
         df = pd.read_parquet(path)
-        # smash columns to lower
         df.columns = [str(c).lower() for c in df.columns]
         return df
     except Exception:
-        # return none if anything goes wrong
         return None
 
+def _norm(n):
+    """
+    normalises grand prix name for get_compound_a
+    """
+    # remove grand prix so it is easier to match
+    return n.lower().replace("grand prix", "").replace("gp", "").strip()
 
 # compound helpers
-
 def get_compound_allocation(season: int, gp_name: str) -> Optional[str]:
     """retrieve the tire compound allocation for a specific race event"""
-    def _norm(n):
-        # strip out grand prix so it is easier to match
-        return n.lower().replace("grand prix", "").replace("gp", "").strip()
 
-    # get the whole year of allocs
+    # get the whole season of allocs
     allocs = COMPOUND_ALLOCATIONS.get(season)
-    if not allocs:
-        return None
-    # normalise the target string
+    # normalise the target string by removing grand prix so its easier to match
     norm = _norm(gp_name)
-    # search for an exact match after normalising
+    # search for the compounds used for that race
     for name, compounds in allocs.items():
         if _norm(name) == norm:
             return compounds.replace(" ", "")
-        
     return None
-
 
 def _parse_allocated_slicks(availablecompounds: str) -> List[str]:
     """parse the available compound string into a list of individual codes"""
@@ -426,20 +417,19 @@ def _parse_allocated_slicks(availablecompounds: str) -> List[str]:
         return []
     # uppercase everything just in case
     txt = str(availablecompounds).upper()
-    # regex for old a codes
+    # regex for old a codes (A1-A7 compouonds used in 2018)
     a = re.findall(r"\bA([1-7])\b", txt)
-    # regex for new c codes
+    # regex for new c codes (C1-C5 used from 2019-2025)
     c = re.findall(r"\bC([1-6])\b", txt)
-    # spit out a list of full codes
+    # give list of full codes
     if a:
         return [f"A{x}" for x in a]
     if c:
         return [f"C{x}" for x in c]
     return []
 
-
 def _build_relative_map(slicks: List[str]) -> Dict[str, str]:
-    """map absolute compound codes to relative hardness soft medium hard"""
+    """map absolute compound codes to relative hardness"""
     # we need exactly three slicks for this to work
     if len(slicks) != 3:
         return {}
@@ -448,81 +438,75 @@ def _build_relative_map(slicks: List[str]) -> Dict[str, str]:
     # hardcode the mapping to the sorted list
     return {ordered[0]: "HARD", ordered[1]: "MEDIUM", ordered[2]: "SOFT"}
 
-
 def _normalise_compound(raw: Any, rel_map: Dict[str, str]) -> Optional[str]:
-    """normalise compound names to standard types or relative hardness"""
-    # ignore missing values
+    """
+    converts the raw tyre label into the final stored compound label
+    """
     if raw is None or (isinstance(raw, float) and np.isnan(raw)):
         return None
-    # uppercase and strip
+
     s = str(raw).strip().upper()
-    # handle weird empty strings
+
     if s in {"", "NAN", "NONE", "NULL"}:
         return None
-    # standardise inters
     if s in {"INTERMEDIATE", "INTER", "IN", "I"}:
         return "INTERMEDIATE"
-    # standardise wets
     if s in {"WET", "FULLWET", "FW"}:
         return "WET"
-    # see if our relative map uses c codes
-    is_c = any(k.startswith("C") for k in rel_map)
-    # if it does or there is no map we just pass standard slicks through
-    if (is_c or not rel_map) and s in {"SOFT", "MEDIUM", "HARD"}:
-        return s
-    # if it is already an a or c code we hit the map directly
-    if re.fullmatch(r"A[1-7]", s) or re.fullmatch(r"C[1-6]", s):
-        return rel_map.get(s)
-    # finally check the 2018 dictionary just in case
-    return rel_map.get(_ABS_2018_TO_A.get(s, ""))
 
+    if s in {"SOFT", "MEDIUM", "HARD"}:
+        return s
+
+    if s in rel_map:
+        return rel_map[s]
+
+    a_code = _ABS_2018_TO_A.get(s)
+    if a_code is not None:
+        return rel_map.get(a_code)
+
+    return None
 
 def _derive_availablecompounds_c(availablecompounds: str) -> Optional[str]:
-    """derive the c range equivalent string from an a range availablecompounds"""
+    """derive the C compound range equivalent string from an A compound"""
     # dictionary translating old to new
     a_to_c = {"A2": "C1", "A3": "C2", "A4": "C3", "A6": "C4", "A7": "C5"}
-    # split and strip the string
+    # split the string
     parts = [c.strip() for c in availablecompounds.split(",") if c.strip()]
-    # translate everything we can
+    #translate everything we can (not all A compounds have an equivalent C compound, in this case its stored as None)
     c_parts = [a_to_c[p] for p in parts if p in a_to_c]
-    # mush it back together
     return ",".join(sorted(set(c_parts))) if c_parts else None
 
-
 # gap interval computation
-
 def compute_gap_interval_by_position(laps_df: pd.DataFrame) -> pd.DataFrame:
     """
     computes gap to leader and interval to car ahead per lap based on
     position order at lap completion
     """
-    # make a copy to play with
+    # make a copy
     df = laps_df.copy()
     # force numeric types on critical columns
     for col in ("lapnumber", "position", "laptime", "time", "lapstarttime"):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    # calculate end time of the lap to establish race order
+    # calculate each cars lap end time
     end_time = df.get("time", pd.Series(dtype=float))
     # if there is no time column we try to add start plus laptime
     if end_time.isna().all() and "lapstarttime" in df.columns and "laptime" in df.columns:
         end_time = df["lapstarttime"] + df["laptime"]
     df["_end_s"] = end_time
 
-    # carve out just the columns we need to build the gaps
+    #columns we need to build gaps
     tmp = df[["driver", "lapnumber", "position", "_end_s"]].dropna(
         subset=["driver", "lapnumber", "position", "_end_s"]
     ).copy()
     tmp["lapnumber"] = tmp["lapnumber"].astype(int)
     tmp["position"] = tmp["position"].astype(int)
     
-    # deduplicate positions to ensure stable sort
-    tmp = (tmp.sort_values(["lapnumber", "position", "_end_s", "driver"])
-              .drop_duplicates(subset=["lapnumber", "position"], keep="first")
-              .sort_values(["lapnumber", "position"]))
+    #deduplication just in case
+    tmp = (tmp.sort_values(["lapnumber", "position", "_end_s", "driver"]).drop_duplicates(subset=["lapnumber", "position"], keep="first").sort_values(["lapnumber", "position"]))
 
-    # calculate gap to leader by grouping on lap number
+    # calculate gap to leader by finding the smallest lap-end time, which belongs to the leader, then subtract that from everyone else’s lap-end time
     leader = tmp.groupby("lapnumber")["_end_s"].transform("min")
     tmp["gap_calc"] = tmp["_end_s"] - leader
 
@@ -531,7 +515,6 @@ def compute_gap_interval_by_position(laps_df: pd.DataFrame) -> pd.DataFrame:
     tmp["interval_calc"] = tmp["_end_s"] - prev
     # leader interval is zero
     tmp.loc[tmp["position"] == 1, "interval_calc"] = 0.0
-    # filter out negative floats
     tmp.loc[tmp["interval_calc"] < -1e-6, "interval_calc"] = np.nan
 
     # join the calculated metrics back onto the main df
@@ -546,7 +529,7 @@ def compute_gap_interval_by_position(laps_df: pd.DataFrame) -> pd.DataFrame:
 
 def _extract_fcy_phases(track_status_df: pd.DataFrame) -> List[Dict[str, Any]]:
     """extract virtual safety car and safety car phases from track status data"""
-    # handle missing dfs
+    # handle missing track status df
     if track_status_df is None or track_status_df.empty:
         return []
     # check that we have time and status columns
@@ -595,43 +578,37 @@ def _extract_fcy_phases(track_status_df: pd.DataFrame) -> List[Dict[str, Any]]:
     return [p for p in phases if p["start"] is not None
             and (p["end"] is None or p["end"] > p["start"])]
 
-
 def _phase_times_to_laps(phases: List[Dict[str, Any]], leader_laps_df: pd.DataFrame) -> List[Dict[str, Any]]:
     """map fcy phase timestamps to specific lap numbers based on leader progress"""
-    # check inputs
+    #if there are no fcy phases or no leader lap data return none
     if not phases or leader_laps_df is None or leader_laps_df.empty:
         return phases
-    # get leader lap data sorted nicely
+    # get leader lap data sorted by lap number
     ll = leader_laps_df.sort_values("lapnumber")
     laps_list = ll["lapnumber"].tolist()
     times_list = ll["racetime"].tolist()
 
+    #finds the first lap whose end time is at or after this race time
     def _time_to_lap(t):
         # handle missing times
         if t is None:
             return None
-        # find the first lap that ends after this time
         for ln, rt in zip(laps_list, times_list):
             if rt is not None and rt >= t:
                 return int(ln)
         # default to last lap if it is at the very end
         return int(laps_list[-1]) if laps_list else None
 
-    # apply mapping function to all phases
+    #get the start and end lap for all phases
     for p in phases:
         p["startlap"] = _time_to_lap(p.get("start"))
         p["endlap"] = _time_to_lap(p.get("end")) if p.get("end") is not None else None
     return phases
 
-
 # position deduplication
 
-def _clean_positions(
-    df: pd.DataFrame,
-    season: int, location: str, session: str
-) -> Optional[pd.DataFrame]:
+def _clean_positions(df: pd.DataFrame, season: int, location: str, session: str) -> Optional[pd.DataFrame]:
     """remove duplicate positions from qualifying results to ensure uniqueness"""
-    # checking for the position column
     if "position" not in df.columns:
         return None
     # drop nas
@@ -640,61 +617,59 @@ def _clean_positions(
     out["position"] = pd.to_numeric(out["position"], errors="coerce")
     out = out[pd.notna(out["position"])].copy()
     out["position"] = out["position"].astype(int)
-    # log if we find duplicates and then toss them
+    # log if we find duplicates and then remove them
     if out.duplicated(subset=["position"]).any():
         logger.warning(f"{season} {location} {session} duplicate positions keeping first")
         out = out.sort_values("position").drop_duplicates(subset=["position"], keep="first")
     return out
 
-
 # pit timing helpers
-
-def _precompute_pit_timing(df: pd.DataFrame, col_pitin: Optional[str], col_pitout: Optional[str], group_key: Optional[str]) -> pd.DataFrame:
+def _precompute_pit_timing(laps_df: pd.DataFrame, group_key: str) -> pd.DataFrame:
     """
-    add aligned pit timing columns to the dataframe
-    we align the pit stop duration to the lap where the pit entry occurred
-    this simplifies analysis of the in lap
+    Align pit timing so each pit stop is attached to the lap where pit entry occurred.
     """
-    work = df.copy()
+    work = laps_df.copy()
 
-    # compute numerical values for the pit timestamps
-    if col_pitin and col_pitin in work.columns:
-        work["_pitintimenum_ms"] = work[col_pitin].apply(time_to_ms)
+    #converts pitintime and pitouttime to milliseconds
+    if "pitintime" in work.columns:
+        work["_pitintimenum_ms"] = work["pitintime"].apply(time_to_ms)
     else:
-        work["_pitintimenum_ms"] = pd.Series(np.nan, index=work.index)
+        work["_pitintimenum_ms"] = np.nan
 
-    if col_pitout and col_pitout in work.columns:
-        work["_pitouttimenum_ms"] = work[col_pitout].apply(time_to_ms)
+    if "pitouttime" in work.columns:
+        work["_pitouttimenum_ms"] = work["pitouttime"].apply(time_to_ms)
     else:
-        work["_pitouttimenum_ms"] = pd.Series(np.nan, index=work.index)
+        work["_pitouttimenum_ms"] = np.nan
 
-    # figure out how to sort the dataframe for sequential processing
-    sort_cols = ([group_key] if group_key else []) + (["lapnumber"] if "lapnumber" in work.columns else [])
-    if sort_cols:
-        work = work.sort_values(sort_cols, kind="mergesort").reset_index(drop=True)
+    #orders rows to be in driver lap order (laps are stored sequentially for each driver)
+    sort_cols = [group_key]
+    if "lapnumber" in work.columns:
+        sort_cols.append("lapnumber")
+    work = work.sort_values(sort_cols, kind="mergesort").reset_index(drop=True)
 
-    # shift the pitout time to check if it occurs on the next row
-    if group_key and group_key in work.columns:
+    if group_key in work.columns:
         work["_pitouttimenum_next_ms"] = (
             work.groupby(group_key)["_pitouttimenum_ms"].shift(-1)
         )
         work["_pitouttime_next_val"] = (
-            work.groupby(group_key)[col_pitout].shift(-1) if col_pitout and col_pitout in work.columns else pd.Series(np.nan, index=work.index)
+            work.groupby(group_key)["pitouttime"].shift(-1)
+            if "pitouttime" in work.columns else np.nan
         )
     else:
         work["_pitouttimenum_next_ms"] = work["_pitouttimenum_ms"].shift(-1)
         work["_pitouttime_next_val"] = (
-            work[col_pitout].shift(-1) if col_pitout and col_pitout in work.columns else pd.Series(np.nan, index=work.index)
+            work["pitouttime"].shift(-1)
+            if "pitouttime" in work.columns else np.nan
         )
 
-    # a pit stop is only valid if the out time is after the in time
     pitin = work["_pitintimenum_ms"]
     pitout_same = work["_pitouttimenum_ms"]
     pitout_next = work["_pitouttimenum_next_ms"]
-    
+
+    #only counts a pit stop as valid if for when there is a not null pitintime on lap n, there is a not null pitouttime on lap n + 1
     is_same_valid = pitin.notna() & pitout_same.notna() & (pitout_same > pitin)
-    
-    # calculate pit stop duration in seconds
+
+    #compute pit duration
     work["_pitstopduration_s"] = np.where(
         is_same_valid,
         (pitout_same - pitin) / 1000.0,
@@ -702,54 +677,52 @@ def _precompute_pit_timing(df: pd.DataFrame, col_pitin: Optional[str], col_pitou
             pitin.notna() & pitout_next.notna(),
             (pitout_next - pitin) / 1000.0,
             np.nan,
-        )
+        ),
     )
-    
-    # helper for lap insertion to determine which pit out belongs to the pit in on this lap
+
     work["_pitout_aligned_ms"] = np.where(
         is_same_valid,
         pitout_same,
-        np.where(pitin.notna(), pitout_next, pitout_same)
+        np.where(pitin.notna(), pitout_next, pitout_same),
     )
-    
-    if col_pitout and col_pitout in work.columns:
+
+    if "pitouttime" in work.columns:
         work["_pitout_aligned_val"] = np.where(
             is_same_valid,
-            work[col_pitout],
-            np.where(pitin.notna(), work["_pitouttime_next_val"], work[col_pitout])
+            work["pitouttime"],
+            np.where(pitin.notna(), work["_pitouttime_next_val"], work["pitouttime"]),
         )
     else:
         work["_pitout_aligned_val"] = np.nan
-    
+
     return work
 
 
 # database creation
 
 def create_database(db_path: str) -> sqlite3.Connection:
-    """initialize the sqlite database with the full schema"""
+    """initialise the sqlite database with the full schema"""
     # ensure parent dir exists
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     
-    # nuke the old one if it exists
+    #remove old one if it exists
     if os.path.exists(db_path):
         os.remove(db_path)
-        logger.info(f"removed existing database {db_path}")
-    # connect to make a new one
+
+    #make a new database
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
-    # execute all the create tables
+    #create all the tables
     for name, sql in FULL_SCHEMA.items():
         cur.execute(sql)
         logger.info(f"created table {name}")
-    # execute all the indexes
+    #create all the indexes
     for idx_sql in SCHEMA_INDICES:
         cur.execute(idx_sql)
-    # save it down
+    #save it
     conn.commit()
     logger.info("schema created")
     return conn
-
 
 # main processing
 
@@ -772,7 +745,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
     if not season_dirs:
         logger.warning(f"no season directories found under {input_dir}")
 
-    # pass 1 discover races and drivers
+    # pass 1 get all races and drivers
     logger.info("pass 1 races and drivers")
 
     for season_dir in season_dirs:
@@ -790,7 +763,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
             if not results_path.exists():
                 continue
 
-            # safe load results
+            #load results
             results_df = _safe_read_parquet(results_path)
             if results_df is None:
                 continue
@@ -805,9 +778,9 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                     if ldf is not None and "lapstartdate" in ldf.columns and not ldf.empty:
                         v = ldf["lapstartdate"].iloc[0]
                         if pd.notna(v):
-                            race_date = pd.to_datetime(v).strftime("%Y-%m-%d")
+                            race_date = pd.to_datetime(v).strftime("%Y-%m-%d") #store date consistently
 
-                # get allocations
+                # get compound allocations
                 dry = get_compound_allocation(season, location)
                 avail = f"{dry},I,W" if dry else "A1,A2,A3,I,W"
                 avail_c = _derive_availablecompounds_c(avail) if dry else None
@@ -818,7 +791,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                     w = results_df[results_df["position"] == 1]
                     nolaps = int(w["laps"].iloc[0]) if not w.empty else 0
 
-                # shove it all into the database
+                #insert into database
                 cur.execute(
                     """INSERT INTO races
                        (id, date, season, location, availablecompounds, availablecompounds_c,
@@ -833,7 +806,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
             # populate driver details
             sources = [results_df]
             q_res = gp_dir / "Qualifying" / "results.parquet"
-            # load qualy results too just to see all drivers
+            # load qualifying results
             if q_res.exists():
                 qdf = _safe_read_parquet(q_res)
                 if qdf is not None:
@@ -903,7 +876,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                         if "finished" not in status and "+" not in status:
                             key = (season, did)
                             retirements_data.setdefault(key, {"accidents": 0, "failures": 0})
-                            # guess at the retirement type
+                            # guess at the retirement type using common retirement reasons
                             if any(kw in status for kw in
                                    ["accident", "collision", "crash", "spun", "damage", "contact"]):
                                 retirements_data[key]["accidents"] += 1
@@ -922,7 +895,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                             did = driver_cache.get(row.get("abbreviation"))
                             if not did:
                                 continue
-                            # log qualy times
+                            # log qualifying imes
                             cur.execute(
                                 """INSERT INTO qualifyings
                                    (race_id, position, driver_id, q1laptime, q2laptime, q3laptime, speedtrap)
@@ -939,10 +912,6 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
     # pass 3 sessions telemetry and laps
     logger.info("pass 3 sessions telemetry tables laps fcy")
 
-    # build a fast lookup for driver ids using car numbers
-    cur.execute("SELECT id, carno FROM drivers WHERE carno IS NOT NULL")
-    driver_by_carno: Dict[int, int] = {row[1]: row[0] for row in cur.fetchall()}
-
     for season_dir in season_dirs:
         season = int(season_dir.name)
         for gp_dir in sorted(p for p in season_dir.iterdir() if p.is_dir()):
@@ -958,7 +927,11 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
             logger.info(f"  processing {season} {location} race id {race_id}")
 
             # create session entry
-            cur.execute("""INSERT INTO sessions   (id, race_id, session_code, session_name) VALUES (?,?,'R','Race')""",(next_session_id, race_id),)
+            cur.execute(
+                """INSERT INTO sessions (id, race_id, session_code, session_name)
+                VALUES (?,?,'R','Race')""",
+                (next_session_id, race_id),
+            )
             session_id = next_session_id
             next_session_id += 1
 
@@ -969,7 +942,6 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
             if wp.exists():
                 wdf = _safe_read_parquet(wp)
                 if wdf is not None:
-                    # figure out the base date for timing
                     base_date = None
                     if "date" in wdf.columns:
                         dates = wdf["date"].dropna()
@@ -978,11 +950,9 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
 
                     rows_w = []
                     for _, wr in wdf.iterrows():
-                        # get the time
                         t_ms = time_to_ms(wr.get("time"))
                         date_v = wr.get("date")
 
-                        # compute time from date diff if needed
                         if t_ms is None and base_date is not None and pd.notna(date_v):
                             try:
                                 t_ms = int((pd.Timestamp(date_v) - pd.Timestamp(base_date)).total_seconds() * 1000)
@@ -994,7 +964,6 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
 
                         date_utc = str(date_v) if pd.notna(date_v) else None
 
-                        # parse rainfall
                         rain_v = wr.get("rainfall")
                         rain_i = None
                         if pd.notna(rain_v) and rain_v is not None:
@@ -1019,10 +988,9 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                             wr.get("pressure"),
                             wr.get("windspeed"),
                             wr.get("winddirection"),
-                            rain_i
+                            rain_i,
                         ))
 
-                    # bulk insert the weather
                     if rows_w:
                         conn.executemany(
                             """INSERT OR REPLACE INTO weather_samples
@@ -1033,7 +1001,6 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                         )
                         logger.info(f"    weather {len(rows_w)} rows from weather_data.parquet")
 
-            # note whether we saw any rain
             cur.execute("UPDATE races SET wet_race=? WHERE id=?", (wet_race, race_id))
 
             # process track status events
@@ -1049,15 +1016,18 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                         if t_ms is None or sv is None or pd.isna(sv):
                             continue
                         dv = r.get("date")
-                        # save the status update
-                        rows_ts.append((session_id, t_ms,
-                                        str(dv) if pd.notna(dv) else None,
-                                        str(sv), r.get("message")))
+                        rows_ts.append((
+                            session_id,
+                            t_ms,
+                            str(dv) if pd.notna(dv) else None,
+                            str(sv),
+                            r.get("message"),
+                        ))
                     if rows_ts:
                         conn.executemany(
                             """INSERT INTO track_status_events
-                               (session_id,time_ms,date_utc,status_code,message)
-                               VALUES (?,?,?,?,?)""",
+                            (session_id,time_ms,date_utc,status_code,message)
+                            VALUES (?,?,?,?,?)""",
                             rows_ts,
                         )
                         logger.info(f"    track status events {len(rows_ts)}")
@@ -1069,7 +1039,6 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                 if rcm_df is not None:
                     rows_rcm = []
                     for _, r in rcm_df.iterrows():
-                        # sort out utc formatting
                         uv = r.get("utc")
                         utc_str = uv.isoformat() if pd.notna(uv) and uv is not None else None
                         dno = r.get("racingnumber")
@@ -1077,25 +1046,30 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                             dno = int(dno) if pd.notna(dno) else None
                         except Exception:
                             dno = None
-                        # gather the row
-                        rows_rcm.append((session_id, utc_str,
-                                         time_to_ms(r.get("time")),
-                                         r.get("category"), r.get("message"),
-                                         r.get("status"), r.get("flag"),
-                                         r.get("scope"), r.get("sector"),
-                                         r.get("lap"), dno))
-                    # insert all messages
+                        rows_rcm.append((
+                            session_id,
+                            utc_str,
+                            time_to_ms(r.get("time")),
+                            r.get("category"),
+                            r.get("message"),
+                            r.get("status"),
+                            r.get("flag"),
+                            r.get("scope"),
+                            r.get("sector"),
+                            r.get("lap"),
+                            dno,
+                        ))
                     if rows_rcm:
                         conn.executemany(
                             """INSERT INTO race_control_messages
-                               (session_id,utc,time_ms,category,message,
+                            (session_id,utc,time_ms,category,message,
                                 status,flag,scope,sector,lap,driver_no)
-                               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                             rows_rcm,
                         )
                         logger.info(f"    rcm {len(rows_rcm)} messages")
 
-            # process laps with full detail
+            # process laps
             laps_path = race_dir / "laps.parquet"
             if not laps_path.exists():
                 conn.commit()
@@ -1106,7 +1080,6 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                 conn.commit()
                 continue
 
-            # need at least these basics to proceed
             if not {"driver", "lapnumber", "position", "laptime"}.issubset(laps_df.columns):
                 conn.commit()
                 continue
@@ -1129,7 +1102,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
             laps_df = laps_df[laps_df["position"].notna()].copy()
             laps_df["position"] = laps_df["position"].astype(int)
 
-            # normalize tyre compound names
+            # normalise tyre compound names
             if "compound" in laps_df.columns:
                 laps_df["_compound_rel"] = laps_df["compound"].apply(
                     lambda x: _normalise_compound(x, rel_map)
@@ -1141,7 +1114,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
             laps_df = laps_df.sort_values(["driver", "lapnumber"])
             laps_df["_racetime"] = laps_df.groupby("driver")["laptime"].cumsum()
 
-            # determine the tire compound used after the pit stop
+            # determine the tyre compound used after the pit stop
             laps_df["_nextcompound"] = laps_df.groupby("driver")["_compound_rel"].shift(-1)
             if "pitintime" in laps_df.columns:
                 laps_df["_nextcompound"] = laps_df["_nextcompound"].where(
@@ -1151,69 +1124,38 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
             else:
                 laps_df["_nextcompound"] = None
 
-            # compute gaps and intervals using our helper function
+            # compute gaps and intervals
             laps_df = compute_gap_interval_by_position(laps_df)
 
             # align pit stop timings across laps
             if "pitintime" in laps_df.columns or "pitouttime" in laps_df.columns:
-                laps_df = _precompute_pit_timing(laps_df, "pitintime", "pitouttime", group_key)
+                laps_df = _precompute_pit_timing(laps_df, group_key)
 
-            # update driver car numbers if we find newer info in the lap metadata
-            if "drivernumber" in laps_df.columns and "driver" in laps_df.columns:
-                updates = []
-                for _, dr in laps_df[["drivernumber", "driver"]].drop_duplicates().iterrows():
-                    dn, dv = dr.get("drivernumber"), dr.get("driver")
-                    if pd.isna(dn) or pd.isna(dv):
-                        continue
-                    try:
-                        new_carno = int(dn)
-                    except Exception:
-                        continue
-                    did = driver_cache.get(str(dv))
-                    if did is None:
-                        continue
-                    cur.execute("SELECT carno FROM drivers WHERE id=?", (did,))
-                    existing = cur.fetchone()
-                    if existing and existing[0] != new_carno:
-                        updates.append((new_carno, did))
-                        driver_by_carno[new_carno] = did
-                # process any updates we found
-                if updates:
-                    cur.executemany("UPDATE drivers SET carno=? WHERE id=?", updates)
-
-            # loop over every lap and dump it in the db
+            # loop over every lap and insert it in the db
             laps_inserted = 0
             for _, lap in laps_df.iterrows():
                 drv = lap.get("driver")
                 did = driver_cache.get(str(drv))
-                # try the car number fallback
-                if did is None:
-                    dn_val = lap.get("drivernumber")
-                    if pd.notna(dn_val):
-                        try:
-                            did = driver_by_carno.get(int(dn_val))
-                        except Exception:
-                            pass
                 if did is None:
                     continue
 
                 lapno = lap.get("lapnumber")
-                pos   = lap.get("position")
+                pos = lap.get("position")
                 if pd.isna(lapno) or pd.isna(pos):
                     continue
 
                 # extract pit timing fields
-                pitin_raw      = lap.get("pitintime")
-                pitin_ms       = lap.get("_pitintimenum_ms")
-                pitout_ms      = lap.get("_pitout_aligned_ms")
-                pitout_val     = lap.get("_pitout_aligned_val")
-                pitdur         = lap.get("_pitstopduration_s")
+                pitin_raw = lap.get("pitintime")
+                pitin_ms = lap.get("_pitintimenum_ms")
+                pitout_ms = lap.get("_pitout_aligned_ms")
+                pitout_val = lap.get("_pitout_aligned_val")
+                pitdur = lap.get("_pitstopduration_s")
 
-                pitin_str  = str(pitin_raw)  if (pitin_raw  is not None and pd.notna(pitin_raw))  else None
-                pitout_str = str(pitout_val) if (pitout_val is not None and pd.notna(pitout_val)) else None
-                pitin_s    = (pitin_ms  / 1000.0) if pitin_ms  is not None and pd.notna(pitin_ms)  else None
-                pitout_s   = (pitout_ms / 1000.0) if pitout_ms is not None and pd.notna(pitout_ms) else None
-                pitdur     = float(pitdur) if pitdur is not None and pd.notna(pitdur) else None
+                pitin_str = str(pitin_raw) if pitin_raw is not None and pd.notna(pitin_raw) else None
+                pitout_str = str(pitout_val) if pitout_val is not None and pd.notna(pitout_val) else None
+                pitin_s = (pitin_ms / 1000.0) if pitin_ms is not None and pd.notna(pitin_ms) else None
+                pitout_s = (pitout_ms / 1000.0) if pitout_ms is not None and pd.notna(pitout_ms) else None
+                pitdur = float(pitdur) if pitdur is not None and pd.notna(pitdur) else None
 
                 # calculate pit in elapsed
                 lap_start_s = lap.get("lapstarttime")
@@ -1222,27 +1164,26 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                     pit_in_elapsed = pitin_s - float(lap_start_s)
 
                 # extract sector times
-                s1  = td_to_s(lap.get("sector1time"))
-                s2  = td_to_s(lap.get("sector2time"))
-                s3  = td_to_s(lap.get("sector3time"))
+                s1 = td_to_s(lap.get("sector1time"))
+                s2 = td_to_s(lap.get("sector2time"))
+                s3 = td_to_s(lap.get("sector3time"))
                 s1s = time_to_ms(lap.get("sector1sessiontime"))
                 s2s = time_to_ms(lap.get("sector2sessiontime"))
                 s3s = time_to_ms(lap.get("sector3sessiontime"))
 
                 # fetch flags
-                pb_v  = lap.get("ispersonalbest")
+                pb_v = lap.get("ispersonalbest")
                 acc_v = lap.get("isaccurate")
                 del_v = lap.get("deleted")
-                dr_v  = lap.get("deletedreason")
+                dr_v = lap.get("deletedreason")
 
                 ts_val = lap.get("trackstatus")
                 ts_str = str(ts_val) if ts_val is not None and pd.notna(ts_val) else None
 
                 try:
-                    # fire the enormous insert query
                     cur.execute(
                         """INSERT INTO laps
-                           (race_id, lapno, position, driver_id,
+                        (race_id, lapno, position, driver_id,
                             laptime, racetime, gap, interval,
                             compound, tireage, nextcompound,
                             pitintime, pitouttime, pitintime_s, pitouttime_s,
@@ -1252,8 +1193,8 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                             speed_i1_kph, speed_i2_kph, speed_fl_kph, speed_st_kph,
                             track_status_code,
                             is_personal_best, is_accurate, is_deleted, deleted_reason)
-                           VALUES
-                           (?,?,?,?,  ?,?,?,?,  ?,?,?,
+                        VALUES
+                        (?,?,?,?,  ?,?,?,?,  ?,?,?,
                             ?,?,?,?,  ?,?,?,?,
                             ?,?,?,  ?,?,?,
                             ?,?,?,?,  ?,
@@ -1265,21 +1206,17 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                             lap.get("_compound_rel"),
                             int(lap.get("tyrelife")) if pd.notna(lap.get("tyrelife")) else None,
                             lap.get("_nextcompound"),
-                            # pit
                             pitin_str, pitout_str, pitin_s, pitout_s,
                             int(pitin_ms) if pitin_ms is not None and pd.notna(pitin_ms) else None,
                             int(pitout_ms) if pitout_ms is not None and pd.notna(pitout_ms) else None,
                             pitdur, pit_in_elapsed,
-                            # sectors
                             s1, s2, s3, s1s, s2s, s3s,
-                            # speeds
                             lap.get("speedi1"),
                             lap.get("speedi2"),
                             lap.get("speedfl"),
                             lap.get("speedst"),
-                            # flags
                             ts_str,
-                            1 if pb_v  else 0,
+                            1 if pb_v else 0,
                             1 if acc_v else 0,
                             1 if del_v else 0,
                             str(dr_v) if dr_v is not None and pd.notna(dr_v) else None,
@@ -1287,15 +1224,13 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                     )
                     laps_inserted += 1
                 except sqlite3.IntegrityError:
-                    # just ignore duplicates if any
                     pass
 
             if laps_inserted > 0:
                 logger.info(f"    laps inserted {laps_inserted}")
 
-            # update speedtrap data in starterfields if we found it
+            # update speedtrap data in starterfields if found
             if "speedst" in laps_df.columns:
-                # get highest speed trap per driver
                 st_df = laps_df.groupby("driver")["speedst"].max().reset_index()
                 for _, r in st_df.iterrows():
                     did = driver_cache.get(str(r["driver"]))
@@ -1303,7 +1238,7 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
                     if did and pd.notna(sv):
                         cur.execute(
                             """UPDATE starterfields SET speedtrap=?
-                               WHERE race_id=? AND driver_id=? AND speedtrap IS NULL""",
+                            WHERE race_id=? AND driver_id=? AND speedtrap IS NULL""",
                             (sv, race_id, did),
                         )
 
@@ -1311,29 +1246,37 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
             if ts_df is not None:
                 phases = _extract_fcy_phases(ts_df)
                 if "position" in laps_df.columns:
-                    leader_df = laps_df[laps_df["position"] == 1][["lapnumber", "_racetime"]].rename(columns={"_racetime": "racetime"}).dropna()
+                    leader_df = (
+                        laps_df[laps_df["position"] == 1][["lapnumber", "_racetime"]]
+                        .rename(columns={"_racetime": "racetime"})
+                        .dropna()
+                    )
                     phases = _phase_times_to_laps(phases, leader_df)
-                # stuff them in the database
+
                 for ph in phases:
                     cur.execute(
                         """INSERT INTO fcyphases
-                           (id, race_id, startracetime, endracetime, startlap, endlap, type)
-                           VALUES (?,?,?,?,?,?,?)""",
-                        (next_fcyphase_id, race_id,
-                         ph.get("start"), ph.get("end"),
-                         ph.get("startlap"), ph.get("endlap"), ph.get("type")),
+                        (id, race_id, startracetime, endracetime, startlap, endlap, type)
+                        VALUES (?,?,?,?,?,?,?)""",
+                        (
+                            next_fcyphase_id,
+                            race_id,
+                            ph.get("start"),
+                            ph.get("end"),
+                            ph.get("startlap"),
+                            ph.get("endlap"),
+                            ph.get("type"),
+                        ),
                     )
                     next_fcyphase_id += 1
 
-            # save the race
             conn.commit()
 
     logger.info("pass 3 done")
 
-    # pass 4 retirements and validation
     logger.info("pass 4 retirements and validation")
 
-    # finally dump those retirements we cached
+    # finally add the retirements we cached
     for (season, did), counts in retirements_data.items():
         if counts["accidents"] > 0 or counts["failures"] > 0:
             cur.execute(
@@ -1343,13 +1286,12 @@ def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
             )
     conn.commit()
 
-    # run a quick validation check on all tables
+    #validation check on all tables
     for table in FULL_SCHEMA:
         count = cur.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
         logger.info(f"  {table} {count} rows")
 
-# entry point
-def main() -> None:
+def main():
     input_dir = Path("../f1_data")
     output_db = Path("../data/raw/f1_database.sqlite")
 

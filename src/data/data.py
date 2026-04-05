@@ -42,7 +42,6 @@ def _exclude_holdout_races(
 ) -> pd.DataFrame:
     """
     drops any rows belonging to the holdout races
-    we do this so the model doesnt accidentally peek at the test data
     """
     if "race_id" not in df.columns:
         return df
@@ -50,16 +49,14 @@ def _exclude_holdout_races(
 
 def _read_any(path: Union[str, Path]) -> pd.DataFrame:
     """
-    super simple helper to load a dataframe from either csv or parquet
+    super simple helper to load a dataframe from csv
     """
     path = Path(path)
 
     if path.suffix.lower() == ".csv":
         return pd.read_csv(path)
-    if path.suffix.lower() == ".parquet":
-        return pd.read_parquet(path)
-
-    raise ValueError(f"Unsupported file type: {path.suffix}. Use .csv or .parquet")
+    
+    raise ValueError(f"Unsupported file type: {path.suffix} use .csv")
 
 
 def _normalize_compound_series(s: pd.Series, *, allow_null: bool) -> pd.Series:

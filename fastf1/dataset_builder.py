@@ -7,26 +7,22 @@ Dataset 1 comes from the clean db and prepares features for tire strategy.
 Dataset 2 comes from the less clean db and focuses on pit stop events.
 """
 
-import argparse
 import logging
 import math
 import re
 import sqlite3
 from pathlib import Path
 from typing import Optional, Tuple
-
 import numpy as np
 import pandas as pd
-
-pd.set_option('future.no_silent_downcasting', True)
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Set to True to include the pit stops left feature for structural analyses
+# choose whether to include the pit stops left feature
 INCLUDE_PIT_STOPS_LEFT = False
 
-# Estimated net time loss from making a pit stop in seconds
+# estimated net time loss from making a pit stop in seconds, calculated using the src/utils/compute_net_pit_loss_by_track.py file
 NET_PIT_LOSS_BY_TRACK_S: dict[str, float] = {
     "70th Anniversary Grand Prix": 9.01,
     "Abu Dhabi Grand Prix": 11.216,
@@ -65,9 +61,10 @@ NET_PIT_LOSS_BY_TRACK_S: dict[str, float] = {
     "United States Grand Prix": 9.958,
 }
 
+# fallback in case a track somehow is not in the dictionary, average over all the tracks 
 DEFAULT_NET_PIT_LOSS_S = 9.141
 
-# Mapping for compound hardness to an absolute scale where 1 is hardest and 7 is softest
+#compare old 2018 compounds and newer c compounds on one shared scale
 ABSOLUTE_HARDNESS_MAP = {
     "A1": 1,
     "A2": 2,
@@ -83,36 +80,26 @@ ABSOLUTE_HARDNESS_MAP = {
     "C5": 7,
 }
 
-
 def pick_race_lap_count(races: pd.DataFrame) -> pd.Series:
     """Determines the total laps for the race using planned if available otherwise actual."""
+    # planned laps are preferred because they represent the intended race distance
     if "nolapsplanned" in races.columns:
         base = races["nolapsplanned"].copy()
     else:
         base = pd.Series([np.nan] * len(races), index=races.index)
 
+    # if planned laps are missing then use actual laps completed instead
     if "nolaps" in races.columns:
         base = base.fillna(races["nolaps"])
     return base
 
 
-def normalize_compound(x: Optional[str]) -> Optional[str]:
-    """Standardizes compound names to a common format."""
-    if x is None:
+def validate_compound(x: Optional[str]) -> Optional[str]: #double check compound is stored correctly
+    if x is None or pd.isna(x):
         return None
-    s = str(x).strip().upper()
-    if s in {"SOFT", "S"}:
-        return "SOFT"
-    if s in {"MEDIUM", "M"}:
-        return "MEDIUM"
-    if s in {"HARD", "H"}:
-        return "HARD"
-    if s in {"INTERMEDIATE", "INTER", "IN", "I"}:
-        return "INTERMEDIATE"
-    if s in {"WET", "FULLWET", "FW"}:
-        return "WET"
-    return None
-
+    if x not in {"HARD", "MEDIUM", "SOFT", "INTERMEDIATE", "WET"}:
+        raise ValueError(f"Unexpected compound value: {x}")
+    return x
 
 def estimate_pit_loss_seconds(race_track: pd.Series, fcy_status: pd.Series) -> pd.Series:
     """Calculates estimated net time loss from pitting adjusted for safety car status."""
@@ -121,7 +108,8 @@ def estimate_pit_loss_seconds(race_track: pd.Series, fcy_status: pd.Series) -> p
 
     f = pd.to_numeric(fcy_status, errors="coerce").fillna(0).astype(int)
 
-    # Reduce net loss under VSC/SC conditions based on simulator assumptions
+    # the idea here is that a pit stop costs less under vsc or sc because everyone is slower anyway
+    # these multipliers come from what heilmeier assumed cars would slow down by in his simulator
     mult = np.where(
         (f == 1) | (f == 2),
         0.71,
@@ -139,6 +127,8 @@ def extract_hardest_slick_from_availablecompounds(s: Optional[str]) -> Optional[
         return None
 
     txt = str(s).upper()
+
+    # gets the absolute compound code like a3 or c2 from the stored string
     matches = re.findall(r"\b([AC][1-7])\b", txt)
     if not matches:
         return None
@@ -149,12 +139,13 @@ def extract_hardest_slick_from_availablecompounds(s: Optional[str]) -> Optional[
     if not abs_hardness:
         return None
 
+    # lower number means harder tyre so taking the minimum gives the hardest slick available
     return min(abs_hardness)
 
 
 def track_category_from_hardest(hardest_abs: Optional[int]) -> Optional[int]:
     """
-    Categorizes track degradation based on the hardest compound brought to the track.
+    Categorises track degradation based on the hardest compound brought to the track.
     1: high degradation (hardest tires brought)
     2: medium degradation (medium tires brought)
     3: low degradation (soft tires brought)
@@ -168,7 +159,6 @@ def track_category_from_hardest(hardest_abs: Optional[int]) -> Optional[int]:
         return 2 
     return 3 
 
-
 def _rejoin_gaps_one_lap(grp: pd.DataFrame) -> pd.DataFrame:
     """Estimates gaps to cars ahead and behind after a hypothetical pit stop."""
     g = grp.copy()
@@ -176,8 +166,10 @@ def _rejoin_gaps_one_lap(grp: pd.DataFrame) -> pd.DataFrame:
     ids = g["driver_id"].to_numpy()
     pit_loss = pd.to_numeric(g["pit_loss_est_s"], errors="coerce").to_numpy()
 
+    # projected race time after adding the estimated pit stop loss
     t_proj = times + pit_loss
 
+    # sort by current race time so we can work out where each driver would rejoin
     order = np.argsort(times)
     times_sorted = times[order]
     ids_sorted = ids[order]
@@ -186,12 +178,13 @@ def _rejoin_gaps_one_lap(grp: pd.DataFrame) -> pd.DataFrame:
     behind_gap = np.full(len(g), np.nan, dtype=float)
 
     for i in range(len(g)):
+        # this finds the place in the order where the driver would slot back in after stopping
         ins = np.searchsorted(times_sorted, t_proj[i], side="left")
 
         prev_idx = ins - 1
         next_idx = ins
 
-        # Skip self comparisons (driver does not race against their own ghost)
+        # skip self comparisons
         while prev_idx >= 0 and ids_sorted[prev_idx] == ids[i]:
             prev_idx -= 1
         while next_idx < len(times_sorted) and ids_sorted[next_idx] == ids[i]:
@@ -239,6 +232,7 @@ def add_undercut_features(df: pd.DataFrame) -> pd.DataFrame:
     df["racetime_sofar"] = pd.to_numeric(df["racetime_sofar"], errors="coerce")
     df["tyre_age"] = pd.to_numeric(df.get("tyre_age", np.nan), errors="coerce")
 
+    #sort laps by race order
     df = df.sort_values(["race_id", "lapno", "position", "driver_id"]).copy()
     g = df.groupby(["race_id", "lapno"], sort=False)
 
@@ -253,6 +247,8 @@ def add_undercut_features(df: pd.DataFrame) -> pd.DataFrame:
         for i in range(len(g2)):
             if np.isnan(t[i]):
                 continue
+
+            # this counts how many cars are packed within five seconds ahead of the driver
             j0 = np.searchsorted(t, t[i] - 5.0, side="left")
             out[i] = max(0, i - j0)
         return pd.Series(out, index=g2.index)
@@ -264,6 +260,7 @@ def add_undercut_features(df: pd.DataFrame) -> pd.DataFrame:
         .astype(int)
     )
 
+    # compare tyre age to the car directly ahead
     df["ahead1_tyre_age"] = g["tyre_age"].shift(1)
     df["tyre_age_diff_to_ahead"] = df["tyre_age"] - df["ahead1_tyre_age"]
 
@@ -272,6 +269,7 @@ def add_undercut_features(df: pd.DataFrame) -> pd.DataFrame:
     else:
         df["pit_loss_est_s"] = DEFAULT_NET_PIT_LOSS_S
 
+    #compute the hypothetical rejoin gaps for every driver on every lap
     rejoin_cols = (
         df.groupby(["race_id", "lapno"], sort=False, group_keys=False)
         .apply(_rejoin_gaps_one_lap, include_groups=False)
@@ -284,7 +282,6 @@ def add_undercut_features(df: pd.DataFrame) -> pd.DataFrame:
     )
     return df
 
-
 def add_weather_flags(df: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
     """Processes weather data to add flags for current rain and accumulated rain."""
     df = df.copy()
@@ -294,6 +291,7 @@ def add_weather_flags(df: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
     if weather is None or weather.empty:
         return df
 
+    #get the time at the end of the lap for the driver (When the model has to make its decision)
     df["_time_ms"] = pd.to_numeric(df["decision_time_ms"], errors="coerce").round().astype("Int64")
 
     weather = weather.copy()
@@ -310,6 +308,7 @@ def add_weather_flags(df: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
             out.append(df_r)
             continue
 
+        # this finds continuous stretches where rainfall is on so you can measure how long rain has been ongoing
         is_rain = w["rainfall"].eq(1)
         change = is_rain.ne(is_rain.shift(1, fill_value=False))
         w["streak_id"] = change.cumsum()
@@ -329,6 +328,7 @@ def add_weather_flags(df: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
         w["time_ms_i64"] = w["time_ms"].astype(np.int64)
         w = w.sort_values("time_ms_i64")
 
+        # merge_asof here matches each lap to the latest weather sample at or before decision time, preventing temporal leakage
         merged = pd.merge_asof(
             df_t,
             w[["time_ms_i64", "rainfall", "rain_streak_start_ms"]],
@@ -347,7 +347,6 @@ def add_weather_flags(df: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
             dur_ms / 60000.0,
             np.nan
         )
-
         merged = merged.drop(columns=["time_ms", "rainfall", "rain_streak_start_ms"], errors="ignore")
 
         out.append(pd.concat([merged, df_nt], ignore_index=True) if not df_nt.empty else merged)
@@ -355,7 +354,6 @@ def add_weather_flags(df: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
     df2 = pd.concat(out, ignore_index=True)
     df2 = df2.drop(columns=["_time_ms_num", "_time_ms"], errors="ignore")
     return df2
-
 
 def add_is_wet_race(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -367,6 +365,7 @@ def add_is_wet_race(df: pd.DataFrame) -> pd.DataFrame:
     comp = df["current_compound"]
     is_wet_tyre = comp.isin({"INTERMEDIATE", "WET"}).astype(int)
     
+    # this is cumulative within a driver race sequence so once it turns on it stays on
     df["is_wet_race"] = (
         is_wet_tyre.groupby([df["race_id"], df["driver_id"]])
         .cumsum()
@@ -375,11 +374,11 @@ def add_is_wet_race(df: pd.DataFrame) -> pd.DataFrame:
     )
     return df
 
-
 def add_pit_stops_so_far(df: pd.DataFrame) -> pd.DataFrame:
     """Calculates cumulative pit stops taken strictly prior to the current lap."""
     df = df.sort_values(["race_id", "driver_id", "lapno"]).copy()
     
+    # the shift means current lap does not count itself
     df["pit_stops_so_far"] = (
         df.groupby(["race_id", "driver_id"])["y_pit"]
           .transform(lambda s: s.cumsum().shift(1).fillna(0).astype(int))
@@ -388,15 +387,17 @@ def add_pit_stops_so_far(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_tyre_change_pursuer(df: pd.DataFrame) -> pd.DataFrame:
-    """Checks if the car immediately behind changed tyres in the previous lap."""
+    """Checks if the car immediately behind changed tyres at the end of the previous lap."""
     df = df.sort_values(["race_id", "driver_id", "lapno"]).copy()
 
     def did_change(s):
         shifted = s.shift(1)
         return s.notna() & shifted.notna() & (s != shifted)
         
+    # first work out whether each driver changed compound relative to their own previous lap
     df["did_change_since_prev"] = df.groupby(["race_id", "driver_id"])["current_compound"].transform(did_change)
 
+    # then look up the car behind by position on the same lap
     pursuer_lookup = df[["race_id", "lapno", "position", "did_change_since_prev"]].copy()
     pursuer_lookup = pursuer_lookup.rename(columns={"did_change_since_prev": "pursuer_changed_prev"})
     df["pursuer_position"] = df["position"] + 1
@@ -417,9 +418,8 @@ def add_tyre_change_pursuer(df: pd.DataFrame) -> pd.DataFrame:
     )
     return df
 
-
 def add_close_ahead(df: pd.DataFrame, threshold_s: float = 1.5) -> pd.DataFrame:
-    """Flags if the driver was closely followed by another car in the previous lap."""
+    """Flags if the driver was closely followed by another car (within 1.5s) in the previous lap."""
     df = df.copy()
 
     if not {"race_id", "driver_id", "lapno", "position", "racetime"}.issubset(df.columns):
@@ -430,6 +430,7 @@ def add_close_ahead(df: pd.DataFrame, threshold_s: float = 1.5) -> pd.DataFrame:
     base["racetime"] = pd.to_numeric(base["racetime"], errors="coerce")
     base["position"] = pd.to_numeric(base["position"], errors="coerce")
 
+    #uses position +1 to identify the pursuer
     pursuer = base[["race_id", "lapno", "position", "racetime"]].rename(
         columns={"position": "pursuer_position", "racetime": "pursuer_racetime"}
     )
@@ -443,6 +444,7 @@ def add_close_ahead(df: pd.DataFrame, threshold_s: float = 1.5) -> pd.DataFrame:
 
     merged["ahead_by_pursuer_s_prev"] = merged["pursuer_racetime"] - merged["racetime"]
 
+    # lapno +1 shifts the previous lap gap onto the next lap row
     merged["lapno_next"] = merged["lapno"] + 1
     attach = merged[["race_id", "driver_id", "lapno_next", "ahead_by_pursuer_s_prev"]].rename(
         columns={"lapno_next": "lapno"}
@@ -460,7 +462,7 @@ def add_close_ahead(df: pd.DataFrame, threshold_s: float = 1.5) -> pd.DataFrame:
 
 
 def add_fcy_status_table6(df: pd.DataFrame, fcy: pd.DataFrame) -> pd.DataFrame:
-    """Maps full course yellow phases to a categorical status for each lap."""
+    """Maps full course yellow phases to a categorical status for each lap (as defined by heilmeier in his paper)."""
     df = df.copy()
     df["fcy_status"] = 0
 
@@ -499,6 +501,7 @@ def add_fcy_status_table6(df: pd.DataFrame, fcy: pd.DataFrame) -> pd.DataFrame:
             out_frames.append(df_r)
             continue
 
+        # this attaches the most recent fcy phase start before the lap end time
         merged_time = pd.merge_asof(
             df_r_time,
             fcy_r[["startracetime", "endracetime", "type_norm"]],
@@ -529,7 +532,6 @@ def add_fcy_status_table6(df: pd.DataFrame, fcy: pd.DataFrame) -> pd.DataFrame:
     is_vsc = df2["phase_type_end"].eq("VSC")
     is_sc = df2["phase_type_end"].eq("SC")
 
-    # Encode states: 1 (VSC start), 2 (VSC cont), 3 (SC start), 4 (SC cont)
     first_vsc = is_vsc & (prev_phase.ne("VSC"))
     further_vsc = is_vsc & (prev_phase.eq("VSC"))
     first_sc = is_sc & (prev_phase.ne("SC"))
@@ -553,6 +555,7 @@ def add_fulfilled_second_compound(df: pd.DataFrame) -> pd.DataFrame:
     missing = comp.isna()
     tmp = comp.fillna("__MISSING__")
 
+    # this works by counting first appearances of distinct compounds through the race
     first_occ = tmp.groupby([df["race_id"], df["driver_id"]]).transform(lambda s: ~s.duplicated())
     first_occ = first_occ & (~missing)
 
@@ -560,6 +563,7 @@ def add_fulfilled_second_compound(df: pd.DataFrame) -> pd.DataFrame:
     
     is_wet_race = pd.to_numeric(df["is_wet_race"], errors="coerce").fillna(0).astype(int)
 
+    # if a driver has used wet tyres the two compound dry rule does not matter anymore
     df["fulfilled_second_compound"] = ((is_wet_race == 1) | (cum_distinct >= 2)).astype(int)
     return df
 
@@ -582,6 +586,7 @@ def load_core_tables(conn: sqlite3.Connection) -> Tuple[pd.DataFrame, pd.DataFra
     fcy_cols = ["race_id", "startracetime", "endracetime", "startlap", "endlap", "type"]
     fcy = pd.read_sql_query(f"SELECT {', '.join(fcy_cols)} FROM fcyphases;", conn)
 
+    # only race session weather is needed
     weather_query = """
         SELECT ws.race_id, ws.time_ms, ws.rainfall 
         FROM weather_samples ws
@@ -592,14 +597,15 @@ def load_core_tables(conn: sqlite3.Connection) -> Tuple[pd.DataFrame, pd.DataFra
 
     return laps, races, fcy, weather
 
-
 def add_labels(df: pd.DataFrame) -> pd.DataFrame:
     """Generates target variables for training."""
     df = df.copy()
 
+    # pit label is simply whether pit entry time exists on that lap
     df["y_pit"] = df["pitintime"].notna().astype(int)
 
-    df["y_compound"] = df["nextcompound"].apply(normalize_compound)
+    # the compound label is the next compound used after a pit stop
+    df["y_compound"] = df["nextcompound"].apply(validate_compound)
     df.loc[df["y_pit"] != 1, "y_compound"] = None
 
     return df
@@ -613,6 +619,7 @@ def add_race_progress_and_track_category(laps: pd.DataFrame, races: pd.DataFrame
     df["race_progress"] = df["lapno"] / total_laps.replace({0: np.nan})
     df["race_progress"] = df["race_progress"].clip(lower=0.0, upper=1.0)
 
+    # prefer availablecompounds_c when present since it is already normalised to the newer c scale
     ac = df["availablecompounds_c"].fillna(df["availablecompounds"])
     hardest_abs = ac.apply(extract_hardest_slick_from_availablecompounds)
     df["track_category"] = hardest_abs.apply(track_category_from_hardest)
@@ -626,10 +633,12 @@ def add_extra_output_features(df: pd.DataFrame) -> pd.DataFrame:
     """Includes useful columns from raw data to the processing dataframe."""
     df = df.copy()
 
-    df["current_compound"] = df["compound"].apply(normalize_compound)
+    df["current_compound"] = df["compound"].apply(validate_compound)
 
     lap_time_base = pd.to_numeric(df["laptime"], errors="coerce")
     pit_in_time = pd.to_numeric(df["pit_in_elapsed"], errors="coerce")
+
+    # on pit laps the raw lap time is distorted by the stop so pit_in_elapsed is a better decision feature
     df["lap_time"] = np.where(df["y_pit"] == 1, pit_in_time.fillna(lap_time_base), lap_time_base)
 
     df["racetime_sofar"] = pd.to_numeric(df["racetime"], errors="coerce")
@@ -640,20 +649,23 @@ def add_extra_output_features(df: pd.DataFrame) -> pd.DataFrame:
     for c in ["pitintimenum", "pitouttimenum", "sector1session_ms", "sector2session_ms", "sector3session_ms"]:
         df[c] = pd.to_numeric(df[c], errors="coerce")
 
+    # bfill here means use the latest available session timestamp on the lap
+    # pitintimenum is preferred if present otherwise sector 3 then sector 2 then sector 1
     session_time_cols = ["pitintimenum", "sector3session_ms", "sector2session_ms", "sector1session_ms"]
     df["decision_time_ms"] = df[session_time_cols].bfill(axis=1).iloc[:, 0]
 
     return df
 
 
-def finalize_missingness(df: pd.DataFrame) -> pd.DataFrame:
+def finalise_missingness(df: pd.DataFrame) -> pd.DataFrame:
     """
     Handles missing values in a principled way for the final dataset.
-    Semantically fills certain columns and adds missingness flags for others.
-    Leaves main numeric columns as NaN for downstream statistical imputation.
+    fills certain columns and adds missingness flags for others.
+    Leaves main numeric columns as NaN for downstream statistical imputation
     """
     df = df.copy()
 
+    #fill in places where the missing value has a clear meaning (e.g., is_raining being missing means its not currently raining)
     if "is_raining" in df.columns:
         df["is_raining"] = df["is_raining"].fillna(0)
     if "minutes_rain" in df.columns and "is_raining" in df.columns:
@@ -666,6 +678,7 @@ def finalize_missingness(df: pd.DataFrame) -> pd.DataFrame:
     if "fcy_status" in df.columns:
         df["fcy_status"] = df["fcy_status"].fillna(0)
 
+    # for other features you keep the nan and add a flag so the model can learn missingness patterns explicitly (e.g., in the case that the driver is leading the race)
     features_to_flag = [
         "gap_behind_s",
         "tyre_age_diff_to_ahead",
@@ -682,13 +695,14 @@ def finalize_missingness(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_dataset(db_path: str) -> pd.DataFrame:
-    """Pipeline that coordinates data loading and feature engineering."""
+    """oordinates data loading and feature engineering."""
     conn = sqlite3.connect(db_path)
     try:
         laps, races, fcy, weather = load_core_tables(conn)
     finally:
         conn.close()
 
+    #ensures necessary attributes are present
     laps = laps.dropna(subset=["race_id", "driver_id", "lapno", "position"]).copy()
     for c in ["race_id", "driver_id", "lapno", "position"]:
         laps[c] = laps[c].astype(int)
@@ -709,20 +723,13 @@ def build_dataset(db_path: str) -> pd.DataFrame:
     df = add_close_ahead(df, threshold_s=1.5)
     df = add_fulfilled_second_compound(df)
     
-    df = finalize_missingness(df)
-
-    if "race_progress" in df.columns:
-        df["race_progress"] = df["race_progress"].astype(float).clip(0.0, 1.0)
-    if "position" in df.columns:
-        df["position"] = df["position"].astype(int).clip(0, 22)
-    if "fcy_status" in df.columns:
-        df["fcy_status"] = df["fcy_status"].astype(int).clip(0, 4)
+    df = finalise_missingness(df)
 
     return df
 
 
 def make_dataset_1(df_full: pd.DataFrame) -> pd.DataFrame:
-    """Filters columns for the main tire strategy dataset."""
+    """get columns for stage 1 dataset"""
     keep_cols = [
         "race_id", "driver_id", "lapno",
         "race_progress", "position", "fcy_status",
@@ -748,7 +755,8 @@ def make_dataset_1(df_full: pd.DataFrame) -> pd.DataFrame:
 
 
 def make_dataset_2(df_full: pd.DataFrame) -> pd.DataFrame:
-    """Filters columns for the pit event dataset."""
+    """get columns for the pit event dataset."""
+    # dataset 2 only keeps actual pit stop rows because its target is next compound choice
     df_pit = df_full[df_full["y_pit"] == 1].copy()
 
     keep_cols = [
@@ -770,7 +778,9 @@ def make_dataset_2(df_full: pd.DataFrame) -> pd.DataFrame:
         
     return df_pit[[c for c in keep_cols if c in df_pit.columns]].copy()
 
+
 def main() -> None:
+    # these point to the two cleaned versions of the database built earlier
     db_clean_path = "../data/raw/f1_database__clean.sqlite"
     db_less_clean_path = "../data/raw/f1_database__less_clean.sqlite"
 
@@ -788,6 +798,7 @@ def main() -> None:
     ds2 = make_dataset_2(df_less_full)
     ds2.to_csv(out2_path, index=False)
     logger.info(f"Dataset 2 (pit events) wrote {len(ds2)} rows to {out2_path}")
+
 
 if __name__ == "__main__":
     main()
