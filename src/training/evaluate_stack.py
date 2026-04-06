@@ -242,7 +242,7 @@ def run_stage1_stacking():
     (outdir / "summary.json").write_text(json.dumps(summary, indent=2))
     return summary
 
-
+def run_stage2_stacking():
     """handles the pipeline for stage 2 compound decision stacking"""
     outdir.mkdir(parents=True, exist_ok=True)
     n_classes = len(COMPOUND_CLASSES)

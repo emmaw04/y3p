@@ -16,7 +16,7 @@ STAGE2_PATH = Path("runs/final_run/stage2_multiclass/artifacts/oof_predictions.c
 OUT_PATH = Path("runs/final_run/oof_slice_metrics.csv")
 
 #hardcoded decision rules
-PIT_THRESHOLD = 0.3120
+PIT_THRESHOLD = 0.264
 COMPOUND_LABELS = ["HARD", "MEDIUM", "SOFT", "INTERMEDIATE", "WET"]
 META_COLS_STAGE2 = [f"meta_proba_c{i}" for i in range(len(COMPOUND_LABELS))] #the probability columns expected in the stage 2 OOF probabilities file
 GP_COL = "race_track"
@@ -149,7 +149,7 @@ def _summarise(stage_name: str, df: pd.DataFrame, slices: dict[str, set[int]], m
         rows.append(row)
     return pd.DataFrame(rows)
 
-def main() -> None:
+def main():
     stage1 = pd.read_csv(STAGE1_PATH)
     stage2 = pd.read_csv(STAGE2_PATH)
 

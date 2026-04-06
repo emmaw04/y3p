@@ -80,7 +80,6 @@ def run_tabular_cv(x, y, task: str, model_name: str, outdir: Path):
     seed = 42
     n_splits = 5
     
-    
     num_cols, cat_cols = infer_feature_types(x)
     
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)

@@ -4,9 +4,10 @@ scikit-learn==1.4.0
 fastf1==3.0.1
 scipy==1.12.0
 tqdm==4.66.1
-torch==2.2.0
 xgboost==2.0.3
-lightgbm==4.3.0
-catboost==1.2.2
 tensorflow==2.15.0
 keras==2.15.0
+imbalanced-learn==0.12.4
+scikeras==0.13.0
+optuna==4.7.0
+matplotlib==3.9.4
