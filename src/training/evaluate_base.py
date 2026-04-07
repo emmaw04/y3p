@@ -260,8 +260,8 @@ def main():
     #hardcoded config
     data_stage1 = "data/processed/dataset1.csv"
     data_stage2 = "data/processed/dataset2.csv"
-    task = "binary"  # "binary"/"multiclass"
-    model = "xgb"    # e.g. "xgb", "rf", "svm", "lstm", "tcn_gru", "hybrid_vse"
+    task = "multiclass"  # "binary"/"multiclass"
+    model = "gru"    # e.g. "xgb", "rf", "svm", "lstm", "tcn_gru", "hybrid_vse"
     outdir_base = "runs/base"
     cfg = ModelConfig()
 

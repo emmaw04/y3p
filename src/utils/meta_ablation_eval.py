@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # src/utils/ablation_eval.py
 """
-Ablation evaluation for Stage-1 and Stage-2 using OOF base learner probabilities.
+Ablation evaluation for Stage-1 and Stage-2 meta learners using OOF base learner probabilities.
 This script generates OOF probabilities for all specified base learners and excludes one base learner at a time to see how the xgb meta learners performance drops
+
 Outputs:
 reports/meta_ablation_results_stageX.csv (fold-level results)
 reports/meta_ablation_summary_stageX.csv (average across the fold results)
@@ -12,54 +13,60 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from sklearn.metrics import (
     average_precision_score,
-    log_loss,
     f1_score,
+    log_loss,
     precision_score,
     recall_score,
 )
 from sklearn.preprocessing import label_binarize
 
 from src.data.data import (
-    load_stage1_dataset,
-    get_stage1_xy,
-    load_stage2_dataset,
-    get_stage2_xy,
-    make_race_group_folds,
-    infer_feature_types,
+    COMPOUND_CLASSES,
     HOLDOUT_RACE_IDS,
     build_feature_sequences,
-    COMPOUND_CLASSES,
     encode_y_compound,
+    get_stage1_xy,
+    get_stage2_xy,
+    infer_feature_types,
+    load_stage1_dataset,
+    load_stage2_dataset,
+    make_race_group_folds,
 )
-
-from src.data.preprocessing import build_preprocessor, PreprocessConfig, make_preprocessor_for_model
+from src.data.preprocessing import (
+    PreprocessConfig,
+    build_preprocessor,
+    make_preprocessor_for_model,
+)
 from src.models.models import (
+    ModelConfig,
     build_model_pipeline,
     get_binary_base_learners,
-    get_stage1_sequential_models,
-    make_meta_binary_xgb,
     get_multiclass_base_learners,
+    get_stage1_sequential_models,
     get_stage2_sequential_models,
+    make_meta_binary_xgb,
     make_meta_multiclass_xgb,
-    ModelConfig
 )
 
 SEED_DEFAULT = 42
+
 
 def vprint(verbose: bool, *args, **kwargs) -> None:
     if verbose:
         print(*args, **kwargs, flush=True)
 
+
 def _ensure_dir(p: Path) -> Path:
     p.mkdir(parents=True, exist_ok=True)
     return p
+
 
 def _write_json(path: Path, obj: Any) -> None:
     path.write_text(json.dumps(obj, indent=2, default=str))
@@ -69,29 +76,10 @@ def _safe_logloss_binary(y_true: np.ndarray, proba_pos: np.ndarray) -> float:
     p = np.clip(proba_pos.astype(float), 1e-15, 1 - 1e-15)
     return float(log_loss(y_true, p, labels=[0, 1]))
 
+
 def _safe_logloss_multi(y_true: np.ndarray, proba: np.ndarray, labels: np.ndarray) -> float:
     p = np.clip(proba.astype(float), 1e-15, 1 - 1e-15)
     return float(log_loss(y_true, p, labels=labels))
-
-
-def tune_threshold_max_f1_binary(
-    y_true: np.ndarray,
-    proba_pos: np.ndarray,
-    *,
-    grid: Optional[np.ndarray] = None,
-) -> float:
-    if grid is None:
-        grid = np.linspace(0.01, 0.99, 99)
-
-    best_t = 0.5
-    best_f1 = -1.0
-    for t in grid:
-        y_pred = (proba_pos >= t).astype(int)
-        f1 = f1_score(y_true, y_pred, zero_division=0)
-        if f1 > best_f1:
-            best_f1 = f1
-            best_t = float(t)
-    return best_t
 
 
 def compute_fold_metrics_binary(
@@ -149,11 +137,12 @@ def collect_oof_base_probs_tabular(
     y: pd.Series,
     folds: List[Tuple[np.ndarray, np.ndarray]],
     *,
+    cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int] = None,
     verbose: bool = False,
 ) -> pd.DataFrame:
-    
+
     if stage == 1:
         base_all = get_binary_base_learners(cfg)
         is_binary = True
@@ -163,10 +152,10 @@ def collect_oof_base_probs_tabular(
 
     names = list(base_all.keys())
     n = len(y)
-    
+
     if is_binary:
         out = np.zeros((n, len(names)), dtype=float)
-        cols = [f"p_{n}" for n in names]
+        cols = [f"p_{name}" for name in names]
     else:
         out = np.zeros((n, len(names) * n_classes), dtype=float)
         cols = []
@@ -178,7 +167,10 @@ def collect_oof_base_probs_tabular(
     vprint(verbose, f"[META][PART A][tabular oof] stage={stage} n={n} base={names}")
 
     for fold_id, (tr_idx, te_idx) in enumerate(folds):
-        vprint(verbose, f"[META][PART A][tabular oof][fold {fold_id}] train={len(tr_idx)} test={len(te_idx)}")
+        vprint(
+            verbose,
+            f"[META][PART A][tabular oof][fold {fold_id}] train={len(tr_idx)} test={len(te_idx)}",
+        )
         X_tr, y_tr = X.iloc[tr_idx], y.iloc[tr_idx]
         X_te = X.iloc[te_idx]
 
@@ -193,12 +185,16 @@ def collect_oof_base_probs_tabular(
                 out[te_idx, j] = pipe.predict_proba(X_te)[:, 1].astype(float)
             else:
                 proba_fold = pipe.predict_proba(X_te)
-                classes_seen = pipe.named_steps["model"].classes_ if hasattr(pipe.named_steps["model"], "classes_") else getattr(pipe, "classes_")
+                classes_seen = (
+                    pipe.named_steps["model"].classes_
+                    if hasattr(pipe.named_steps["model"], "classes_")
+                    else getattr(pipe, "classes_")
+                )
                 proba_full = np.zeros((len(te_idx), n_classes), dtype=float)
                 for c_idx, cls in enumerate(classes_seen):
                     proba_full[:, int(cls)] = proba_fold[:, c_idx]
                 start = j * n_classes
-                out[te_idx, start:start + n_classes] = proba_full
+                out[te_idx, start : start + n_classes] = proba_full
 
     return pd.DataFrame(out, columns=cols)
 
@@ -207,6 +203,7 @@ def collect_oof_seq_models(
     df: pd.DataFrame,
     folds: List[Tuple[np.ndarray, np.ndarray]],
     *,
+    cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int] = None,
     seq_len: int,
@@ -214,7 +211,7 @@ def collect_oof_seq_models(
     add_timestep_mask: bool = True,
     verbose: bool = False,
 ) -> pd.DataFrame:
-    
+
     if stage == 1:
         target_col = "y_pit"
         seq_models = get_stage1_sequential_models(cfg)
@@ -223,7 +220,7 @@ def collect_oof_seq_models(
         target_col = "y_compound_encoded"
         seq_models = get_stage2_sequential_models(cfg, n_classes=n_classes)
         is_binary = False
-        
+
     names = list(seq_models.keys())
     y_full = df[target_col].astype(int)
     keys = df[["race_id", "driver_id", "lapno"]].copy()
@@ -237,18 +234,18 @@ def collect_oof_seq_models(
     pre_proto = make_preprocessor_for_model("tcn", num_cols=num_cols, cat_cols=cat_cols)
 
     N = len(df)
-    
+
     if is_binary:
         out = np.full((N, len(names)), np.nan, dtype=float)
-        cols = [f"seq_{n}_proba" for n in names]
-        eff_len_cols = [f"seq_{n}_eff_len" for n in names]
+        cols = [f"seq_{name}_proba" for name in names]
+        eff_len_cols = [f"seq_{name}_eff_len" for name in names]
     else:
         out = np.full((N, len(names) * n_classes), np.nan, dtype=float)
         cols = []
         for name in names:
             for k in range(n_classes):
                 cols.append(f"seq_{name}_c{k}")
-        eff_len_cols = [f"seq_{n}_eff_len" for n in names]
+        eff_len_cols = [f"seq_{name}_eff_len" for name in names]
 
     oof_eff_len = np.zeros((N, len(names)), dtype=float)
 
@@ -319,22 +316,25 @@ def collect_oof_seq_models(
                 out[idx_last_te, j] = proba
             else:
                 proba_fold = model.predict_proba(X_seq_te)
-                # handle missing classes
-                classes_seen = model.model_.classes_ if hasattr(model, "model_") and hasattr(model.model_, "classes_") else np.unique(y_seq_tr)
+                classes_seen = (
+                    model.model_.classes_
+                    if hasattr(model, "model_") and hasattr(model.model_, "classes_")
+                    else np.unique(y_seq_tr)
+                )
                 proba_full = np.zeros((len(idx_last_te), n_classes), dtype=float)
                 for c_idx, cls in enumerate(classes_seen):
                     proba_full[:, int(cls)] = proba_fold[:, c_idx]
                 start = j * n_classes
-                out[idx_last_te, start:start + n_classes] = proba_full
+                out[idx_last_te, start : start + n_classes] = proba_full
 
             oof_eff_len[idx_last_te, j] = eff_len_te
 
     out = np.nan_to_num(out, nan=0.0)
     eff_scaled = oof_eff_len / float(seq_len)
-    
+
     df_out = pd.DataFrame(out, columns=cols)
     df_eff = pd.DataFrame(eff_scaled, columns=eff_len_cols)
-    
+
     return pd.concat([df_out, df_eff], axis=1)
 
 
@@ -344,21 +344,35 @@ def build_meta_table(
     y: pd.Series,
     folds: List[Tuple[np.ndarray, np.ndarray]],
     *,
+    cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int] = None,
     seq_len: int,
     verbose: bool = False,
 ) -> pd.DataFrame:
-    
+
     target_col = "y_pit" if stage == 1 else "y_compound_encoded"
-    
+
     df_base_probs = collect_oof_base_probs_tabular(
-        X, y, folds, cfg=cfg, stage=stage, n_classes=n_classes, verbose=verbose
+        X,
+        y,
+        folds,
+        cfg=cfg,
+        stage=stage,
+        n_classes=n_classes,
+        verbose=verbose,
     )
 
     df_seq_probs = collect_oof_seq_models(
-        df, folds, cfg=cfg, stage=stage, n_classes=n_classes, seq_len=seq_len,
-        pad_left=True, add_timestep_mask=True, verbose=verbose
+        df,
+        folds,
+        cfg=cfg,
+        stage=stage,
+        n_classes=n_classes,
+        seq_len=seq_len,
+        pad_left=True,
+        add_timestep_mask=True,
+        verbose=verbose,
     )
 
     meta = pd.DataFrame(
@@ -369,10 +383,20 @@ def build_meta_table(
         }
     )
 
-    meta = pd.concat([meta, df_base_probs.reset_index(drop=True), df_seq_probs.reset_index(drop=True)], axis=1)
+    meta = pd.concat(
+        [
+            meta,
+            df_base_probs.reset_index(drop=True),
+            df_seq_probs.reset_index(drop=True),
+        ],
+        axis=1,
+    )
 
-    X_safe = X.copy().drop(columns=["race_id", "row_id", "y_pit", "y_compound", "y_compound_encoded", "driver_id"], errors="ignore")
-    # This concat ensures that the contextual features from the race are passed to the meta learner
+    X_safe = X.copy().drop(
+        columns=["race_id", "row_id", "y_pit", "y_compound", "y_compound_encoded", "driver_id"],
+        errors="ignore",
+    )
+    # this concat ensures that the contextual features from the race are passed to the meta learner
     meta = pd.concat([meta, X_safe.reset_index(drop=True)], axis=1)
 
     if meta.columns.duplicated().any():
@@ -390,8 +414,7 @@ def make_ablation_specs_meta(
     seq_cols: List[str],
     raw_cols: List[str],
 ) -> Dict[str, List[str]]:
-    
-    baseline_set = set(baseline_cols)
+
     specs: Dict[str, List[str]] = {}
     specs["baseline_full"] = baseline_cols
 
@@ -405,7 +428,7 @@ def make_ablation_specs_meta(
     # 1. Leave-One-Base-Out (LOBO) for every individual model
     for model_name, pcols in prob_cols_dict.items():
         specs[f"drop_{model_name}"] = drop(pcols)
-        
+
     # 2. Broader Group Exclusions
     if tabular_cols:
         specs["drop_all_tabular_bases"] = drop(tabular_cols)
@@ -421,17 +444,18 @@ def run_meta_ablation_cv(
     meta_df: pd.DataFrame,
     folds_meta: List[Tuple[np.ndarray, np.ndarray]],
     *,
+    cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int],
     ablation_specs: Dict[str, List[str]],
     verbose: bool = False,
 ) -> pd.DataFrame:
-    
+
     target_col = "y_pit" if stage == 1 else "y_compound_encoded"
     y = meta_df[target_col].to_numpy().astype(int)
 
     results_rows: List[Dict[str, Any]] = []
-    
+
     if stage == 1:
         meta_model_proto = make_meta_binary_xgb(cfg)
         is_binary = True
@@ -461,39 +485,47 @@ def run_meta_ablation_cv(
 
             if is_binary:
                 proba_tr = pipe.predict_proba(X_tr)[:, 1].astype(float)
-                thr = tune_threshold_max_f1_binary(y_tr, proba_tr)
                 proba_te = pipe.predict_proba(X_te)[:, 1].astype(float)
-                m = compute_fold_metrics_binary(y_te, proba_te, threshold=thr)
-                m["threshold"] = float(thr)
+                m = compute_fold_metrics_binary(y_te, proba_te, threshold=0.5)
+                m["threshold"] = float(0.5)
             else:
                 proba_te = pipe.predict_proba(X_te)
-                classes_seen = pipe.named_steps["model"].classes_ if hasattr(pipe.named_steps["model"], "classes_") else getattr(pipe, "classes_")
+                classes_seen = (
+                    pipe.named_steps["model"].classes_
+                    if hasattr(pipe.named_steps["model"], "classes_")
+                    else getattr(pipe, "classes_")
+                )
                 proba_full = np.zeros((len(te_idx), n_classes), dtype=float)
                 for c_idx, cls in enumerate(classes_seen):
                     proba_full[:, int(cls)] = proba_te[:, c_idx]
-                
+
                 m = compute_fold_metrics_multi(y_te, proba_full)
                 m["threshold"] = np.nan
 
-            results_rows.append({
-                "mode": "meta",
-                "ablation_name": ab_name,
-                "fold_id": int(fold_id),
-                "n_test_rows": int(len(te_idx)),
-                **m,
-            })
+            results_rows.append(
+                {
+                    "mode": "meta",
+                    "ablation_name": ab_name,
+                    "fold_id": int(fold_id),
+                    "n_test_rows": int(len(te_idx)),
+                    **m,
+                }
+            )
 
             if verbose:
                 vprint(
                     verbose,
                     f"[META][{ab_name}][fold {fold_id}] PR_AUC={m['PR_AUC']:.4f} "
-                    f"LogLoss={m['LogLoss']:.4f} F1={m['F1']:.4f}"
+                    f"LogLoss={m['LogLoss']:.4f} F1={m['F1']:.4f}",
                 )
 
     return pd.DataFrame(results_rows)
 
 
-def summarize_ablation_results(results_df: pd.DataFrame, baseline_name: str = "baseline_full") -> pd.DataFrame:
+def summarize_ablation_results(
+    results_df: pd.DataFrame,
+    baseline_name: str = "baseline_full",
+) -> pd.DataFrame:
     agg = results_df.groupby("ablation_name").agg(
         mean_PR_AUC=("PR_AUC", "mean"),
         std_PR_AUC=("PR_AUC", "std"),
@@ -531,11 +563,17 @@ def print_top5_damage(summary_df: pd.DataFrame, title: str) -> None:
     print(f"\n{title}")
     print("Top-5 most damaging ablations (by PR-AUC drop):")
     for _, r in top_pr.iterrows():
-        print(f"  {r['ablation_name']}: PR_AUC_drop={r['PR_AUC_drop_vs_baseline']:.4f} (mean_PR_AUC={r['mean_PR_AUC']:.4f})")
+        print(
+            f"  {r['ablation_name']}: PR_AUC_drop={r['PR_AUC_drop_vs_baseline']:.4f} "
+            f"(mean_PR_AUC={r['mean_PR_AUC']:.4f})"
+        )
 
     print("\nTop-5 most damaging ablations (by LogLoss increase):")
     for _, r in top_ll.iterrows():
-        print(f"  {r['ablation_name']}: LogLoss_increase={r['LogLoss_increase_vs_baseline']:.4f} (mean_LogLoss={r['mean_LogLoss']:.4f})")
+        print(
+            f"  {r['ablation_name']}: LogLoss_increase={r['LogLoss_increase_vs_baseline']:.4f} "
+            f"(mean_LogLoss={r['mean_LogLoss']:.4f})"
+        )
 
 
 def main() -> None:
@@ -544,8 +582,8 @@ def main() -> None:
     edit the values below directly instead of passing cli arguments.
     """
 
-    data_path = "data/processed/dataset1.csv"  #dataset1.csv or dataset2.csv
-    stage = 1 #1 = binary, 2 = multiclass
+    data_path = "data/processed/dataset1.csv"  # dataset1.csv or dataset2.csv
+    stage = 1  # 1 = binary, 2 = multiclass
     outdir = "runs/ablation"
     run_name = "meta_ablation"
     n_splits = 5
@@ -573,7 +611,7 @@ def main() -> None:
         X, y = get_stage2_xy(df)
         target_col = "y_compound_encoded"
 
-    fb = make_race_group_folds(df, target_col=target_col, n_splits=n_splits, seed=seed)
+    fb = make_race_group_folds(df, n_splits=n_splits, seed=seed)
     folds = fb.folds
 
     meta_table_path = cache_dir / f"meta_table_stage{stage}.parquet"
@@ -655,7 +693,7 @@ def main() -> None:
         {"ablations": list(ablation_specs.keys())},
     )
 
-    fb_meta = make_race_group_folds(meta_df, target_col=target_col, n_splits=n_splits, seed=seed)
+    fb_meta = make_race_group_folds(meta_df, n_splits=n_splits, seed=seed)
     folds_meta = fb_meta.folds
 
     print(f"[META] running meta ablation CV: n_ablations={len(ablation_specs)} n_folds={len(folds_meta)}")
@@ -678,6 +716,7 @@ def main() -> None:
 
     print_top5_damage(meta_summary, title=f"[META Stage {stage}] Damage rankings")
     print(f"\n[ablation_eval] done. Outputs in: {reports_dir}")
+
 
 if __name__ == "__main__":
     main()

@@ -303,7 +303,7 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
     prob_cols = [f"p_{name}" for name in all_names]
     df_probs = pd.DataFrame(meta_x_all, columns=prob_cols)
 
-    # meta learner just gets base probabilities
+    # meta learner just gets base probabilities and race context
     x_meta_df = pd.concat([x.reset_index(drop=True),df_probs.reset_index(drop=True)], axis=1)
 
     print("generating OOF predictions for stage 1 meta learner")
