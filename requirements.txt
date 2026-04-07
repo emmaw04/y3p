@@ -11,3 +11,4 @@ imbalanced-learn==0.12.4
 scikeras==0.13.0
 optuna==4.7.0
 matplotlib==3.9.4
+joblib==1.5.2
