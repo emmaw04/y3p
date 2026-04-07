@@ -1,7 +1,7 @@
 """
-trains and freezes the final models for both stages.
-we use out of fold predictions to train the meta learner, then retrain
-all base models on the full dataset before saving them for inference.
+trains and freezes the final models for both stages
+we use out of fold predictions to train the meta learner then retrain
+all base models on the full dataset before saving them for inference
 """
 
 import json
@@ -50,35 +50,36 @@ from src.models.models import (
 def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.ndarray:
     """
     trains base tabular models on the folds and grabs their out of fold predictions
-    to be used as features by the meta model.
+    to be used as features by the meta model
     """
     n = len(y)
     names = list(models_dict.keys())
 
-    #creates a storage array, if the base learner is binary it creates one probability column per model, if multiclass it creates one full probability vector per model
+    # sets up our storage space for predictions
+    # if its a binary learner we just need one column for probabilities per model
+    # if its multiclass we need a a column to store the prediction for each class for each model
     if is_binary:
         meta_x = np.zeros((n, len(names)), dtype=float)
     else:
         n_classes = len(COMPOUND_CLASSES)
         meta_x = np.zeros((n, len(names) * n_classes), dtype=float)
 
-    #loop through each fold
     for fold, (tr_idx, va_idx) in enumerate(folds):
         print(f"collecting tabular oof preds for fold {fold}")
-        x_tr, y_tr = x.iloc[tr_idx], y.iloc[tr_idx] #split into training and validation rows
+        x_tr, y_tr = x.iloc[tr_idx], y.iloc[tr_idx] # split the data up into train and test sets
         x_va = x.iloc[va_idx]
 
         for j, name in enumerate(names):
             est = clone(models_dict[name])
             num_cols, cat_cols = infer_feature_types(x_tr)
-            pre = make_preprocessor_for_model(name, num_cols=num_cols, cat_cols=cat_cols) #build preprocessor
+            pre = make_preprocessor_for_model(name, num_cols=num_cols, cat_cols=cat_cols) # make preprocessor
 
-            pipe = build_model_pipeline(pre, est) #combine preprocessor and model into one pipeline
-            pipe.fit(x_tr, y_tr) #fit on training fold
+            pipe = build_model_pipeline(pre, est) #combine preprocessor and predictor
+            pipe.fit(x_tr, y_tr) #fit model on training set
 
-            if is_binary: #for binary models only the positive class probability is saved
+            if is_binary: #only care about positive predictions for binary models
                 meta_x[va_idx, j] = pipe.predict_proba(x_va)[:, 1]
-            else: #ensures probabilities are given for all classes
+            else:
                 n_classes = len(COMPOUND_CLASSES)
                 proba_fold = pipe.predict_proba(x_va)
                 classes_seen = (
@@ -103,26 +104,25 @@ def get_stage1_seq_oof_preds(
     model_instance,
 ) -> np.ndarray:
     """
-    gets out of fold predictions for stage 1 sequential models
+    gets out of fold predictions for stage one sequential models
     """
     seq_len = 8
-    keys = df[["race_id", "driver_id", "lapno"]].copy() #unique identifiers
+    keys = df[["race_id", "driver_id", "lapno"]].copy() # grab our unique id fields
     y_full = df["y_pit"].astype(int) #target variable
     x_tab = df.drop(columns=["y_pit", "race_id", "driver_id"], errors="ignore").copy()
     oof_pred = np.full(len(df), np.nan, dtype=float)
 
     num_cols, cat_cols = infer_feature_types(x_tab)
-    base_pre = make_preprocessor_for_model(model_name, num_cols=num_cols, cat_cols=cat_cols) #make preprocessor 
+    base_pre = make_preprocessor_for_model(model_name, num_cols=num_cols, cat_cols=cat_cols) # create preprocessor
 
-    #loop through each fold
     for fold, (tr_idx, va_idx) in enumerate(folds):
         print(f"{model_name} fold {fold} processing")
         x_tr = x_tab.iloc[tr_idx]
 
         pre = clone(base_pre)
-        pre.fit(x_tr, y_full.iloc[tr_idx]) #fit preprocessor only on training rows 
+        pre.fit(x_tr, y_full.iloc[tr_idx]) #fit preprocessor on training data
 
-        xt_all = pre.transform(x_tab) #transform the full table
+        xt_all = pre.transform(x_tab) #preprocess the whole dataset
         if hasattr(xt_all, "toarray"):
             xt_all = xt_all.toarray()
         xt_all = xt_all.astype(np.float32)
@@ -140,14 +140,14 @@ def get_stage1_seq_oof_preds(
         tr_mask = np.all((seq_idx == -1) | np.isin(seq_idx, tr_idx), axis=1)
         va_mask = np.all((seq_idx == -1) | np.isin(seq_idx, va_idx), axis=1)
 
-        #splits into training and validation sequences
+        #separate sequences to training and testing
         x_seq_tr, y_seq_tr = x_seq[tr_mask], y_seq[tr_mask]
         x_seq_va = x_seq[va_mask]
         idx_last_va = idx_last[va_mask]
 
         model = clone(model_instance)
 
-        #computes binary class weights
+        #class weightings
         n_pos = int(np.sum(y_seq_tr == 1))
         n_neg = int(np.sum(y_seq_tr == 0))
 
@@ -159,7 +159,7 @@ def get_stage1_seq_oof_preds(
         pos_w = min(20.0, float(n_neg / n_pos))
         class_w = {0: 1.0, 1: pos_w}
 
-        #fits the model and gets its predictions
+        # train the model and test it on validation
         model.fit(x_seq_tr, y_seq_tr, class_weight=class_w)
         proba = model.predict_proba(x_seq_va)[:, 1]
         oof_pred[idx_last_va] = proba
@@ -168,13 +168,12 @@ def get_stage1_seq_oof_preds(
 
 def _get_stage2_reference_x(df1_ref: pd.DataFrame, stage2_feature_cols: list[str]) -> pd.DataFrame:
     """
-    helper for stage 2 sequence modelling, checks that all the attributes in dataset 2 exist in dataset 1, and returns these attributes
+    quick helper for stage two sequences to make sure stage 2 features are a subset of stage 1 features
     """
     missing = [c for c in stage2_feature_cols if c not in df1_ref.columns]
     if missing:
         raise ValueError(
-            "stage 1 reference dataframe is missing stage 2 feature columns: "
-            f"{missing}"
+            "stage one reference dataframe is missing stage two feature columns"
         )
     return df1_ref[stage2_feature_cols].copy()
 
@@ -188,11 +187,11 @@ def get_stage2_seq_oof_preds(
     stage2_feature_cols: list[str],
 ) -> np.ndarray:
     """
-    out of fold predictions for stage 2 sequential models
+    out of fold predictions for stage two sequential models
 
-    sequences are built from the full lap-level reference dataframe from dataset1,
-    but labels and oof alignment come from the stage 2 pit-event dataframe df2_target.
-    only stage 2 feature columns are used from dataset1
+    we build sequences from the lap level data from the first dataset
+    but the actual answers and alignment come from the stage two event data
+    we only care about stage two features here
     """
     seq_len = 8
     n_classes = len(COMPOUND_CLASSES)
@@ -272,7 +271,9 @@ def get_stage2_seq_oof_preds(
 
 
 def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
-    """handles the final training pipeline for stage 1 pit decision"""
+    """
+    takes care of the final training process for stage one pit decisions
+    """
     art_dir = outdir / "stage1_binary" / "artifacts"
     art_dir.mkdir(parents=True, exist_ok=True)
 
@@ -430,7 +431,9 @@ def train_stage1_final(df1, x, y, folds, outdir: Path, cfg: ModelConfig):
 
 
 def train_stage2_final(df1_ref, df2, x, y, folds, outdir: Path, cfg: ModelConfig):
-    """handles the final training pipeline for stage 2 compound decision"""
+    """
+    takes care of training the final stage 2 model (no cross validation)
+    """
     art_dir = outdir / "stage2_multiclass" / "artifacts"
     art_dir.mkdir(parents=True, exist_ok=True)
     n_classes = len(COMPOUND_CLASSES)
@@ -617,27 +620,6 @@ def train_stage2_final(df1_ref, df2, x, y, folds, outdir: Path, cfg: ModelConfig
         },
     }
 
-def filter_stage2_to_reference(df2: pd.DataFrame, df1_ref: pd.DataFrame) -> pd.DataFrame:
-    """
-    keep only stage 2 rows whose (race_id, driver_id, lapno) exist
-    in the lap-level stage 1 reference dataframe
-    """
-    valid_keys = df1_ref[["race_id", "driver_id", "lapno"]].drop_duplicates()
-
-    before = len(df2)
-
-    df2_filtered = df2.merge(
-        valid_keys,
-        on=["race_id", "driver_id", "lapno"],
-        how="inner",
-    ).copy()
-
-    dropped = before - len(df2_filtered)
-    if dropped > 0:
-        print(f"dropped {dropped} stage 2 rows not present in stage 1 reference data")
-
-    return df2_filtered.reset_index(drop=True)
-
 def main():
     root = Path("runs") / "final_run"
     root.mkdir(parents=True, exist_ok=True)
@@ -646,12 +628,13 @@ def main():
     n_splits = 5
     cfg = ModelConfig(random_state=seed)
 
-    # hardcoded run settings
-    only_stage = "all"  # either "all", "stage1", "stage2"
+    # hardcoded settings for the run
+    only_stage = "all"  # either all or stage one or stage two
     data_stage1 = "data/processed/dataset1.csv"
     data_stage2 = "data/processed/dataset2.csv"
 
-    manifest = { #create manifest for final model
+    # create a manifest file to store final model info
+    manifest = { 
         "seed": seed,
         "n_splits": n_splits,
         "holdout_race_ids": list(HOLDOUT_RACE_IDS),
@@ -674,9 +657,6 @@ def main():
         df2 = load_stage2_dataset(data_stage2, strict=True)
         df2 = encode_y_compound(df2, col="y_compound", out_col="y_compound_encoded")
         df2 = df2.loc[~df2["y_compound_encoded"].isna()].copy()
-
-        # temporary workaround: drop stage 2 rows whose target lap is missing from dataset1
-        df2 = filter_stage2_to_reference(df2, df1)
 
         x2, y2 = get_stage2_xy(df2)
         fb2 = make_race_group_folds(df2, n_splits=n_splits, seed=seed)
