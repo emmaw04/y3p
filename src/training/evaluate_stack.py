@@ -3,7 +3,6 @@ evaluates different meta learners for the stacking ensemble.
 we collect out of fold predictions from the base models and use them to train a meta model
 for either stage 1 pit decision or stage 2 compound decision.
 """
-import argparse
 import json
 from pathlib import Path
 from typing import Any
@@ -21,7 +20,6 @@ from sklearn.metrics import (
 )
 from src.data.data import (
     COMPOUND_CLASSES,
-    COMPOUND_TO_INT,
     build_feature_sequences,
     encode_y_compound,
     get_stage1_xy,
@@ -39,11 +37,11 @@ from src.models.models import (
     get_meta_multiclass_learners,
     get_stage2_tabular_models,
     get_stage1_sequential_models,
-    get_stage2_sequential_models,
+    ModelConfig,
 )
 
 def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray) -> dict[str, float]:
-    """calc standard binary metrics"""
+    """calc evaluation metrics for binary classification"""
     y_pred = (proba_pos >= 0.5).astype(int)
     return {
         "accuracy": float(accuracy_score(y_true, y_pred)),
@@ -54,7 +52,7 @@ def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray) -> dict[st
     }
 
 def compute_multiclass_metrics(y_true: np.ndarray, proba: np.ndarray) -> dict[str, float]:
-    """calc standard multiclass metrics"""
+    """calc evaluation metrics for multiclassification"""
     y_pred = np.argmax(proba, axis=1)
     labels = np.arange(proba.shape[1])
     return {
@@ -71,33 +69,33 @@ def summarise(metrics_list: list[dict[str, Any]], keys: list[str]) -> dict[str, 
 
 def get_tcn_oof_preds(df1: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray]], cfg: ModelConfig) -> tuple[np.ndarray, np.ndarray]:
     """
-    grabs out of fold predictions for the tcn model.
-    we have to process it specially since it needs sequence data rather than just tabular rows.
-    returns the predictions and effective length.
+    grabs out of fold predictions for the tcn model
     """
     seq_len = 8
+    #extract target and key identifiers
     y_full = df1["y_pit"].astype(int)
     keys = df1[["race_id", "driver_id", "lapno"]].copy()
 
     oof_pred = np.full(len(df1), np.nan, dtype=float)
     oof_eff_len = np.zeros(len(df1), dtype=float)
-
+    #tabular input for preprocessing
     x_tab = df1.drop(columns=["y_pit", "y_compound", "race_id", "driver_id"], errors="ignore").copy()
     num_cols, cat_cols = infer_feature_types(x_tab)
     base_pre = make_preprocessor_for_model("tcn", num_cols=num_cols, cat_cols=cat_cols)
 
     for fold, (tr_idx, va_idx) in enumerate(folds):
         print(f"tcn fold {fold} processing")
-        x_tr, y_tr = x_tab.iloc[tr_idx], y_full.iloc[tr_idx]
+        x_tr, y_tr = x_tab.iloc[tr_idx], y_full.iloc[tr_idx] #fit preprocessor only on training fold
 
         pre = clone(base_pre)
         pre.fit(x_tr, y_tr)
 
-        xt_all = pre.transform(x_tab)
+        xt_all = pre.transform(x_tab) #transform all rows using the training fitted preprocessor
         if hasattr(xt_all, "toarray"):
             xt_all = xt_all.toarray()
         xt_all = xt_all.astype(np.float32)
 
+        #build sequences
         x_seq, y_seq, idx_last, seq_idx, eff_len = build_feature_sequences(
             keys, xt_all, y_full, seq_len=seq_len, pad_left=True, add_timestep_mask=True
         )
@@ -105,29 +103,23 @@ def get_tcn_oof_preds(df1: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarra
         tr_mask = np.all((seq_idx == -1) | np.isin(seq_idx, tr_idx), axis=1)
         va_mask = np.all((seq_idx == -1) | np.isin(seq_idx, va_idx), axis=1)
 
+        #extract training and validation sequences
         x_seq_tr, y_seq_tr = x_seq[tr_mask], y_seq[tr_mask]
         x_seq_va = x_seq[va_mask]
         idx_last_va = idx_last[va_mask]
         eff_len_va = eff_len[va_mask]
 
-        if len(y_seq_tr) == 0 or len(x_seq_va) == 0:
-            continue
-
         n_pos = int(np.sum(y_seq_tr == 1))
         n_neg = int(np.sum(y_seq_tr == 0))
-
-        if n_pos == 0 or n_neg == 0:
-            const_p = 1.0 if n_neg == 0 else 0.0
-            oof_pred[idx_last_va] = const_p
-            oof_eff_len[idx_last_va] = eff_len_va
-            continue
 
         pos_w = min(20.0, float(n_neg / n_pos))
         class_w = {0: 1.0, 1: pos_w}
 
+        #train TCN
         tcn = get_stage1_sequential_models(cfg)["tcn"]
         tcn.fit(x_seq_tr, y_seq_tr, class_weight=class_w)
 
+        #predict on validation sequences
         proba = tcn.predict_proba(x_seq_va)[:, 1]
         oof_pred[idx_last_va] = proba
         oof_eff_len[idx_last_va] = eff_len_va
@@ -137,11 +129,12 @@ def get_tcn_oof_preds(df1: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarra
 def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.ndarray:
     """
     trains base tabular models on the folds and grabs their out of fold predictions
-    to be used as features by the meta model.
+    to be used as inputs by the meta model
     """
     n = len(y)
     names = list(models_dict.keys())
     
+    #create empty output array
     if is_binary:
         meta_x = np.zeros((n, len(names)), dtype=float)
     else:
@@ -155,16 +148,17 @@ def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.n
 
         for j, name in enumerate(names):
             est = clone(models_dict[name])
-            num_cols, cat_cols = infer_feature_types(x)
+            num_cols, cat_cols = infer_feature_types(x) #build preprocessor
             pre = make_preprocessor_for_model(name, num_cols=num_cols, cat_cols=cat_cols)
             
-            pipe = build_model_pipeline(pre, est)
+            pipe = build_model_pipeline(pre, est) #train
             pipe.fit(x_tr, y_tr)
 
             if is_binary:
                 meta_x[va_idx, j] = pipe.predict_proba(x_va)[:, 1]
             else:
                 proba_fold = pipe.predict_proba(x_va)
+                #map the returned class order back into the full fixed class order (e.g., if the fold doesnt contain the WET compound)
                 classes_seen = pipe.named_steps["model"].classes_ if hasattr(pipe.named_steps["model"], "classes_") else getattr(pipe, "classes_")
                 proba_full = np.zeros((len(va_idx), n_classes), dtype=float)
                 for c_idx, cls in enumerate(classes_seen):
@@ -175,7 +169,15 @@ def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.n
 
     return meta_x
 
-def run_stage1_stacking():
+def run_stage1_stacking(
+    df1: pd.DataFrame,
+    x: pd.DataFrame,
+    y: pd.Series,
+    cfg: ModelConfig,
+    folds: list[tuple[np.ndarray, np.ndarray]],
+    meta_model_name: str,
+    outdir: Path,
+):
     """handles the whole pipeline for stage 1 pit decision stacking"""
     outdir.mkdir(parents=True, exist_ok=True)
     
@@ -188,10 +190,10 @@ def run_stage1_stacking():
     print("starting stage 1 tcn base model")
     tcn_oof, tcn_eff_len = get_tcn_oof_preds(df1, folds, cfg)
     
-    tcn_oof_filled = np.nan_to_num(tcn_oof, nan=0.0)
-    tcn_eff_len_scaled = tcn_eff_len / 8.0
+    tcn_oof_filled = np.nan_to_num(tcn_oof, nan=0.0) #fill missing TCN values
+    tcn_eff_len_scaled = tcn_eff_len / 8.0 #normalise effective length
     
-    meta_x_all = np.column_stack([meta_x_tabular, tcn_oof_filled, tcn_eff_len_scaled])
+    meta_x_all = np.column_stack([meta_x_tabular, tcn_oof_filled, tcn_eff_len_scaled]) 
     
     prob_cols = [f"p_{name}" for name in names] + ["tcn_proba", "tcn_effective_len"]
     (outdir / "base_oof_columns.json").write_text(json.dumps({"columns": prob_cols}, indent=2))
@@ -217,7 +219,7 @@ def run_stage1_stacking():
         num_m, cat_m = infer_feature_types(x_meta_df)
         meta_pre = build_preprocessor(num_cols=num_m, cat_cols=cat_m, cfg=PreprocessConfig(scale_numeric=False, sparse_onehot=True))
         
-        meta_pipe = build_model_pipeline(meta_pre, meta_est)
+        meta_pipe = build_model_pipeline(meta_pre, meta_est) #train and predict meta learner
         meta_pipe.fit(x_meta_tr, y_tr)
         
         proba = meta_pipe.predict_proba(x_meta_va)[:, 1]
@@ -235,14 +237,21 @@ def run_stage1_stacking():
         "stage": "stage1_binary",
         "meta_model": meta_model_name,
         "n_folds": len(folds),
-        **summarize(fold_rows, ["accuracy", "f1", "roc_auc", "pr_auc", "logloss"])
+        **summarise(fold_rows, ["accuracy", "f1", "roc_auc", "pr_auc", "logloss"])
     }
     
     (outdir / "fold_metrics.json").write_text(json.dumps(fold_rows, indent=2))
     (outdir / "summary.json").write_text(json.dumps(summary, indent=2))
     return summary
 
-def run_stage2_stacking():
+def run_stage2_stacking(
+    x: pd.DataFrame,
+    y: pd.Series,
+    cfg: ModelConfig,
+    folds: list[tuple[np.ndarray, np.ndarray]],
+    meta_model_name: str,
+    outdir: Path,
+):
     """handles the pipeline for stage 2 compound decision stacking"""
     outdir.mkdir(parents=True, exist_ok=True)
     n_classes = len(COMPOUND_CLASSES)
@@ -258,7 +267,7 @@ def run_stage2_stacking():
         for k in range(n_classes):
             prob_cols.append(f"p_{name}_c{k}")
             
-    df_probs = pd.DataFrame(meta_x, columns=prob_cols)
+    df_probs = pd.DataFrame(meta_x, columns=prob_cols) #combine base probabilities with origina features
     x_meta_df = pd.concat([df_probs.reset_index(drop=True), x.reset_index(drop=True)], axis=1)
     
     np.save(outdir / "oof_base_preds.npy", meta_x)
@@ -302,7 +311,7 @@ def run_stage2_stacking():
         "meta_model": meta_model_name,
         "n_folds": len(folds),
         "n_classes": n_classes,
-        **summarize(fold_rows, ["accuracy", "f1_macro", "logloss"])
+        **summarise(fold_rows, ["accuracy", "f1_macro", "logloss"])
     }
     
     (outdir / "fold_metrics.json").write_text(json.dumps(fold_rows, indent=2))
@@ -310,49 +319,51 @@ def run_stage2_stacking():
     (outdir / "classes.json").write_text(json.dumps({"classes": list(COMPOUND_CLASSES)}, indent=2))
     return summary
 
-
 def main():
-    ap = argparse.ArgumentParser(description="evaluate stack meta models for stage1 and stage2")
-    ap.add_argument("--data_stage1", help="path to stage 1 data")
-    ap.add_argument("--data_stage2", help="path to stage 2 data")
-    ap.add_argument("--outdir", default="runs/stack", help="where to save models and metrics")
-    ap.add_argument("--meta_model_stage1", choices=["xgb", "lr", "mlp"], default="xgb", help="meta model to use for pit decision")
-    ap.add_argument("--meta_model_stage2", choices=["xgb", "lr", "mlp"], default="xgb", help="meta model to use for compound decision")
-    ap.add_argument("--only_stage", choices=["all", "stage1", "stage2"], default="all", help="which stage to run")
-    args = ap.parse_args()
-
-    root = Path(args.outdir)
-    root.mkdir(parents=True, exist_ok=True)
+    # hardcoded config
+    data_stage1 = "data/processed/dataset1.csv"
+    data_stage2 = "data/processed/dataset2.csv"
+    outdir = "runs/stack"
+    meta_model_stage1 = "xgb" #choose from xgb, mlp, lr
+    meta_model_stage2 = "xgb"
+    only_stage = "all" # choose from all, stage1, stage2
 
     seed = 42
     n_splits = 5
-    
+    cfg = ModelConfig()
 
-    if args.only_stage in {"all", "stage1"}:
-        if not args.data_stage1:
-            raise ValueError("need stage 1 data path")
-        df1 = load_stage1_dataset(args.data_stage1)
+    root = Path(outdir)
+    root.mkdir(parents=True, exist_ok=True)
+
+    if only_stage in {"all", "stage1"}:
+        df1 = load_stage1_dataset(data_stage1)
         x1, y1 = get_stage1_xy(df1)
-        fb1 = make_race_group_folds(df1, target_col="y_pit", n_splits=n_splits, seed=seed)
-        
+        fb1 = make_race_group_folds(
+            df1,
+            target_col="y_pit",
+            n_splits=n_splits,
+            seed=seed,
+        )
+
         print("running stage 1 stacking evaluation")
         s1_out = root / "stage1_binary"
-        s1_summary = run_stage1_stacking(df1, x1, y1, cfg, fb1.folds, args.meta_model_stage1, s1_out)
+        s1_summary = run_stage1_stacking(df1=df1,x=x1,y=y1,cfg=cfg,folds=fb1.folds,meta_model_name=meta_model_stage1,outdir=s1_out,)
         print("stage 1 summary:", json.dumps(s1_summary, indent=2))
 
-    if args.only_stage in {"all", "stage2"}:
-        if not args.data_stage2:
-            raise ValueError("need stage 2 data path")
-        df2 = load_stage2_dataset(args.data_stage2, strict=True)
+    if only_stage in {"all", "stage2"}:
+        df2 = load_stage2_dataset(data_stage2, strict=True)
         x2, y2 = get_stage2_xy(df2)
-        
-        # map classes to integers before grouping folds to ensure balance
-        df2_tmp = encode_y_compound(df2, col="y_compound", out_col="y_compound_encoded")
-        fb2 = make_race_group_folds(df2_tmp, target_col="y_compound_encoded", n_splits=n_splits, seed=seed)
-        
+
+        df2_tmp = encode_y_compound(df2,col="y_compound",out_col="y_compound_encoded",)
+        fb2 = make_race_group_folds(
+            df2_tmp,
+            target_col="y_compound_encoded",
+            n_splits=n_splits,
+            seed=seed,
+        )
         print("running stage 2 stacking evaluation")
         s2_out = root / "stage2_multiclass"
-        s2_summary = run_stage2_stacking(x2, y2, cfg, fb2.folds, args.meta_model_stage2, s2_out)
+        s2_summary = run_stage2_stacking(x=x2,y=y2,cfg=cfg,folds=fb2.folds,meta_model_name=meta_model_stage2,outdir=s2_out,)
         print("stage 2 summary:", json.dumps(s2_summary, indent=2))
 
 if __name__ == "__main__":

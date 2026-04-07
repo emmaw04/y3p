@@ -13,7 +13,6 @@ import pandas as pd
 from optuna.samplers import TPESampler
 from optuna.pruners import MedianPruner
 from sklearn.base import clone
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
@@ -23,17 +22,14 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.svm import SVC
-from sklearn.calibration import CalibratedClassifierCV
-from xgboost import XGBClassifier
 from sklearn.preprocessing import label_binarize
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
 from src.data.data import (
     COMPOUND_CLASSES,
     HOLDOUT_RACE_IDS,
     build_feature_sequences,
+    build_feature_sequences_from_reference,
     encode_y_compound,
     get_stage1_xy,
     get_stage2_xy,
@@ -44,37 +40,40 @@ from src.data.data import (
 )
 from src.data.preprocessing import make_preprocessor_for_model
 from src.models.models import (
-    _build_gru_binary,
-    _build_gru_multiclass,
-    _build_lstm_binary,
-    _build_lstm_multiclass,
+    ModelConfig,
+    build_stage1_rf,
+    build_stage1_xgb,
+    build_stage1_svm,
+    build_stage1_ann,
+    build_stage2_rf,
+    build_stage2_xgb,
+    build_stage2_svm,
+    build_stage2_ffnn,
+    build_meta_binary_lr,
+    build_meta_binary_mlp,
+    build_meta_binary_xgb,
+    build_meta_multiclass_lr,
+    build_meta_multiclass_mlp,
+    build_meta_multiclass_xgb,
     _build_tcn_binary,
     _build_tcn_gru_binary,
-    _build_tcn_gru_multiclass,
-    _build_tcn_multiclass,
+    _build_lstm_binary,
+    _build_gru_binary,
     _build_vse_hybrid_binary,
-)
-from sklearn.linear_model import LogisticRegression
-from sklearn.neural_network import MLPClassifier
-from src.models.models import (
+    _build_tcn_multiclass,
+    _build_tcn_gru_multiclass,
+    _build_lstm_multiclass,
+    _build_gru_multiclass,
     make_stage1_svm,
     make_stage1_xgb,
-    make_tcn_binary,
     make_tcn_gru_binary,
     make_stage2_svm,
     make_stage2_rf,
     make_stage2_xgb,
-    make_stage2_ffnn,
-    _build_gru_binary,
-    _build_gru_multiclass,
-    _build_lstm_binary,
-    _build_lstm_multiclass,
-    _build_tcn_binary,
-    _build_tcn_gru_binary,
-    _build_tcn_gru_multiclass,
-    _build_tcn_multiclass,
-    _build_vse_hybrid_binary,
+    make_lstm_binary,
+    make_tcn_gru_multiclass,
 )
+from sklearn.utils.class_weight import compute_class_weight
 
 #hardcoded tuning values
 DATA_STAGE1 = "../../data/processed/dataset1.csv"
@@ -87,10 +86,11 @@ SEED = 42
 N_SPLITS = 5
 
 def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> dict[str, float]:
-    """unified metric computation for both binary and multiclass tasks"""
+    """calculates evaluation metrics"""
     if is_binary:
         proba = np.asarray(proba)
 
+        #gets positive class probability
         if proba.ndim == 2 and proba.shape[1] == 2:
             proba_pos = proba[:, 1]
         elif proba.ndim == 2 and proba.shape[1] == 1:
@@ -98,7 +98,7 @@ def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> d
         else:
             proba_pos = proba.reshape(-1)
 
-        y_pred = (proba_pos >= 0.5).astype(int)
+        y_pred = (proba_pos >= 0.5).astype(int) #turns probabilities into class predictions
         return {
             "accuracy": float(accuracy_score(y_true, y_pred)),
             "precision": float(precision_score(y_true, y_pred, zero_division=0)),
@@ -110,10 +110,10 @@ def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> d
         }
     else:
         eps = 1e-15
-        proba_norm = np.clip(proba, eps, 1.0)
-        proba_norm = proba_norm / proba_norm.sum(axis=1, keepdims=True)
+        proba_norm = np.clip(proba, eps, 1.0) #clips probabilities slightly so log loss doesn't break
+        proba_norm = proba_norm / proba_norm.sum(axis=1, keepdims=True) #renormalises rows so probabilities sum to 1
 
-        y_pred = np.argmax(proba_norm, axis=1)
+        y_pred = np.argmax(proba_norm, axis=1) #gets predicted class with argmax
         labels = np.arange(proba_norm.shape[1])
 
         y_bin = label_binarize(y_true, classes=labels)
@@ -140,6 +140,9 @@ def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> d
         }
 
 def mean_metric_dict(metric_dicts: list[dict[str, float]]) -> dict[str, float]:
+    """
+    computes average metrics across folds
+    """
     keys = metric_dicts[0].keys()
     return {
         k: float(np.nanmean([m[k] for m in metric_dicts]))
@@ -147,6 +150,9 @@ def mean_metric_dict(metric_dicts: list[dict[str, float]]) -> dict[str, float]:
     }
 
 def suggest_rf_params(trial: optuna.Trial) -> dict[str, Any]:
+    """
+    search space for random forest model
+    """
     return {
         "n_estimators": trial.suggest_int("n_estimators", 200, 1200),
         "max_depth": trial.suggest_categorical("max_depth", [None, 6, 10, 14, 20]),
@@ -155,12 +161,13 @@ def suggest_rf_params(trial: optuna.Trial) -> dict[str, Any]:
         "max_features": trial.suggest_categorical("max_features", ["sqrt", "log2", 0.3, 0.5, 0.8]),
         "bootstrap": True,
         "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
-        "n_jobs": -1,
     }
 
 def suggest_xgb_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
-    params = {
-        "tree_method": "hist",
+    """
+    search space for xgboost model
+    """
+    return {
         "n_estimators": trial.suggest_int("n_estimators", 100, 500),
         "learning_rate": trial.suggest_float("learning_rate", 0.03, 0.12, log=True),
         "max_depth": trial.suggest_int("max_depth", 3, 6),
@@ -172,25 +179,21 @@ def suggest_xgb_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-2, 10.0, log=True),
         "max_bin": trial.suggest_categorical("max_bin", [128, 256]),
     }
-    if is_binary:
-        params["objective"] = "binary:logistic"
-        params["eval_metric"] = "logloss"
-    else:
-        params["objective"] = "multi:softprob"
-        params["eval_metric"] = "mlogloss"
-
-    return params
-
 
 def suggest_svm_params(trial: optuna.Trial) -> dict[str, Any]:
+    """
+    search space for svm model
+    """
     return {
         "C": trial.suggest_float("C", 1e-2, 1e2, log=True),
         "gamma": trial.suggest_float("gamma", 1e-4, 1e-1, log=True),
-        "kernel": "rbf",
         "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
     }
 
 def suggest_ann_params(trial: optuna.Trial) -> dict[str, Any]:
+    """
+    search space for ann model
+    """
     return {
         "n_layers": trial.suggest_int("n_layers", 1, 2),
         "hidden_units": trial.suggest_categorical("hidden_units", [32, 64, 128]),
@@ -200,34 +203,15 @@ def suggest_ann_params(trial: optuna.Trial) -> dict[str, Any]:
         "batch_size": trial.suggest_categorical("batch_size", [32, 64, 128, 256]),
     }
 
-def build_ann_model(params: dict, input_dim: int, n_classes: int) -> keras.Model:
-    reg = keras.regularizers.l2(params["l2"])
-    x_in = layers.Input(shape=(input_dim,))
-    x = x_in
-    
-    for _ in range(params["n_layers"]):
-        x = layers.Dense(params["hidden_units"], activation="relu", kernel_regularizer=reg)(x)
-        if params["dropout"] > 0:
-            x = layers.Dropout(params["dropout"])(x)
-            
-    y_out = layers.Dense(n_classes, activation="softmax")(x)
-    model = keras.Model(x_in, y_out)
-    
-    model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=params["learning_rate"]),
-        loss=keras.losses.SparseCategoricalCrossentropy(),
-        metrics=[keras.metrics.SparseCategoricalAccuracy(name="acc")],
-    )
-    return model
-
 def build_cached_folds(x: pd.DataFrame, y: pd.Series, folds: list, pre_name: str) -> list:
     """precomputes all tabular preprocessing so trials run much faster"""
     num_cols, cat_cols = infer_feature_types(x)
-    base_pre = make_preprocessor_for_model(pre_name, num_cols=num_cols, cat_cols=cat_cols)
+    base_pre = make_preprocessor_for_model(pre_name, num_cols=num_cols, cat_cols=cat_cols) #fits preprocessor on training data only
 
     cached = []
     y_np = y.to_numpy()
 
+    #transforms train and validation data
     for tr_idx, va_idx in folds:
         x_tr, x_va = x.iloc[tr_idx], x.iloc[va_idx]
         y_tr, y_va = y_np[tr_idx], y_np[va_idx]
@@ -242,7 +226,16 @@ def build_cached_folds(x: pd.DataFrame, y: pd.Series, folds: list, pre_name: str
 
     return cached
 
-def objective_tabular(trial: optuna.Trial, cached_folds: list, model_name: str, is_binary: bool, n_classes: int, seed: int) -> float:
+def objective_tabular(
+    trial: optuna.Trial,
+    cached_folds: list,
+    model_name: str,
+    is_binary: bool,
+    n_classes: int,
+    seed: int,
+) -> float:
+    """the function that optuna optimises for tabular models"""
+    #samples hyperparameters for the chosen model
     if model_name == "rf":
         params = suggest_rf_params(trial)
     elif model_name == "xgb":
@@ -255,63 +248,83 @@ def objective_tabular(trial: optuna.Trial, cached_folds: list, model_name: str, 
     else:
         raise ValueError(f"unsupported tabular model: {model_name}")
 
+    #creates a ModelConfig
+    cfg = ModelConfig(random_state=seed, n_jobs=-1, use_class_weight=True)
+
     losses = []
     fold_metrics = []
 
+    #loops through the folds
     for fold, (xt_tr, y_tr, xt_va, y_va, _, _) in enumerate(cached_folds):
+        #builds the correct model using the builder functions from models.py
         if model_name == "rf":
-            model = RandomForestClassifier(**params, random_state=seed)
-            model.fit(xt_tr, y_tr)
-            proba = model.predict_proba(xt_va)
-            
+            if is_binary:
+                model = build_stage1_rf(cfg, **params)
+            else:
+                model = build_stage2_rf(cfg, **params)
+
+            model.fit(xt_tr, y_tr) #fits the model on thr training fold
+            proba = model.predict_proba(xt_va) #predict probabilities on the validation fold
+
             if not is_binary:
-                proba_full = np.zeros((len(y_va), n_classes), dtype=float)
-                for j, cls in enumerate(model.classes_):
-                    proba_full[:, int(cls)] = proba[:, j]
-                proba = proba_full
-                
+                proba = _expand_multiclass_proba(proba, model.classes_, n_classes)
+
         elif model_name == "xgb":
             kwargs = dict(params)
+
             if is_binary:
                 n_pos = int(np.sum(y_tr == 1))
                 n_neg = int(np.sum(y_tr == 0))
-                spw = float(n_neg / n_pos) if n_pos > 0 else 1.0
-                kwargs["scale_pos_weight"] = spw
+                kwargs["scale_pos_weight"] = float(n_neg / n_pos) if n_pos > 0 else 1.0
+                model = build_stage1_xgb(cfg, **kwargs)
             else:
-                kwargs["num_class"] = n_classes
-                
-            model = XGBClassifier(**kwargs, random_state=seed, early_stopping_rounds=20)
+                kwargs["n_classes"] = n_classes
+                model = build_stage2_xgb(cfg, **kwargs)
+
+            model.set_params(early_stopping_rounds=20)
             model.fit(xt_tr, y_tr, eval_set=[(xt_va, y_va)], verbose=False)
             proba = model.predict_proba(xt_va)
-            
+
             if not is_binary:
-                proba_full = np.zeros((len(y_va), n_classes), dtype=float)
-                for j, cls in enumerate(model.classes_):
-                    proba_full[:, int(cls)] = proba[:, j]
-                proba = proba_full
-                
+                proba = _expand_multiclass_proba(proba, model.classes_, n_classes)
+
         elif model_name == "svm":
-            base = SVC(**params, probability=False, random_state=seed)
-            model = CalibratedClassifierCV(base, method="sigmoid", cv=3)
+            if is_binary:
+                model = build_stage1_svm(cfg, **params)
+            else:
+                model = build_stage2_svm(cfg, **params)
+
             model.fit(xt_tr, y_tr)
             proba = model.predict_proba(xt_va)
-            
+
             if not is_binary:
-                proba_full = np.zeros((len(y_va), n_classes), dtype=float)
-                for j, cls in enumerate(model.classes_):
-                    proba_full[:, int(cls)] = proba[:, j]
-                proba = proba_full
-                
+                proba = _expand_multiclass_proba(proba, model.classes_, n_classes)
+
         elif model_name == "ann":
-            xt_tr_dense = xt_tr.toarray() if hasattr(xt_tr, "toarray") else np.asarray(xt_tr)
-            xt_va_dense = xt_va.toarray() if hasattr(xt_va, "toarray") else np.asarray(xt_va)
-            
-            model = build_ann_model(params, xt_tr_dense.shape[1], n_classes)
-            cb = keras.callbacks.EarlyStopping(monitor="val_loss", mode="min", patience=5, restore_best_weights=True)
-            model.fit(xt_tr_dense, y_tr, validation_data=(xt_va_dense, y_va), epochs=60, batch_size=params["batch_size"], verbose=0, callbacks=[cb])
-            proba = model.predict(xt_va_dense, batch_size=params["batch_size"], verbose=0)
+            xt_tr_dense = _as_dense(xt_tr)
+            xt_va_dense = _as_dense(xt_va)
+
+            if is_binary:
+                model = build_stage1_ann(
+                    cfg,
+                    **params,
+                    epochs=60,
+                    patience=5,
+                )
+            else:
+                model = build_stage2_ffnn(
+                    cfg,
+                    n_classes=n_classes,
+                    **params,
+                    epochs=60,
+                    patience=5,
+                )
+
+            model.fit(xt_tr_dense, y_tr)
+            proba = model.predict_proba(xt_va_dense)
             tf.keras.backend.clear_session()
 
+        #computes metrics as a result of the trial
         m = compute_metrics(y_va, proba, is_binary)
         losses.append(m["logloss"])
         fold_metrics.append(m)
@@ -320,11 +333,15 @@ def objective_tabular(trial: optuna.Trial, cached_folds: list, model_name: str, 
         if trial.should_prune():
             raise optuna.TrialPruned()
 
+    #averages metrics across folds
     mean_metrics = mean_metric_dict(fold_metrics)
     trial.set_user_attr("cv_metrics", mean_metrics)
-    return mean_metrics["logloss"]
+    return mean_metrics["logloss"] #returns mean log loss
 
 def suggest_seq_params(trial: optuna.Trial, model_name: str, is_binary: bool) -> dict[str, Any]:
+    """
+    search space for sequence models
+    """
     params = {
         "learning_rate": trial.suggest_float("learning_rate", 1e-4, 2e-3, log=True),
         "batch_size": trial.suggest_categorical("batch_size", [32, 64, 128]),
@@ -352,7 +369,9 @@ def suggest_seq_params(trial: optuna.Trial, model_name: str, is_binary: bool) ->
     return params
 
 def build_cached_seq_folds(df: pd.DataFrame, x: pd.DataFrame, y: pd.Series, folds: list, seq_len: int) -> list:
-    """precomputes and caches sequence windows so optuna runs much faster without recalculating every trial"""
+    """precomputes and caches lap sequences for our sequential models so optuna runs much faster without recalculating every trial
+    sequences are for stage 1 models
+    """
     num_cols, cat_cols = infer_feature_types(x)
     base_pre = make_preprocessor_for_model("tcn", num_cols=num_cols, cat_cols=cat_cols)
     
@@ -370,7 +389,7 @@ def build_cached_seq_folds(df: pd.DataFrame, x: pd.DataFrame, y: pd.Series, fold
 
         if has_seq_keys:
             keys = df[["race_id", "driver_id", "lapno"]].copy()
-            x_seq, y_seq, _, seq_idx, _ = build_feature_sequences(keys, xt_all, y, seq_len=seq_len, pad_left=True, add_timestep_mask=True)
+            x_seq, y_seq, _, seq_idx, _ = build_feature_sequences(keys, xt_all, y, seq_len=seq_len, pad_left=True, add_timestep_mask=True) #builds lap sequences
             
             def all_in(s_idx, allowed):
                 return np.all((s_idx == -1) | np.isin(s_idx, allowed), axis=1)
@@ -391,11 +410,113 @@ def build_cached_seq_folds(df: pd.DataFrame, x: pd.DataFrame, y: pd.Series, fold
         
     return cached
 
+def build_cached_stage2_seq_folds_from_reference(
+    reference_df: pd.DataFrame,
+    target_df: pd.DataFrame,
+    x_target: pd.DataFrame,
+    y_target: pd.Series,
+    folds: list,
+    seq_len: int,
+) -> list:
+    """
+    builds cached sequence folds for stage 2 sequence models
+
+    sequences come from the full dataset (dataset1)
+    but labels and fold membership come from the pit-event target data (dataset2)
+
+    each target row is a pit lap, and each sequence ends on that pit lap
+    """
+    feature_cols = list(x_target.columns)
+    missing = [c for c in feature_cols if c not in reference_df.columns]
+    if missing:
+        raise ValueError(
+            f"reference_df is missing stage 2 feature columns needed for sequence construction: {missing}"
+        )
+
+    x_reference = reference_df[feature_cols].copy()
+
+    num_cols, cat_cols = infer_feature_types(x_target)
+    base_pre = make_preprocessor_for_model("tcn", num_cols=num_cols, cat_cols=cat_cols)
+
+    reference_keys = reference_df[["race_id", "driver_id", "lapno"]].reset_index(drop=True)
+    target_keys = target_df[["race_id", "driver_id", "lapno"]].reset_index(drop=True)
+
+    cached = []
+
+    for tr_idx, va_idx in folds:
+        # fit preprocessing on reference rows from the training races only
+        train_race_ids = set(target_df.iloc[tr_idx]["race_id"].astype(int).tolist())
+        ref_train_idx = np.flatnonzero(reference_df["race_id"].isin(train_race_ids).to_numpy())
+
+        pre = clone(base_pre)
+        pre.fit(x_reference.iloc[ref_train_idx])
+
+        xt_reference = pre.transform(x_reference)
+        if hasattr(xt_reference, "toarray"):
+            xt_reference = xt_reference.toarray()
+        xt_reference = xt_reference.astype(np.float32)
+
+        # build all target aligned sequences from the full lap-level reference table
+        x_seq_all, y_seq_all, idx_target_all, _, _ = build_feature_sequences_from_reference(
+            reference_keys=reference_keys,
+            X_reference=xt_reference,
+            target_keys=target_keys,
+            y_target=y_target,
+            seq_len=seq_len,
+            pad_left=True,
+            add_timestep_mask=True,
+            strict_match=True,
+        )
+
+        idx_target_all = np.asarray(idx_target_all, dtype=int)
+
+        tr_mask = np.isin(idx_target_all, tr_idx)
+        va_mask = np.isin(idx_target_all, va_idx)
+
+        x_tr = x_seq_all[tr_mask]
+        y_tr = y_seq_all[tr_mask]
+        idx_tr = idx_target_all[tr_mask]
+
+        x_va = x_seq_all[va_mask]
+        y_va = y_seq_all[va_mask]
+        idx_va = idx_target_all[va_mask]
+
+        # reorder sequences so they match the original target fold order
+        tr_pos = {int(idx): pos for pos, idx in enumerate(tr_idx)}
+        va_pos = {int(idx): pos for pos, idx in enumerate(va_idx)}
+
+        if len(idx_tr) > 0:
+            tr_order = np.argsort([tr_pos[int(i)] for i in idx_tr])
+            x_tr = x_tr[tr_order]
+            y_tr = y_tr[tr_order]
+
+        if len(idx_va) > 0:
+            va_order = np.argsort([va_pos[int(i)] for i in idx_va])
+            x_va = x_va[va_order]
+            y_va = y_va[va_order]
+
+        cached.append((
+            x_tr.astype(np.float32),
+            y_tr.astype(int),
+            x_va.astype(np.float32),
+            y_va.astype(int),
+            tr_idx,
+            va_idx,
+        ))
+
+    return cached
+
 def _as_dense(x):
+    """
+    converts sparse matrixes to dense arrays
+    """
     return x.toarray() if hasattr(x, "toarray") else np.asarray(x)
 
 
 def _binary_pos_col(proba: np.ndarray) -> np.ndarray:
+    """
+    standardises binary probabilities to a single positive class column
+    """
     proba = np.asarray(proba)
     if proba.ndim == 1:
         return proba.reshape(-1, 1)
@@ -407,26 +528,30 @@ def _binary_pos_col(proba: np.ndarray) -> np.ndarray:
 
 
 def _expand_multiclass_proba(proba: np.ndarray, classes_: np.ndarray, n_classes: int) -> np.ndarray:
+    """
+    in the case of the compound class, expands probability outputs back to the full class set if a model was trained on a fold with missing classes (the wet compound)
+    """
     proba = np.asarray(proba)
     full = np.zeros((proba.shape[0], n_classes), dtype=float)
     for j, cls in enumerate(classes_):
         full[:, int(cls)] = proba[:, j]
     return full
 
-
 def suggest_meta_lr_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
-    params = {
+    """
+    search space for logistic regression meta learner
+    """
+    return {
         "C": trial.suggest_float("C", 1e-3, 50.0, log=True),
         "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
-        "solver": "lbfgs",
         "max_iter": 6000 if not is_binary else 4000,
     }
-    if not is_binary:
-        params["multi_class"] = "multinomial"
-    return params
 
 
 def suggest_meta_mlp_params(trial: optuna.Trial) -> dict[str, Any]:
+    """
+    search space for MLP meta learner
+    """
     return {
         "hidden_layer_sizes": trial.suggest_categorical(
             "hidden_layer_sizes",
@@ -439,8 +564,10 @@ def suggest_meta_mlp_params(trial: optuna.Trial) -> dict[str, Any]:
 
 
 def suggest_meta_xgb_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
-    params = {
-        "tree_method": "hist",
+    """
+    search space for xgboost meta learner
+    """
+    return {
         "n_estimators": trial.suggest_int("n_estimators", 100, 800),
         "max_depth": trial.suggest_int("max_depth", 2, 5),
         "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.2, log=True),
@@ -451,14 +578,6 @@ def suggest_meta_xgb_params(trial: optuna.Trial, is_binary: bool) -> dict[str, A
         "min_child_weight": trial.suggest_int("min_child_weight", 1, 8),
         "gamma": trial.suggest_float("gamma", 0.0, 5.0),
     }
-    if is_binary:
-        params["objective"] = "binary:logistic"
-        params["eval_metric"] = "logloss"
-    else:
-        params["objective"] = "multi:softprob"
-        params["eval_metric"] = "mlogloss"
-    return params
-
 
 def build_meta_folds(
     df: pd.DataFrame,
@@ -469,12 +588,14 @@ def build_meta_folds(
     is_binary: bool,
     n_classes: int,
     seed: int,
+    reference_df: pd.DataFrame | None = None,
 ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """
-    Build OOF stacked features for the meta learner.
+    builds the training data for stacked models using the OOF probabilities given by the base learners
 
-    Binary stage 1 bases: tcn, tcn_gru, svm, xgb
-    Multiclass stage 2 bases: svm, rf, xgb, ann
+    Binary stage 1 bases: xgb, svm, tcn_gru, lstm
+    Multiclass stage 2 bases: xgb, svm, rf, tcn_gru
+    base learners selected through individual performance and how much the meta learner relied on their probabilities which was found out through ablation
     """
     cfg = ModelConfig(random_state=seed, n_jobs=-1, use_class_weight=True)
     fold_val_sets: list[tuple[np.ndarray, np.ndarray]] = []
@@ -501,17 +622,17 @@ def build_meta_folds(
             model.fit(xt_tr, y_tr)
             cols.append(_binary_pos_col(model.predict_proba(xt_va)))
 
-            # tcn + tcn_gru
+            # sequence models: tcn_gru + lstm
             x_tr_seq, y_tr_seq, x_va_seq, y_va_seq, _, _ = seq_cached[fold_idx]
             if len(y_va_seq) != len(y_va):
                 raise ValueError("binary meta fold misalignment between tabular and sequence folds")
 
-            model = make_tcn_binary(cfg)
+            model = make_tcn_gru_binary(cfg)
             model.fit(x_tr_seq, y_tr_seq)
             cols.append(_binary_pos_col(model.predict_proba(x_va_seq)))
             tf.keras.backend.clear_session()
 
-            model = make_tcn_gru_binary(cfg)
+            model = make_lstm_binary(cfg)
             model.fit(x_tr_seq, y_tr_seq)
             cols.append(_binary_pos_col(model.predict_proba(x_va_seq)))
             tf.keras.backend.clear_session()
@@ -523,7 +644,7 @@ def build_meta_folds(
         svm_cached = build_cached_folds(x, y, folds, "svm")
         rf_cached = build_cached_folds(x, y, folds, "rf")
         xgb_cached = build_cached_folds(x, y, folds, "xgb")
-        ann_cached = build_cached_folds(x, y, folds, "ann")
+        seq_cached = build_cached_stage2_seq_folds_from_reference(reference_df=reference_df,target_df=df,x_target=x,y_target=y,folds=folds,seq_len=8,)
 
         for fold_idx in range(len(folds)):
             cols = []
@@ -550,15 +671,14 @@ def build_meta_folds(
             model.fit(xt_tr, y_tr)
             cols.append(_expand_multiclass_proba(model.predict_proba(xt_va), model.classes_, n_classes))
 
-            # ann
-            xt_tr, y_tr, xt_va, y_va4, _, _ = ann_cached[fold_idx]
-            if not np.array_equal(y_va, y_va4):
-                raise ValueError("multiclass meta fold misalignment between xgb and ann cached folds")
-            xt_tr = _as_dense(xt_tr)
-            xt_va = _as_dense(xt_va)
-            model = make_stage2_ffnn(cfg, n_classes=n_classes)
-            model.fit(xt_tr, y_tr)
-            cols.append(_expand_multiclass_proba(model.predict_proba(xt_va), model.classes_, n_classes))
+            #tcn_gru
+            x_tr_seq, y_tr_seq, x_va_seq, y_va_seq, _, _ = seq_cached[fold_idx]
+            if len(y_va_seq) != len(y_va):
+                raise ValueError("multiclass meta fold misalignment between tabular and sequence folds")
+
+            model = make_tcn_gru_multiclass(cfg, n_classes=n_classes)
+            model.fit(x_tr_seq, y_tr_seq)
+            cols.append(_expand_multiclass_proba(model.predict_proba(x_va_seq), model.classes_, n_classes))
             tf.keras.backend.clear_session()
 
             z_va = np.hstack(cols)
@@ -582,6 +702,11 @@ def objective_meta(
     n_classes: int,
     seed: int,
 ) -> float:
+    """
+    the function that optuna optimises for meta models
+    """
+
+    #sample meta model hyperparameters
     if model_name == "meta_lr":
         params = suggest_meta_lr_params(trial, is_binary)
     elif model_name == "meta_mlp":
@@ -591,30 +716,30 @@ def objective_meta(
     else:
         raise ValueError(f"unsupported meta model: {model_name}")
 
+    cfg = ModelConfig(random_state=seed, n_jobs=-1, use_class_weight=True)
+
     losses = []
     fold_metrics = []
 
+    #loops through the folds, build the meta learner, fit on OOF base learner probabilities, make predictions, and compute metrics
     for fold, (x_tr, y_tr, x_va, y_va) in enumerate(meta_folds):
         if model_name == "meta_lr":
-            model = LogisticRegression(**params, random_state=seed)
+            if is_binary:
+                model = build_meta_binary_lr(cfg, **params)
+            else:
+                model = build_meta_multiclass_lr(cfg, **params)
 
         elif model_name == "meta_mlp":
-            model = MLPClassifier(
-                hidden_layer_sizes=params["hidden_layer_sizes"],
-                alpha=params["alpha"],
-                learning_rate_init=params["learning_rate_init"],
-                batch_size=params["batch_size"],
-                activation="relu",
-                max_iter=300,
-                early_stopping=True,
-                random_state=seed,
-            )
+            if is_binary:
+                model = build_meta_binary_mlp(cfg, **params)
+            else:
+                model = build_meta_multiclass_mlp(cfg, **params)
 
         elif model_name == "meta_xgb":
-            kwargs = dict(params)
-            if not is_binary:
-                kwargs["num_class"] = n_classes
-            model = XGBClassifier(**kwargs, n_jobs=-1, random_state=seed)
+            if is_binary:
+                model = build_meta_binary_xgb(cfg, **params)
+            else:
+                model = build_meta_multiclass_xgb(cfg, n_classes=n_classes, **params)
 
         model.fit(x_tr, y_tr)
         proba = model.predict_proba(x_va)
@@ -630,37 +755,30 @@ def objective_meta(
         if trial.should_prune():
             raise optuna.TrialPruned()
 
+    #compute average metrics
     mean_metrics = mean_metric_dict(fold_metrics)
     trial.set_user_attr("cv_metrics", mean_metrics)
     return mean_metrics["logloss"]
 
 def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_binary: bool, n_classes: int, seed: int) -> float:
+    """
+    the function that optuna optimises for sequence models
+    """
+    #sample sequence model hyperparameters
     params = suggest_seq_params(trial, model_name, is_binary)
     tf.keras.utils.set_random_seed(seed)
     
     losses = []
     fold_metrics = []
     
+    #for each fold
     for fold, (x_tr, y_tr, x_va, y_va, _, _) in enumerate(cached_folds):
+        #remove sequences that don't have a valid class label
         if not is_binary:
             valid_tr = y_tr >= 0
             valid_va = y_va >= 0
             x_tr, y_tr = x_tr[valid_tr], y_tr[valid_tr]
             x_va, y_va = x_va[valid_va], y_va[valid_va]
-            
-        if len(y_tr) == 0 or len(y_va) == 0:
-            m = {
-                "accuracy": float("nan"),
-                "precision": float("nan"),
-                "recall": float("nan"),
-                "f1": float("nan"),
-                "roc_auc": float("nan"),
-                "pr_auc": float("nan"),
-                "logloss": 1.0,
-            }
-            losses.append(m["logloss"])
-            fold_metrics.append(m)
-            continue
             
         seq_len = x_tr.shape[1]
         n_features = x_tr.shape[2]
@@ -668,6 +786,7 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
         # safely extract args to pass to model builder
         builder_kwargs = {k: v for k, v in params.items() if k not in ["batch_size", "epochs", "patience"]}
         
+        #build sequence model
         if is_binary:
             if model_name == "tcn":
                 model = _build_tcn_binary(seq_len, n_features, **builder_kwargs)
@@ -682,7 +801,7 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
             
             n_pos = int(np.sum(y_tr == 1))
             n_neg = int(np.sum(y_tr == 0))
-            pos_w = min(20.0, float(n_neg / n_pos)) if n_pos > 0 else 1.0
+            pos_w = min(20.0, float(n_neg / n_pos)) if n_pos > 0 else 1.0 #cap positive class weight at 20
             class_w = {0: 1.0, 1: pos_w}
             
         else:
@@ -695,13 +814,13 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
             elif model_name == "gru":
                 model = _build_gru_multiclass(seq_len, n_features, n_classes, **builder_kwargs)
             
-            from sklearn.utils.class_weight import compute_class_weight
             present = np.unique(y_tr)
             w = compute_class_weight("balanced", classes=present, y=y_tr)
             class_w = {int(c): float(wi) for c, wi in zip(present, w)}
             for c in range(n_classes):
                 class_w.setdefault(c, 1.0)
 
+        #train with early stopping
         cb = keras.callbacks.EarlyStopping(monitor="val_pr_auc" if is_binary else "val_acc", mode="max", patience=params["patience"], restore_best_weights=True)
         model.fit(x_tr, y_tr, validation_data=(x_va, y_va), epochs=params["epochs"], batch_size=params["batch_size"], class_weight=class_w, verbose=0, callbacks=[cb])
         
@@ -710,17 +829,19 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
         losses.append(m["logloss"])
         fold_metrics.append(m)
         
+        #reports mean loss so far to optuna and prunes bad trials early
         trial.report(float(np.mean(losses)), step=fold)
         if trial.should_prune():
             raise optuna.TrialPruned()
             
         tf.keras.backend.clear_session()
         
+    #return mean log loss
     mean_metrics = mean_metric_dict(fold_metrics)
     trial.set_user_attr("cv_metrics", mean_metrics)
     return mean_metrics["logloss"]
 
-def main() -> None:
+def main():
     outdir = Path(OUTDIR)
     outdir.mkdir(parents=True, exist_ok=True)
 
@@ -740,57 +861,30 @@ def main() -> None:
     is_binary = TASK == "binary"
 
     if is_binary:
-        if not DATA_STAGE1:
-            raise ValueError("DATA_STAGE1 must be set for binary tuning")
 
         df = load_stage1_dataset(DATA_STAGE1)
         df = df.loc[~df["race_id"].isin(HOLDOUT_RACE_IDS)].copy()
         x, y = get_stage1_xy(df)
-        fb = make_race_group_folds(df, target_col="y_pit", n_splits=N_SPLITS, seed=SEED)
+        fb = make_race_group_folds(df, group_col="race_id", n_splits=N_SPLITS, seed=SEED)
         n_classes = 2
 
-    else:
-        if MODEL == "hybrid_vse":
-            raise ValueError("hybrid_vse is only valid for binary stage 1")
+    else: #note hybrid_vse isn't a multiclass model
 
-        if DATA_STAGE1 and is_seq:
-            # build stage 2 sequence data directly from stage 1 lap-level data
-            df = load_stage1_dataset(DATA_STAGE1)
-            df = df.loc[~df["race_id"].isin(HOLDOUT_RACE_IDS)].copy()
+        reference_df = None
 
-            df = df.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort").reset_index(drop=True)
+        # stage 2 targets always come from dataset2
+        df = load_stage2_dataset(DATA_STAGE2, strict=True)
+        x, y = get_stage2_xy(df)
+        fb = make_race_group_folds(df, n_splits=N_SPLITS, seed=SEED)
 
-            next_comp = df.groupby(["race_id", "driver_id"], sort=False)["current_compound"].shift(-1)
-            df["y_compound"] = np.where(df["y_pit"].astype(int).to_numpy() == 1, next_comp, np.nan)
-            df = encode_y_compound(df, col="y_compound", out_col="y_compound_encoded")
-
-            x = df.drop(
-                columns=["y_pit", "y_compound", "y_compound_encoded", "race_id", "driver_id"],
-                errors="ignore",
-            ).copy()
-            y = df["y_compound_encoded"].fillna(-1).astype(int)
-
-            fb = make_race_group_folds(
-                df,
-                target_col="y_compound_encoded",
-                n_splits=N_SPLITS,
-                seed=SEED,
-            )
-
-        elif DATA_STAGE2:
-            # normal stage 2 tabular data, or fallback for tuning sequence models on SMOTE data
-            df = load_stage2_dataset(DATA_STAGE2, strict=True)
-            df = df.loc[~df["race_id"].isin(HOLDOUT_RACE_IDS)].copy()
-            df = encode_y_compound(df, col="y_compound", out_col="y_compound_encoded")
-            x, y = get_stage2_xy(df)
-            fb = make_race_group_folds(
-                df,
-                target_col="y_compound_encoded",
-                n_splits=N_SPLITS,
-                seed=SEED,
-            )
-        else:
-            raise ValueError("for multiclass tuning, set DATA_STAGE1 or DATA_STAGE2")
+        # stage 2 sequence models and stage 2 stacked models with sequential bases
+        # also need lap-level reference histories from dataset1
+        if is_seq or is_meta:
+            reference_df = load_stage1_dataset(DATA_STAGE1)
+            reference_df = reference_df.sort_values(
+                ["race_id", "driver_id", "lapno"],
+                kind="mergesort",
+            ).reset_index(drop=True)
 
         n_classes = len(COMPOUND_CLASSES)
 
@@ -798,6 +892,7 @@ def main() -> None:
     pruner = MedianPruner(n_startup_trials=10)
     study_name = f"{TASK}_{MODEL}"
 
+    #create optuna study, optimise by minimising mean logloss, use TPE sampling, and use median pruning
     study = optuna.create_study(
         direction="minimize",
         sampler=sampler,
@@ -806,15 +901,8 @@ def main() -> None:
     )
 
     if is_meta:
-        meta_folds = build_meta_folds(
-            df,
-            x,
-            y,
-            fb.folds,
-            is_binary=is_binary,
-            n_classes=n_classes,
-            seed=SEED,
-        )
+        #if the model is a meta leaner build folds with oof probabilities then create the study
+        meta_folds = build_meta_folds(df,x,y,fb.folds,is_binary=is_binary,n_classes=n_classes,seed=SEED,reference_df=None if is_binary else reference_df,)
         study.optimize(
             lambda t: objective_meta(t, meta_folds, MODEL, is_binary, n_classes, SEED),
             n_trials=N_TRIALS,
@@ -822,6 +910,7 @@ def main() -> None:
         )
 
     elif not is_seq:
+        #if the model is tabular, build folds then create the study
         pre_name = MODEL
         cached_folds = build_cached_folds(x, y, fb.folds, pre_name)
         study.optimize(
@@ -831,14 +920,27 @@ def main() -> None:
         )
 
     else:
-        seq_len = 8 if is_binary else 12
-        cached_folds = build_cached_seq_folds(df, x, y, fb.folds, seq_len)
+        seq_len = 8
+        #if the model is sequential build the folds with lap sequences, then create the study
+        if is_binary:
+            cached_folds = build_cached_seq_folds(df, x, y, fb.folds, seq_len)
+        else:
+            cached_folds = build_cached_stage2_seq_folds_from_reference(
+                reference_df=reference_df,
+                target_df=df,
+                x_target=x,
+                y_target=y,
+                folds=fb.folds,
+                seq_len=seq_len,
+            )
+
         study.optimize(
             lambda t: objective_seq(t, cached_folds, MODEL, is_binary, n_classes, SEED),
             n_trials=N_TRIALS,
             show_progress_bar=True,
         )
 
+    #write the best results to file
     best_obj = {
         "study": study_name,
         "best_logloss": float(study.best_value),

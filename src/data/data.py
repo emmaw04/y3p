@@ -448,6 +448,161 @@ def infer_feature_types(
 
     return num_cols, cat_cols
 
+def build_feature_sequences_from_reference(
+    reference_keys: pd.DataFrame,
+    X_reference: np.ndarray,
+    target_keys: pd.DataFrame,
+    y_target: pd.Series,
+    *,
+    seq_len: int = 8,
+    pad_left: bool = True,
+    add_timestep_mask: bool = False,
+    strict_match: bool = True,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    builds sequences for stage 2 sequential models. gets the laps from dataset 1 (Restricted to the attributes dataset 2 has) and the label from dataset 2
+    reference_keys and X_reference come from dataset 1
+    target_keys and y_target come from the pit-event dataset dataset 2
+
+    each target row is identified by (race_id, driver_id, lapno)
+    we find the matching lap in dataset 1, then take the seq_len most recent available laps for that same driver in that same race, ending on the matched lap in dataset 2
+
+    importantly, this function only uses whatever columns are already present in X_reference/dataset 2, we don't use attributes that are in dataset 1 but not dataset 2 (e.g., lap time, not relevant)
+
+    returns:
+    X_seq: shape (n_targets_found, seq_len, d or d+1)
+    y_seq: labels aligned to each built sequence
+    idx_target:row indices into the target table
+    seq_idx_ref:row indices into the reference table for each timestep
+    eff_len:number of real laps before left-padding
+    """
+    required = {"race_id", "driver_id", "lapno"}
+
+    if not required.issubset(reference_keys.columns):
+        raise ValueError(f"reference_keys must contain columns {sorted(required)}")
+    if not required.issubset(target_keys.columns):
+        raise ValueError(f"target_keys must contain columns {sorted(required)}")
+
+    n_ref = len(reference_keys)
+    n_tgt = len(target_keys)
+
+    if X_reference.shape[0] != n_ref:
+        raise ValueError("reference_keys and X_reference must have the same number of rows")
+    if len(y_target) != n_tgt:
+        raise ValueError("target_keys and y_target must have the same number of rows")
+
+    if not isinstance(y_target, pd.Series):
+        y_target = pd.Series(y_target)
+
+    # sort the full lap-level reference rows by race / driver / lap
+    ref_idx = reference_keys[["race_id", "driver_id", "lapno"]].copy()
+    ref_idx["_ref_row"] = np.arange(n_ref, dtype=int)
+    ref_idx = ref_idx.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort")
+
+    # build fast lookup by (race_id, driver_id)
+    ref_groups: Dict[Tuple[int, int], Tuple[np.ndarray, np.ndarray]] = {}
+    for (race_id, driver_id), g in ref_idx.groupby(["race_id", "driver_id"], sort=False):
+        lapnos = g["lapno"].to_numpy(dtype=int)
+        ref_rows = g["_ref_row"].to_numpy(dtype=int)
+        ref_groups[(int(race_id), int(driver_id))] = (lapnos, ref_rows)
+
+    # keep target row ids in original target-table order
+    tgt_idx = target_keys[["race_id", "driver_id", "lapno"]].copy()
+    tgt_idx["_target_row"] = np.arange(n_tgt, dtype=int)
+    tgt_idx = tgt_idx.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort")
+
+    d = X_reference.shape[1]
+    d_out = d + 1 if add_timestep_mask else d
+
+    X_seq_list = []
+    y_seq_list = []
+    idx_target_list = []
+    seq_idx_ref_list = []
+    eff_len_list = []
+
+    missing_targets: List[Tuple[int, int, int, int]] = []
+
+    for (race_id, driver_id), g in tgt_idx.groupby(["race_id", "driver_id"], sort=False):
+        key = (int(race_id), int(driver_id))
+
+        if key not in ref_groups:
+            for _, row in g.iterrows():
+                missing_targets.append((
+                    int(row["_target_row"]),
+                    int(row["race_id"]),
+                    int(row["driver_id"]),
+                    int(row["lapno"]),
+                ))
+            continue
+
+        ref_lapnos, ref_rows = ref_groups[key]
+
+        for _, row in g.iterrows():
+            target_row = int(row["_target_row"])
+            lapno = int(row["lapno"])
+
+            # locate the target lap inside the full lap-level reference history
+            pos = np.searchsorted(ref_lapnos, lapno)
+
+            if pos >= len(ref_lapnos) or ref_lapnos[pos] != lapno:
+                missing_targets.append((
+                    target_row,
+                    int(row["race_id"]),
+                    int(row["driver_id"]),
+                    int(row["lapno"]),
+                ))
+                continue
+
+            if pad_left:
+                real = ref_rows[max(0, pos - seq_len + 1): pos + 1]
+                n_pad = seq_len - len(real)
+                window = np.concatenate([np.full(n_pad, -1, dtype=int), real])
+            else:
+                if pos + 1 < seq_len:
+                    continue
+                window = ref_rows[pos - seq_len + 1: pos + 1]
+
+            real_mask = window != -1
+            eff_len = int(np.sum(real_mask))
+
+            Xw = np.zeros((seq_len, d), dtype=np.float32)
+            if eff_len > 0:
+                Xw[real_mask] = X_reference[window[real_mask]].astype(np.float32, copy=False)
+
+            if add_timestep_mask:
+                mask = real_mask.astype(np.float32).reshape(seq_len, 1)
+                Xw = np.concatenate([Xw, mask], axis=1)
+
+            X_seq_list.append(Xw)
+            y_seq_list.append(int(y_target.iloc[target_row]))
+            idx_target_list.append(target_row)
+            seq_idx_ref_list.append(window)
+            eff_len_list.append(eff_len)
+
+    if missing_targets and strict_match:
+        preview = missing_targets[:5]
+        raise ValueError(
+            "some stage 2 target laps were not found in the full lap-level reference data. "
+            f"first few missing targets: {preview}"
+        )
+
+    if not X_seq_list:
+        return (
+            np.zeros((0, seq_len, d_out), dtype=np.float32),
+            np.zeros((0,), dtype=int),
+            np.zeros((0,), dtype=int),
+            np.zeros((0, seq_len), dtype=int),
+            np.zeros((0,), dtype=int),
+        )
+
+    return (
+        np.asarray(X_seq_list, dtype=np.float32),
+        np.asarray(y_seq_list, dtype=int),
+        np.asarray(idx_target_list, dtype=int),
+        np.asarray(seq_idx_ref_list, dtype=int),
+        np.asarray(eff_len_list, dtype=int),
+    )
+
 #splitting data into training and validation (randomly shuffling races instead of laps to avoid temporal leakage)
 @dataclass(frozen=True)
 class FoldBundle:

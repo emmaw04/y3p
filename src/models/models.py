@@ -932,3 +932,761 @@ def get_meta_multiclass_learners(cfg: ModelConfig, *, n_classes: int) -> Dict[st
         "lr": make_meta_multiclass_lr(cfg),
         "xgb": make_meta_multiclass_xgb(cfg, n_classes=n_classes),
     }
+
+
+
+
+
+
+
+
+# parameterised builders for hyperparameter tuning
+
+def build_stage1_rf(
+    cfg: ModelConfig,
+    *,
+    n_estimators: int,
+    max_depth,
+    min_samples_leaf: int,
+    min_samples_split: int,
+    max_features,
+    bootstrap: bool = True,
+    class_weight=None,
+) -> BaseEstimator:
+    return RandomForestClassifier(
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        min_samples_leaf=min_samples_leaf,
+        min_samples_split=min_samples_split,
+        max_features=max_features,
+        bootstrap=bootstrap,
+        class_weight=class_weight,
+        n_jobs=cfg.n_jobs,
+        random_state=cfg.random_state,
+    )
+
+
+def build_stage1_xgb(
+    cfg: ModelConfig,
+    *,
+    n_estimators: int,
+    learning_rate: float,
+    max_depth: int,
+    min_child_weight: int,
+    subsample: float,
+    colsample_bytree: float,
+    gamma: float,
+    reg_alpha: float,
+    reg_lambda: float,
+    max_bin: int = 256,
+    scale_pos_weight: float = 1.0,
+) -> BaseEstimator:
+    return XGBClassifier(
+        tree_method="hist",
+        n_estimators=n_estimators,
+        learning_rate=learning_rate,
+        max_depth=max_depth,
+        min_child_weight=min_child_weight,
+        subsample=subsample,
+        colsample_bytree=colsample_bytree,
+        gamma=gamma,
+        reg_alpha=reg_alpha,
+        reg_lambda=reg_lambda,
+        max_bin=max_bin,
+        scale_pos_weight=scale_pos_weight,
+        objective="binary:logistic",
+        eval_metric="logloss",
+        n_jobs=cfg.n_jobs,
+        random_state=cfg.random_state,
+    )
+
+
+def build_stage1_svm(
+    cfg: ModelConfig,
+    *,
+    C: float,
+    gamma: float,
+    class_weight=None,
+) -> BaseEstimator:
+    return SVC(
+        C=C,
+        kernel="rbf",
+        gamma=gamma,
+        probability=True,
+        class_weight=class_weight,
+        random_state=cfg.random_state,
+    )
+
+
+def build_stage1_ann(
+    cfg: ModelConfig,
+    *,
+    n_layers: int,
+    hidden_units: int,
+    dropout: float,
+    l2: float,
+    learning_rate: float,
+    batch_size: int,
+    epochs: int = 80,
+    patience: int = 10,
+) -> BaseEstimator:
+    def model_fn(meta):
+        keras.utils.set_random_seed(cfg.random_state)
+        input_dim = meta["n_features_in_"]
+        reg = keras.regularizers.l2(l2)
+
+        x_in = layers.Input(shape=(input_dim,))
+        x = x_in
+        for _ in range(n_layers):
+            x = layers.Dense(hidden_units, activation="relu", kernel_regularizer=reg)(x)
+            if dropout > 0:
+                x = layers.Dropout(dropout)(x)
+
+        y_out = layers.Dense(1, activation="sigmoid")(x)
+        model = keras.Model(x_in, y_out)
+        model.compile(
+            optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+            loss="binary_crossentropy",
+            metrics=[
+                keras.metrics.AUC(curve="PR", name="pr_auc"),
+                keras.metrics.AUC(curve="ROC", name="roc_auc"),
+            ],
+        )
+        return model
+
+    return _make_keras_classifier(
+        cfg,
+        model_fn,
+        epochs=epochs,
+        batch_size=batch_size,
+        monitor="val_pr_auc",
+        mode="max",
+        patience=patience,
+    )
+
+
+# stage 2 tabular builders
+
+def build_stage2_ffnn(
+    cfg: ModelConfig,
+    *,
+    n_classes: int,
+    n_layers: int,
+    hidden_units: int,
+    dropout: float,
+    l2: float,
+    learning_rate: float,
+    batch_size: int,
+    epochs: int = 60,
+    patience: int = 5,
+) -> BaseEstimator:
+    def model_fn(meta):
+        keras.utils.set_random_seed(cfg.random_state)
+        input_dim = meta["n_features_in_"]
+        reg = keras.regularizers.l2(l2)
+
+        x_in = layers.Input(shape=(input_dim,))
+        x = x_in
+        for _ in range(n_layers):
+            x = layers.Dense(hidden_units, activation="relu", kernel_regularizer=reg)(x)
+            if dropout > 0:
+                x = layers.Dropout(dropout)(x)
+
+        y_out = layers.Dense(n_classes, activation="softmax")(x)
+        model = keras.Model(x_in, y_out)
+        model.compile(
+            optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+            loss="sparse_categorical_crossentropy",
+            metrics=[keras.metrics.SparseCategoricalAccuracy(name="acc")],
+        )
+        return model
+
+    return _make_keras_classifier(
+        cfg,
+        model_fn,
+        epochs=epochs,
+        batch_size=batch_size,
+        monitor="val_loss",
+        mode="min",
+        patience=patience,
+    )
+
+
+def build_stage2_rf(
+    cfg: ModelConfig,
+    *,
+    n_estimators: int,
+    max_depth,
+    min_samples_leaf: int,
+    min_samples_split: int,
+    max_features,
+    bootstrap: bool = True,
+    class_weight=None,
+) -> BaseEstimator:
+    return RandomForestClassifier(
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        min_samples_leaf=min_samples_leaf,
+        min_samples_split=min_samples_split,
+        max_features=max_features,
+        bootstrap=bootstrap,
+        class_weight=class_weight,
+        n_jobs=cfg.n_jobs,
+        random_state=cfg.random_state,
+    )
+
+
+def build_stage2_svm(
+    cfg: ModelConfig,
+    *,
+    C: float,
+    gamma: float,
+    class_weight=None,
+) -> BaseEstimator:
+    return SVC(
+        C=C,
+        kernel="rbf",
+        gamma=gamma,
+        probability=True,
+        decision_function_shape="ovr",
+        class_weight=class_weight,
+        random_state=cfg.random_state,
+    )
+
+
+def build_stage2_xgb(
+    cfg: ModelConfig,
+    *,
+    n_classes: int,
+    n_estimators: int,
+    learning_rate: float,
+    max_depth: int,
+    min_child_weight: int,
+    subsample: float,
+    colsample_bytree: float,
+    gamma: float,
+    reg_alpha: float,
+    reg_lambda: float,
+    max_bin: int = 256,
+) -> BaseEstimator:
+    return XGBClassifier(
+        tree_method="hist",
+        n_estimators=n_estimators,
+        learning_rate=learning_rate,
+        max_depth=max_depth,
+        min_child_weight=min_child_weight,
+        subsample=subsample,
+        colsample_bytree=colsample_bytree,
+        gamma=gamma,
+        reg_alpha=reg_alpha,
+        reg_lambda=reg_lambda,
+        max_bin=max_bin,
+        objective="multi:softprob",
+        num_class=n_classes,
+        eval_metric="mlogloss",
+        n_jobs=cfg.n_jobs,
+        random_state=cfg.random_state,
+    )
+
+
+# low-level sequence builders, these return raw keras.Model objects
+
+def _build_tcn_binary(
+    seq_len: int,
+    n_features: int,
+    *,
+    learning_rate: float = 1e-3,
+    filters: int = 64,
+    kernel_size: int = 4,
+    dropout: float = 0.15,
+    pooling: str = "last",
+    focal_gamma: float = 1.0,
+    focal_alpha: float = 0.75,
+) -> "keras.Model":
+    x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
+    x = layers.LayerNormalization()(x)
+    x = layers.Activation("relu")(x)
+
+    for d in [1, 2, 4, 8]:
+        x = _tcn_residual_block(
+            x,
+            filters=filters,
+            kernel_size=kernel_size,
+            dilation=d,
+            dropout=dropout,
+        )
+
+    if pooling == "gap":
+        x = layers.GlobalAveragePooling1D()(x)
+    else:
+        x = layers.Lambda(lambda z: z[:, -1, :])(x)
+
+    x = layers.Dense(64, activation="relu")(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(1, activation="sigmoid")(x)
+
+    return _compile_binary_seq_model(
+        keras.Model(x_in, y_out),
+        learning_rate=learning_rate,
+        use_focal=True,
+        focal_gamma=focal_gamma,
+        focal_alpha=focal_alpha,
+    )
+
+
+def _build_tcn_gru_binary(
+    seq_len: int,
+    n_features: int,
+    *,
+    learning_rate: float = 1e-3,
+    filters: int = 64,
+    kernel_size: int = 2,
+    dropout: float = 0.05,
+    rnn_units: int = 16,
+    rnn_dropout: float = 0.27,
+) -> "keras.Model":
+    x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
+    x = layers.LayerNormalization()(x)
+    x = layers.Activation("relu")(x)
+
+    for d in [1, 2, 4, 8]:
+        x = _tcn_residual_block(
+            x,
+            filters=filters,
+            kernel_size=kernel_size,
+            dilation=d,
+            dropout=dropout,
+        )
+
+    x = layers.GRU(
+        rnn_units,
+        return_sequences=False,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x)
+
+    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(1, activation="sigmoid")(x)
+
+    return _compile_binary_seq_model(
+        keras.Model(x_in, y_out),
+        learning_rate=learning_rate,
+    )
+
+
+def _build_lstm_binary(
+    seq_len: int,
+    n_features: int,
+    *,
+    learning_rate: float = 1e-3,
+    rnn_units: int = 64,
+    rnn_dropout: float = 0.04,
+) -> "keras.Model":
+    x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+    x = layers.LSTM(
+        rnn_units,
+        return_sequences=True,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x_in)
+    x = layers.LSTM(
+        max(rnn_units // 2, 8),
+        return_sequences=True,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x)
+
+    x = layers.LayerNormalization()(x)
+    x = layers.GlobalAveragePooling1D()(x)
+    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(1, activation="sigmoid")(x)
+
+    return _compile_binary_seq_model(
+        keras.Model(x_in, y_out),
+        learning_rate=learning_rate,
+    )
+
+
+def _build_gru_binary(
+    seq_len: int,
+    n_features: int,
+    *,
+    learning_rate: float = 1e-3,
+    rnn_units: int = 64,
+    rnn_dropout: float = 0.01,
+) -> "keras.Model":
+    x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+    x = layers.GRU(
+        rnn_units,
+        return_sequences=True,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x_in)
+    x = layers.GRU(
+        max(rnn_units // 2, 8),
+        return_sequences=True,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x)
+
+    x = layers.LayerNormalization()(x)
+    x = layers.GlobalAveragePooling1D()(x)
+    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(1, activation="sigmoid")(x)
+
+    return _compile_binary_seq_model(
+        keras.Model(x_in, y_out),
+        learning_rate=learning_rate,
+    )
+
+
+def _build_vse_hybrid_binary(
+    seq_len: int,
+    n_features: int,
+    *,
+    learning_rate: float = 1e-3,
+    rnn_units: int = 32,
+    rnn_dropout: float = 0.2,
+) -> "keras.Model":
+    x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+    reg = keras.regularizers.l2(5e-4)
+
+    x = layers.TimeDistributed(
+        layers.Dense(64, activation="relu", kernel_regularizer=reg)
+    )(x_in)
+    x = layers.TimeDistributed(
+        layers.Dense(64, activation="relu", kernel_regularizer=reg)
+    )(x)
+    x = layers.TimeDistributed(
+        layers.Dense(1, activation="sigmoid")
+    )(x)
+
+    x = layers.LSTM(
+        rnn_units,
+        return_sequences=False,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+    )(x)
+    x = layers.Dense(32, activation="relu")(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(1, activation="sigmoid")(x)
+
+    return _compile_binary_seq_model(
+        keras.Model(x_in, y_out),
+        learning_rate=learning_rate,
+    )
+
+
+def _build_tcn_multiclass(
+    seq_len: int,
+    n_features: int,
+    n_classes: int,
+    *,
+    learning_rate: float = 1e-3,
+    filters: int = 32,
+    kernel_size: int = 3,
+    dropout: float = 0.3,
+    pooling: str = "last",
+) -> "keras.Model":
+    x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
+    x = layers.LayerNormalization()(x)
+    x = layers.Activation("relu")(x)
+
+    for d in [1, 2, 4, 8]:
+        x = _tcn_residual_block(
+            x,
+            filters=filters,
+            kernel_size=kernel_size,
+            dilation=d,
+            dropout=dropout,
+        )
+
+    if pooling == "gap":
+        x = layers.GlobalAveragePooling1D()(x)
+    else:
+        x = layers.Lambda(lambda z: z[:, -1, :])(x)
+
+    x = layers.Dense(64, activation="relu")(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(n_classes, activation="softmax")(x)
+
+    return _compile_multiclass_seq_model(
+        keras.Model(x_in, y_out),
+        learning_rate=learning_rate,
+    )
+
+
+def _build_tcn_gru_multiclass(
+    seq_len: int,
+    n_features: int,
+    n_classes: int,
+    *,
+    learning_rate: float = 1e-3,
+    filters: int = 32,
+    kernel_size: int = 3,
+    dropout: float = 0.14,
+    rnn_units: int = 64,
+    rnn_dropout: float = 0.001,
+) -> "keras.Model":
+    x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+    x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
+    x = layers.LayerNormalization()(x)
+    x = layers.Activation("relu")(x)
+
+    for d in [1, 2, 4, 8]:
+        x = _tcn_residual_block(
+            x,
+            filters=filters,
+            kernel_size=kernel_size,
+            dilation=d,
+            dropout=dropout,
+        )
+
+    x = layers.GRU(
+        rnn_units,
+        return_sequences=False,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x)
+
+    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(n_classes, activation="softmax")(x)
+
+    return _compile_multiclass_seq_model(
+        keras.Model(x_in, y_out),
+        learning_rate=learning_rate,
+    )
+
+
+def _build_lstm_multiclass(
+    seq_len: int,
+    n_features: int,
+    n_classes: int,
+    *,
+    learning_rate: float = 1e-3,
+    rnn_units: int = 32,
+    rnn_dropout: float = 0.26,
+) -> "keras.Model":
+    x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+    x = layers.LSTM(
+        rnn_units,
+        return_sequences=True,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x_in)
+    x = layers.LSTM(
+        max(rnn_units // 2, 8),
+        return_sequences=True,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x)
+
+    x = layers.LayerNormalization()(x)
+    x = layers.GlobalAveragePooling1D()(x)
+    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(n_classes, activation="softmax")(x)
+
+    return _compile_multiclass_seq_model(
+        keras.Model(x_in, y_out),
+        learning_rate=learning_rate,
+    )
+
+
+def _build_gru_multiclass(
+    seq_len: int,
+    n_features: int,
+    n_classes: int,
+    *,
+    learning_rate: float = 1e-3,
+    rnn_units: int = 32,
+    rnn_dropout: float = 0.17,
+) -> "keras.Model":
+    x_in = layers.Input(shape=(int(seq_len), int(n_features)))
+
+    x = layers.GRU(
+        rnn_units,
+        return_sequences=True,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x_in)
+    x = layers.GRU(
+        max(rnn_units // 2, 8),
+        return_sequences=True,
+        dropout=rnn_dropout,
+        recurrent_dropout=0.0,
+        kernel_regularizer=keras.regularizers.l2(5e-4),
+    )(x)
+
+    x = layers.LayerNormalization()(x)
+    x = layers.GlobalAveragePooling1D()(x)
+    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(5e-4))(x)
+    x = layers.Dropout(0.2)(x)
+    y_out = layers.Dense(n_classes, activation="softmax")(x)
+
+    return _compile_multiclass_seq_model(
+        keras.Model(x_in, y_out),
+        learning_rate=learning_rate,
+    )
+
+
+# meta builders
+
+def build_meta_binary_mlp(
+    cfg: ModelConfig,
+    *,
+    hidden_layer_sizes,
+    alpha: float,
+    learning_rate_init: float,
+    batch_size: int,
+) -> BaseEstimator:
+    return MLPClassifier(
+        hidden_layer_sizes=hidden_layer_sizes,
+        activation="relu",
+        alpha=alpha,
+        learning_rate_init=learning_rate_init,
+        batch_size=batch_size,
+        max_iter=300,
+        early_stopping=True,
+        random_state=cfg.random_state,
+    )
+
+
+def build_meta_binary_lr(
+    cfg: ModelConfig,
+    *,
+    C: float,
+    class_weight=None,
+    max_iter: int = 4000,
+) -> BaseEstimator:
+    return LogisticRegression(
+        penalty="l2",
+        C=C,
+        solver="lbfgs",
+        max_iter=max_iter,
+        class_weight=class_weight,
+        random_state=cfg.random_state,
+    )
+
+
+def build_meta_binary_xgb(
+    cfg: ModelConfig,
+    *,
+    n_estimators: int,
+    max_depth: int,
+    learning_rate: float,
+    subsample: float,
+    colsample_bytree: float,
+    reg_alpha: float,
+    reg_lambda: float,
+    min_child_weight: int,
+    gamma: float,
+) -> BaseEstimator:
+    return XGBClassifier(
+        tree_method="hist",
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        learning_rate=learning_rate,
+        subsample=subsample,
+        colsample_bytree=colsample_bytree,
+        reg_alpha=reg_alpha,
+        reg_lambda=reg_lambda,
+        min_child_weight=min_child_weight,
+        gamma=gamma,
+        objective="binary:logistic",
+        eval_metric="logloss",
+        n_jobs=cfg.n_jobs,
+        random_state=cfg.random_state,
+    )
+
+
+def build_meta_multiclass_mlp(
+    cfg: ModelConfig,
+    *,
+    hidden_layer_sizes,
+    alpha: float,
+    learning_rate_init: float,
+    batch_size: int,
+) -> BaseEstimator:
+    return MLPClassifier(
+        hidden_layer_sizes=hidden_layer_sizes,
+        activation="relu",
+        alpha=alpha,
+        learning_rate_init=learning_rate_init,
+        batch_size=batch_size,
+        max_iter=300,
+        early_stopping=True,
+        random_state=cfg.random_state,
+    )
+
+def build_meta_multiclass_lr(
+    cfg: ModelConfig,
+    *,
+    C: float,
+    class_weight=None,
+    max_iter: int = 6000,
+) -> BaseEstimator:
+    return LogisticRegression(
+        penalty="l2",
+        C=C,
+        solver="lbfgs",
+        max_iter=max_iter,
+        multi_class="multinomial",
+        class_weight=class_weight,
+        random_state=cfg.random_state,
+    )
+
+def build_meta_multiclass_xgb(
+    cfg: ModelConfig,
+    *,
+    n_classes: int,
+    n_estimators: int,
+    max_depth: int,
+    learning_rate: float,
+    subsample: float,
+    colsample_bytree: float,
+    reg_alpha: float,
+    reg_lambda: float,
+    min_child_weight: int,
+    gamma: float,
+) -> BaseEstimator:
+    return XGBClassifier(
+        tree_method="hist",
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        learning_rate=learning_rate,
+        subsample=subsample,
+        colsample_bytree=colsample_bytree,
+        reg_alpha=reg_alpha,
+        reg_lambda=reg_lambda,
+        min_child_weight=min_child_weight,
+        gamma=gamma,
+        objective="multi:softprob",
+        num_class=n_classes,
+        eval_metric="mlogloss",
+        n_jobs=cfg.n_jobs,
+        random_state=cfg.random_state,
+    )

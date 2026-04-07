@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 # src/utils/ablation_eval.py
 """
-Ablation evaluation for Stage-1 and Stage-2 using a rigorous two-level CV procedure.
-This script generates OOF probabilities for all specified base learners and performs
-LOBO (Leave-One-Base-Out) ablation with the XGB meta learner to determine feature importance.
-
+Ablation evaluation for Stage-1 and Stage-2 using OOF base learner probabilities.
+This script generates OOF probabilities for all specified base learners and excludes one base learner at a time to see how the xgb meta learners performance drops
 Outputs:
-  - reports/meta_ablation_results_stageX.csv (fold-level)
-  - reports/meta_ablation_summary_stageX.csv (aggregated; deltas vs baseline)
+reports/meta_ablation_results_stageX.csv (fold-level results)
+reports/meta_ablation_summary_stageX.csv (average across the fold results)
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Optional
@@ -51,6 +48,7 @@ from src.models.models import (
     get_multiclass_base_learners,
     get_stage2_sequential_models,
     make_meta_multiclass_xgb,
+    ModelConfig
 )
 
 SEED_DEFAULT = 42
@@ -541,77 +539,75 @@ def print_top5_damage(summary_df: pd.DataFrame, title: str) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--data_path", required=True, help="Path to dataset (e.g. output1.csv or output2.csv)")
-    ap.add_argument("--stage", type=int, required=True, choices=[1, 2], help="Stage 1 (binary) or Stage 2 (multiclass)")
-    ap.add_argument("--outdir", default="runs/ablation", help="Output directory root")
-    ap.add_argument("--run_name", default="meta_ablation", help="Subfolder under outdir")
-    ap.add_argument("--n_splits", type=int, default=5)
-    ap.add_argument("--seed", type=int, default=SEED_DEFAULT)
-    ap.add_argument("--seq_len", type=int, default=8)
-    ap.add_argument("--recompute_base_oof", action="store_true", help="Force recomputation of META base OOF cache")
-    ap.add_argument("--verbose", action="store_true")
-    ap.add_argument("--smoke_test", action="store_true", help="Run a quick 1-fold smoke test.")
+    """
+    hardcoded entry point for meta-ablation evaluation.
+    edit the values below directly instead of passing cli arguments.
+    """
 
-    args = ap.parse_args()
+    data_path = "data/processed/dataset1.csv"  #dataset1.csv or dataset2.csv
+    stage = 1 #1 = binary, 2 = multiclass
+    outdir = "runs/ablation"
+    run_name = "meta_ablation"
+    n_splits = 5
+    seed = SEED_DEFAULT
+    seq_len = 8
 
-    out_root = _ensure_dir(Path(args.outdir) / args.run_name)
+    out_root = _ensure_dir(Path(outdir) / run_name)
     cache_dir = _ensure_dir(out_root / "cache")
     reports_dir = _ensure_dir(out_root / "reports")
 
-    cfg = ModelConfig(random_state=int(args.seed))
+    cfg = ModelConfig(random_state=int(seed))
 
-    print(f"[ablation_eval] stage={args.stage} data={args.data_path}")
+    print(f"[ablation_eval] stage={stage} data={data_path}")
 
-    n_classes = len(COMPOUND_CLASSES) if args.stage == 2 else None
+    n_classes = len(COMPOUND_CLASSES) if stage == 2 else None
 
-    if args.stage == 1:
-        df = load_stage1_dataset(args.data_path)
+    if stage == 1:
+        df = load_stage1_dataset(data_path)
         X, y = get_stage1_xy(df)
         target_col = "y_pit"
     else:
-        df_raw = load_stage2_dataset(args.data_path)
+        df_raw = load_stage2_dataset(data_path)
         df = encode_y_compound(df_raw, col="y_compound", out_col="y_compound_encoded")
         df = df.loc[~df["y_compound_encoded"].isna()].copy()
         X, y = get_stage2_xy(df)
         target_col = "y_compound_encoded"
 
-    fb = make_race_group_folds(df, target_col=target_col, n_splits=args.n_splits, seed=args.seed)
+    fb = make_race_group_folds(df, target_col=target_col, n_splits=n_splits, seed=seed)
     folds = fb.folds
-    if args.smoke_test:
-        folds = folds[:1]
 
-    meta_table_path = cache_dir / f"meta_table_stage{args.stage}.parquet"
-    meta_manifest_path = cache_dir / f"meta_table_stage{args.stage}_manifest.json"
+    meta_table_path = cache_dir / f"meta_table_stage{stage}.parquet"
+    meta_manifest_path = cache_dir / f"meta_table_stage{stage}_manifest.json"
 
-    if meta_table_path.exists() and (not args.recompute_base_oof):
-        print(f"[META] loading cached meta-table: {meta_table_path}")
-        meta_df = pd.read_parquet(meta_table_path)
-    else:
-        print(f"[META] generating base-level OOF probabilities for ALL base models...")
-        meta_df = build_meta_table(
-            df, X, y, folds,
-            cfg=cfg, stage=args.stage, n_classes=n_classes,
-            seq_len=int(args.seq_len), verbose=args.verbose
-        )
-        meta_df.to_parquet(meta_table_path, index=False)
-        _write_json(
-            meta_manifest_path,
-            {
-                "data_path": str(args.data_path),
-                "stage": args.stage,
-                "n_rows": int(len(meta_df)),
-                "n_races": int(meta_df["race_id"].nunique()),
-                "n_splits": int(args.n_splits),
-                "seed": int(args.seed),
-                "seq_len": int(args.seq_len),
-                "holdout_race_ids": list(map(int, HOLDOUT_RACE_IDS)),
-            },
-        )
-        print(f"[META] wrote meta-table cache: {meta_table_path}")
+    print("[META] generating base-level OOF probabilities for ALL base models...")
+    meta_df = build_meta_table(
+        df,
+        X,
+        y,
+        folds,
+        cfg=cfg,
+        stage=stage,
+        n_classes=n_classes,
+        seq_len=int(seq_len),
+        verbose=False,
+    )
+    meta_df.to_parquet(meta_table_path, index=False)
+    _write_json(
+        meta_manifest_path,
+        {
+            "data_path": str(data_path),
+            "stage": stage,
+            "n_rows": int(len(meta_df)),
+            "n_races": int(meta_df["race_id"].nunique()),
+            "n_splits": int(n_splits),
+            "seed": int(seed),
+            "seq_len": int(seq_len),
+            "holdout_race_ids": list(map(int, HOLDOUT_RACE_IDS)),
+        },
+    )
+    print(f"[META] wrote meta-table cache: {meta_table_path}")
 
-    # Build ablation specs
-    if args.stage == 1:
+    if stage == 1:
         base_models = list(get_binary_base_learners(cfg).keys())
         seq_models = list(get_stage1_sequential_models(cfg).keys())
     else:
@@ -620,8 +616,9 @@ def main() -> None:
 
     prob_cols_dict = {}
     tabular_cols = []
+
     for bm in base_models:
-        if args.stage == 1:
+        if stage == 1:
             cols = [f"p_{bm}"]
         else:
             cols = [f"p_{bm}_c{k}" for k in range(n_classes)]
@@ -632,7 +629,7 @@ def main() -> None:
 
     seq_cols = []
     for sm in seq_models:
-        if args.stage == 1:
+        if stage == 1:
             cols = [f"seq_{sm}_proba", f"seq_{sm}_eff_len"]
         else:
             cols = [f"seq_{sm}_c{k}" for k in range(n_classes)] + [f"seq_{sm}_eff_len"]
@@ -644,41 +641,42 @@ def main() -> None:
     id_cols = {"race_id", "row_id", target_col}
     baseline_cols = [c for c in meta_df.columns if c not in id_cols]
     raw_cols = [c for c in baseline_cols if c not in tabular_cols and c not in seq_cols]
-    
+
     ablation_specs = make_ablation_specs_meta(
         baseline_cols=baseline_cols,
         prob_cols_dict=prob_cols_dict,
         tabular_cols=tabular_cols,
         seq_cols=seq_cols,
-        raw_cols=raw_cols
+        raw_cols=raw_cols,
     )
-    
-    _write_json(reports_dir / f"meta_ablation_specs_stage{args.stage}.json", {"ablations": list(ablation_specs.keys())})
 
-    fb_meta = make_race_group_folds(meta_df, target_col=target_col, n_splits=args.n_splits, seed=args.seed)
+    _write_json(
+        reports_dir / f"meta_ablation_specs_stage{stage}.json",
+        {"ablations": list(ablation_specs.keys())},
+    )
+
+    fb_meta = make_race_group_folds(meta_df, target_col=target_col, n_splits=n_splits, seed=seed)
     folds_meta = fb_meta.folds
-    if args.smoke_test:
-        folds_meta = folds_meta[:1]
 
     print(f"[META] running meta ablation CV: n_ablations={len(ablation_specs)} n_folds={len(folds_meta)}")
     meta_results = run_meta_ablation_cv(
         meta_df,
         folds_meta,
         cfg=cfg,
-        stage=args.stage,
+        stage=stage,
         n_classes=n_classes,
         ablation_specs=ablation_specs,
-        verbose=args.verbose,
+        verbose=False,
     )
 
-    meta_results_path = reports_dir / f"meta_ablation_results_stage{args.stage}.csv"
+    meta_results_path = reports_dir / f"meta_ablation_results_stage{stage}.csv"
     meta_results.to_csv(meta_results_path, index=False)
-    
+
     meta_summary = summarize_ablation_results(meta_results, baseline_name="baseline_full")
-    meta_summary_path = reports_dir / f"meta_ablation_summary_stage{args.stage}.csv"
+    meta_summary_path = reports_dir / f"meta_ablation_summary_stage{stage}.csv"
     meta_summary.to_csv(meta_summary_path, index=False)
-    
-    print_top5_damage(meta_summary, title=f"[META Stage {args.stage}] Damage rankings")
+
+    print_top5_damage(meta_summary, title=f"[META Stage {stage}] Damage rankings")
     print(f"\n[ablation_eval] done. Outputs in: {reports_dir}")
 
 if __name__ == "__main__":
