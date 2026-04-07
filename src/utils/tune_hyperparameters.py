@@ -6,7 +6,6 @@ handles both tabular and sequential models for both stages.
 
 import json
 from pathlib import Path
-from typing import Any
 import numpy as np
 import optuna
 import pandas as pd
@@ -74,13 +73,14 @@ from src.models.models import (
     make_tcn_gru_multiclass,
 )
 from sklearn.utils.class_weight import compute_class_weight
+from typing import Any, Optional
 
 #hardcoded tuning values
-DATA_STAGE1 = "../../data/processed/dataset1.csv"
-DATA_STAGE2 = "../../data/processed/dataset2.csv"
+DATA_STAGE1 = "data/processed/dataset1.csv"
+DATA_STAGE2 = "data/processed/dataset2.csv"
 TASK = "binary" #binary or multiclass
-MODEL = "xgb" #rf, xgb, svm, ann, tcn, gry, lstm, tcn_gru, hybrid_vse, meta_lr, meta_xgb, meta_mlp
-N_TRIALS = 100
+MODEL = "meta_lr" #rf, xgb, svm, ann, tcn, gry, lstm, tcn_gru, hybrid_vse, meta_lr, meta_xgb, meta_mlp
+N_TRIALS = 2
 OUTDIR = "runs/tuning"
 SEED = 42
 N_SPLITS = 5
@@ -588,7 +588,7 @@ def build_meta_folds(
     is_binary: bool,
     n_classes: int,
     seed: int,
-    reference_df: pd.DataFrame | None = None,
+    reference_df: Optional[pd.DataFrame] = None,
 ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """
     builds the training data for stacked models using the OOF probabilities given by the base learners
@@ -841,6 +841,32 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
     trial.set_user_attr("cv_metrics", mean_metrics)
     return mean_metrics["logloss"]
 
+def filter_stage2_to_reference(
+    target_df: pd.DataFrame,
+    reference_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    keep only stage 2 pit-event rows whose (race_id, driver_id, lapno)
+    exist in the lap-level reference dataframe
+    """
+    valid_keys = reference_df[["race_id", "driver_id", "lapno"]].drop_duplicates()
+
+    before = len(target_df)
+
+    filtered = target_df.merge(
+        valid_keys,
+        on=["race_id", "driver_id", "lapno"],
+        how="inner",
+    ).copy()
+
+    after = len(filtered)
+    dropped = before - after
+
+    if dropped > 0:
+        print(f"dropped {dropped} stage 2 rows not present in reference_df")
+
+    return filtered
+
 def main():
     outdir = Path(OUTDIR)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -868,17 +894,14 @@ def main():
         fb = make_race_group_folds(df, group_col="race_id", n_splits=N_SPLITS, seed=SEED)
         n_classes = 2
 
-    else: #note hybrid_vse isn't a multiclass model
+    else:  # note hybrid_vse isn't a multiclass model
 
         reference_df = None
 
         # stage 2 targets always come from dataset2
-        df = load_stage2_dataset(DATA_STAGE2, strict=True)
-        x, y = get_stage2_xy(df)
-        fb = make_race_group_folds(df, n_splits=N_SPLITS, seed=SEED)
+        df = load_stage2_dataset(DATA_STAGE2, strict=True).reset_index(drop=True)
 
-        # stage 2 sequence models and stage 2 stacked models with sequential bases
-        # also need lap-level reference histories from dataset1
+        # stage 2 sequence models and stage 2 stacked models with sequential bases also need lap-level reference histories from dataset1
         if is_seq or is_meta:
             reference_df = load_stage1_dataset(DATA_STAGE1)
             reference_df = reference_df.sort_values(
@@ -886,6 +909,11 @@ def main():
                 kind="mergesort",
             ).reset_index(drop=True)
 
+            # temporary workaround: drop stage 2 rows missing from reference NOT IDEAL
+            df = filter_stage2_to_reference(df, reference_df).reset_index(drop=True)
+
+        x, y = get_stage2_xy(df)
+        fb = make_race_group_folds(df, n_splits=N_SPLITS, seed=SEED)
         n_classes = len(COMPOUND_CLASSES)
 
     sampler = TPESampler(seed=SEED)

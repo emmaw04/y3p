@@ -72,9 +72,10 @@ The relevant files and functions:
 - `main_racesim.py`: the primary entry point for running the race simulation.
 - `racesim/` where the simulator used for this project is defined, simulates lap times then adds them together
 - `racesim_basic/`: a simplified version of the race simulation environment for quicker less computationally expensive testing, doesn't model traffic or include rivals on track and is a purely physics focused (determines optimal pit stop strategy purely on tyre degradation)
+- `VSE/racesim/src/mcs_analysis.py` computes the average finishing time of the driver across all monte carlo simulations
+
 
 The files that I edited were:
 `VSE/main_racesim.py`: i modified the default 
-`VSE/racesim/src/mcs_analysis.py` 
 `VSE/racesim/src/vse.py` this is where my model was called from to be used within the simulation. this file loads the artifacts from runs/final_run/artifacts/, did the necessary geature engineering to get the inputs needed for my model, constructed sequences of lap data for the sequential models. The data is then passed to stage 1 of the model, and if the model decides to pit then the data is also passed to stage 2 to decide which compound to fit
 `VSE/racesim/input/parameters/pars_Spielberg_2019.ini` this file stores the parameters for the race (e.g., selected compounds, drivers taking part in the race) as well as parameters for the simulator (e.g., kg fuel at the start, amount of fuel burned each lap). through this file i was able to adjust whether in the simulation of the race the driver followed their historical pit stop strategy or would follow the models predictions.

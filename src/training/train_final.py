@@ -617,6 +617,27 @@ def train_stage2_final(df1_ref, df2, x, y, folds, outdir: Path, cfg: ModelConfig
         },
     }
 
+def filter_stage2_to_reference(df2: pd.DataFrame, df1_ref: pd.DataFrame) -> pd.DataFrame:
+    """
+    keep only stage 2 rows whose (race_id, driver_id, lapno) exist
+    in the lap-level stage 1 reference dataframe
+    """
+    valid_keys = df1_ref[["race_id", "driver_id", "lapno"]].drop_duplicates()
+
+    before = len(df2)
+
+    df2_filtered = df2.merge(
+        valid_keys,
+        on=["race_id", "driver_id", "lapno"],
+        how="inner",
+    ).copy()
+
+    dropped = before - len(df2_filtered)
+    if dropped > 0:
+        print(f"dropped {dropped} stage 2 rows not present in stage 1 reference data")
+
+    return df2_filtered.reset_index(drop=True)
+
 def main():
     root = Path("runs") / "final_run"
     root.mkdir(parents=True, exist_ok=True)
@@ -653,6 +674,9 @@ def main():
         df2 = load_stage2_dataset(data_stage2, strict=True)
         df2 = encode_y_compound(df2, col="y_compound", out_col="y_compound_encoded")
         df2 = df2.loc[~df2["y_compound_encoded"].isna()].copy()
+
+        # temporary workaround: drop stage 2 rows whose target lap is missing from dataset1
+        df2 = filter_stage2_to_reference(df2, df1)
 
         x2, y2 = get_stage2_xy(df2)
         fb2 = make_race_group_folds(df2, n_splits=n_splits, seed=seed)
