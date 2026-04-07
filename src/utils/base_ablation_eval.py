@@ -10,8 +10,6 @@ reports/base_ablation_results_{model}_stageX.csv (per fold results)
 reports/base_ablation_summary_{model}_stageX.csv (averaged across folds results)
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
