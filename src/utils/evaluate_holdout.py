@@ -2,7 +2,7 @@
 # it writes lap-level probabilities, predicted positive events, per-driver plots,
 # and per-race metrics.
 
-from typing import Dict, List, Tuple
+from typing import List
 import json
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -29,7 +29,7 @@ OUTDIR = Path("runs/holdout_run")
 PIT_THRESHOLD = 0.264
 
 
-def _race_metrics(y_true: np.ndarray, y_score: np.ndarray, threshold: float) -> Dict[str, float]:
+def _race_metrics(y_true: np.ndarray, y_score: np.ndarray, threshold: float):
     """
     calculate metrics for one race
     """
@@ -50,7 +50,7 @@ def _race_metrics(y_true: np.ndarray, y_score: np.ndarray, threshold: float) -> 
     return out
 
 
-def _segments_from_bool_mask(x: np.ndarray, mask: np.ndarray) -> List[Tuple[float, float]]:
+def _segments_from_bool_mask(x: np.ndarray, mask: np.ndarray):
     # find contiguous true segments in a boolean mask for background shading (rain, fcy phases) in plots
     x = np.asarray(x, dtype=float)
     mask = np.asarray(mask, dtype=bool)
@@ -76,7 +76,7 @@ def _segments_from_bool_mask(x: np.ndarray, mask: np.ndarray) -> List[Tuple[floa
     return [(a, min(100.0, b + 0.5)) if a == b else (a, b) for a, b in segs]
 
 
-def _keras_predict_proba(model: tf.keras.Model, X_np: np.ndarray) -> np.ndarray:
+def _keras_predict_proba(model: tf.keras.Model, X_np: np.ndarray):
     # wrapper around keras predict for binary probabilities
     y = model.predict(X_np, batch_size=4096, verbose=0)
     y = np.asarray(y)
@@ -91,13 +91,13 @@ def _keras_predict_proba(model: tf.keras.Model, X_np: np.ndarray) -> np.ndarray:
     raise ValueError(f"unexpected keras prediction shape: {y.shape}")
 
 
-def _to_dense(x) -> np.ndarray:
+def _to_dense(x):
     if hasattr(x, "toarray"):
         return x.toarray()
     return np.asarray(x)
 
 
-def _prepare_raw_features(df_part: pd.DataFrame, x1_cols: List[str]) -> pd.DataFrame:
+def _prepare_raw_features(df_part: pd.DataFrame, x1_cols: List[str]):
     X_raw = df_part[x1_cols].copy()
 
     for c in ["is_wet_race", "is_raining", "minutes_rain"]:
@@ -115,7 +115,7 @@ def _predict_sequence_model_from_builder(
     X_row: np.ndarray,
     window: int,
     add_timestep_mask: bool = True,
-) -> np.ndarray:
+):
     """
     builds padded sequences using build_feature_sequences and maps the
     predicted probabilities back to the original row order

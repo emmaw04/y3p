@@ -10,7 +10,7 @@ import json
 import logging
 import datetime
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Dict
+from typing import Any, List, Sequence, Dict
 
 import fastf1
 import pandas as pd
@@ -40,7 +40,7 @@ class F1DataEncoder(json.JSONEncoder):
     """Handles serialisation of F1-specific types for metadata storage."""
 
     # this makes sure some pandas and numpy types can still be saved into json
-    def default(self, obj: Any) -> Any:
+    def default(self, obj: Any):
         # timedeltas are turned into strings so json can store them
         if isinstance(obj, pd.Timedelta):
             return str(obj)

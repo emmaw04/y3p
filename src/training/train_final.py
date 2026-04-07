@@ -47,7 +47,7 @@ from src.models.models import (
 )
 
 
-def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.ndarray:
+def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool):
     """
     trains base tabular models on the folds and grabs their out of fold predictions
     to be used as features by the meta model
@@ -102,7 +102,7 @@ def get_stage1_seq_oof_preds(
     folds: list[tuple[np.ndarray, np.ndarray]],
     model_name: str,
     model_instance,
-) -> np.ndarray:
+):
     """
     gets out of fold predictions for stage one sequential models
     """
@@ -166,7 +166,7 @@ def get_stage1_seq_oof_preds(
 
     return oof_pred
 
-def _get_stage2_reference_x(df1_ref: pd.DataFrame, stage2_feature_cols: list[str]) -> pd.DataFrame:
+def _get_stage2_reference_x(df1_ref: pd.DataFrame, stage2_feature_cols: list[str]):
     """
     quick helper for stage two sequences to make sure stage 2 features are a subset of stage 1 features
     """
@@ -185,7 +185,7 @@ def get_stage2_seq_oof_preds(
     model_name: str,
     model_instance,
     stage2_feature_cols: list[str],
-) -> np.ndarray:
+):
     """
     out of fold predictions for stage two sequential models
 

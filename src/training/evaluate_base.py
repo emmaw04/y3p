@@ -41,7 +41,7 @@ from src.models.models import (
 )
 
 
-def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray) -> dict[str, float]:
+def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray):
     """compute common binary classification metrics"""
     y_pred = (proba_pos >= 0.5).astype(int)
     return {
@@ -55,7 +55,7 @@ def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray) -> dict[st
     }
 
 
-def compute_multiclass_metrics(y_true: np.ndarray, proba_full: np.ndarray) -> dict[str, float]:
+def compute_multiclass_metrics(y_true: np.ndarray, proba_full: np.ndarray):
     """compute common multiclass metrics"""
     y_pred = np.argmax(proba_full, axis=1)
     labels = np.arange(proba_full.shape[1])
@@ -68,7 +68,7 @@ def compute_multiclass_metrics(y_true: np.ndarray, proba_full: np.ndarray) -> di
     }
 
 
-def summarize_fold_metrics(folds: list[dict[str, Any]], keys: list[str]) -> dict[str, float]:
+def summarize_fold_metrics(folds: list[dict[str, Any]], keys: list[str]):
     """average the metrics across all folds"""
     return {f"{k}_mean": float(np.mean([fm[k] for fm in folds])) for k in keys}
 

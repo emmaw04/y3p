@@ -61,7 +61,7 @@ def vprint(verbose: bool, *args, **kwargs):
         print(*args, **kwargs, flush=True)
 
 
-def _ensure_dir(p: Path) -> Path:
+def _ensure_dir(p: Path):
     p.mkdir(parents=True, exist_ok=True)
     return p
 
@@ -70,12 +70,12 @@ def _write_json(path: Path, obj: Any):
     path.write_text(json.dumps(obj, indent=2, default=str))
 
 
-def _safe_logloss_binary(y_true: np.ndarray, proba_pos: np.ndarray) -> float:
+def _safe_logloss_binary(y_true: np.ndarray, proba_pos: np.ndarray):
     p = np.clip(proba_pos.astype(float), 1e-15, 1 - 1e-15)
     return float(log_loss(y_true, p, labels=[0, 1]))
 
 
-def _safe_logloss_multi(y_true: np.ndarray, proba: np.ndarray, labels: np.ndarray) -> float:
+def _safe_logloss_multi(y_true: np.ndarray, proba: np.ndarray, labels: np.ndarray):
     p = np.clip(proba.astype(float), 1e-15, 1 - 1e-15)
     return float(log_loss(y_true, p, labels=labels))
 
@@ -84,7 +84,7 @@ def compute_fold_metrics_binary(
     y_true: np.ndarray,
     proba_pos: np.ndarray,
     threshold: float,
-) -> Dict[str, float]:
+):
     y_true = y_true.astype(int)
     proba_pos = proba_pos.astype(float)
     y_pred = (proba_pos >= threshold).astype(int)
@@ -107,7 +107,7 @@ def compute_fold_metrics_binary(
 def compute_fold_metrics_multi(
     y_true: np.ndarray,
     proba: np.ndarray,
-) -> Dict[str, float]:
+):
     y_true = y_true.astype(int)
     proba = proba.astype(float)
     y_pred = np.argmax(proba, axis=1)
@@ -137,7 +137,7 @@ def collect_oof_base_probs_tabular(
     stage: int,
     n_classes: Optional[int] = None,
     verbose: bool = False,
-) -> pd.DataFrame:
+):
 
     if stage == 1:
         base_all = get_binary_base_learners(cfg)
@@ -205,7 +205,7 @@ def collect_oof_seq_models(
     pad_left: bool = True,
     add_timestep_mask: bool = True,
     verbose: bool = False,
-) -> pd.DataFrame:
+):
 
     if stage == 1:
         target_col = "y_pit"
@@ -343,7 +343,7 @@ def build_meta_table(
     n_classes: Optional[int] = None,
     seq_len: int = 8,
     verbose: bool = False,
-) -> pd.DataFrame:
+):
 
     target_col = "y_pit" if stage == 1 else "y_compound_encoded"
 
@@ -406,12 +406,12 @@ def make_ablation_specs_meta(
     tabular_cols: List[str],
     seq_cols: List[str],
     raw_cols: List[str],
-) -> Dict[str, List[str]]:
+):
 
     specs: Dict[str, List[str]] = {}
     specs["baseline_full"] = baseline_cols
 
-    def drop(cols_to_drop: List[str]) -> List[str]:
+    def drop(cols_to_drop: List[str]):
         drop_set = set(cols_to_drop)
         cols2 = [c for c in baseline_cols if c not in drop_set]
         if not cols2:
@@ -441,7 +441,7 @@ def run_meta_ablation_cv(
     n_classes: Optional[int],
     ablation_specs: Dict[str, List[str]],
     verbose: bool = False,
-) -> pd.DataFrame:
+):
 
     target_col = "y_pit" if stage == 1 else "y_compound_encoded"
     y = meta_df[target_col].to_numpy().astype(int)
@@ -517,7 +517,7 @@ def run_meta_ablation_cv(
 def summarize_ablation_results(
     results_df: pd.DataFrame,
     baseline_name: str = "baseline_full",
-) -> pd.DataFrame:
+):
     agg = results_df.groupby("ablation_name").agg(
         mean_PR_AUC=("PR_AUC", "mean"),
         std_PR_AUC=("PR_AUC", "std"),
@@ -546,7 +546,7 @@ def summarize_ablation_results(
 
 
 def print_top5_damage(summary_df: pd.DataFrame, title: str):
-    def _top(df: pd.DataFrame, col: str) -> pd.DataFrame:
+    def _top(df: pd.DataFrame, col: str):
         return df[df["ablation_name"] != "baseline_full"].sort_values(col, ascending=False).head(5)
 
     top_pr = _top(summary_df, "PR_AUC_drop_vs_baseline")

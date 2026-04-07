@@ -38,7 +38,7 @@ CATEGORICAL_FEATURES: set[str] = {
 def _exclude_holdout_races(
     df: pd.DataFrame,
     race_ids: Sequence[int] = HOLDOUT_RACE_IDS,
-) -> pd.DataFrame:
+):
     """
     drops any rows belonging to the holdout races
     """
@@ -46,7 +46,7 @@ def _exclude_holdout_races(
         return df
     return df.loc[~df["race_id"].isin(set(map(int, race_ids)))].copy()
 
-def _read_any(path: Union[str, Path]) -> pd.DataFrame:
+def _read_any(path: Union[str, Path]):
     """
     super simple helper to load a dataframe from csv
     """
@@ -58,7 +58,7 @@ def _read_any(path: Union[str, Path]) -> pd.DataFrame:
     raise ValueError(f"Unsupported file type: {path.suffix} use .csv")
 
 
-def _normalize_compound_series(s: pd.Series, allow_null: bool) -> pd.Series:
+def _normalize_compound_series(s: pd.Series, allow_null: bool):
     """
     cleans up the tyre compound text making sure everything is uppercase and valid
     it throws an error if it sees something weird or if there are blanks when there shouldnt be
@@ -85,7 +85,7 @@ def build_feature_sequences(
     seq_len: int = 8,
     pad_left: bool = False,
     add_timestep_mask: bool = False,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+):
     """
     turns tabular lap data into sequences for our sequential models, the model making a decision at lap 8 will be fed a sequence of lap data from the 8 previous available laps (so laps 1-8 if they are all present)
     it groups by driver and race so we dont accidentally mix different races together
@@ -179,7 +179,7 @@ def build_prob_sequences_4lap(
     proba_pos: np.ndarray,
     y: pd.Series,
     seq_len: int = 4,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+):
     """
     takes the probability predictions and builds a sequence out of them
     used for implementing the VSE model that Heilmeier proposed (not included in the final model)
@@ -236,7 +236,7 @@ def build_prob_sequences_4lap(
     )
 
 # functions for loading datasets
-def load_stage1_dataset(path: Union[str, Path], exclude_holdouts: bool = True) -> pd.DataFrame:
+def load_stage1_dataset(path: Union[str, Path], exclude_holdouts: bool = True):
     """
     loads the data we need for the first stage which predicts if a pit stop happens
     cleans up the text columns and makes sure the numeric ones are actually numbers
@@ -297,7 +297,7 @@ def load_stage2_dataset(
     path: Union[str, Path],
     strict: bool = True,
     exclude_holdouts: bool = True,
-) -> pd.DataFrame:
+):
     """
     grabs the data for the second stage which predicts the next tyre compound
     it throws away rows where we dont know the next compound if strict is true
@@ -355,7 +355,7 @@ def encode_y_compound(
     df: pd.DataFrame,
     col: str = "y_compound",
     out_col: str = "y_compound_encoded",
-) -> pd.DataFrame:
+):
     """
     changes the text based compound names into integers that the models can understand, using the COMPOUND_TO_INT dictionary
     """
@@ -369,7 +369,7 @@ def make_xy(
     df: pd.DataFrame,
     target_col: str,
     drop_cols: Optional[Sequence[str]] = None,
-) -> Tuple[pd.DataFrame, pd.Series]:
+):
     """
     pulls the target column and gets rid of any columns we dont want
     """
@@ -383,7 +383,7 @@ def make_xy(
 def get_stage1_xy(
     df1: pd.DataFrame,
     drop_cols: Optional[Sequence[str]] = None,
-) -> Tuple[pd.DataFrame, pd.Series]:
+):
     """
     grabs the features and target for predicting if someone pits
     throws away stuff like race id, driver ids, and lapno since they arent features and are just used to uniquely identify entries in the dataset
@@ -400,7 +400,7 @@ def get_stage2_xy(
     df2: pd.DataFrame,
     drop_cols: Optional[Sequence[str]] = None,
     encoded_target_col: str = "y_compound_encoded",
-) -> Tuple[pd.DataFrame, pd.Series]:
+):
     """
     grabs the features and target for predicting which compound is selected
     also drops rows where y_compound isnt defined
@@ -422,7 +422,7 @@ def get_stage2_xy(
 def infer_feature_types(
     X_df: pd.DataFrame,
     force_categorical: Optional[Sequence[str]] = None,
-) -> Tuple[List[str], List[str]]:
+):
     """
     determines which columns are treated as numeric and which are treated as categorical
     """
@@ -450,7 +450,7 @@ def build_feature_sequences_from_reference(
     pad_left: bool = True,
     add_timestep_mask: bool = False,
     strict_match: bool = True,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+):
     """
     builds sequences for stage 2 sequential models. gets the laps from dataset 1 (Restricted to the attributes dataset 2 has) and the label from dataset 2
     reference_keys and X_reference come from dataset 1
@@ -609,7 +609,7 @@ def make_race_group_folds(
     group_col: str = "race_id",
     n_splits: int = 5,
     seed: int = 42,
-) -> FoldBundle:
+):
     """
     keeps all rows from the same race in the same fold
     and tries to keep folds similar in total size

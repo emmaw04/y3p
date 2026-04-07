@@ -9,7 +9,7 @@ PREDS_PATH = "runs/final_run/stage1_binary/artifacts/oof_predictions.csv"
 OUT_PATH = "runs/final_run/stage1_binary/artifacts/meta_threshold.json"
 GRID_SIZE = 1001
 
-def metrics_at_threshold(y_true: np.ndarray, y_score: np.ndarray, thr: float) -> dict:
+def metrics_at_threshold(y_true: np.ndarray, y_score: np.ndarray, thr: float):
     """
     computes evaluation metrics at a given threshold
     """
@@ -22,7 +22,7 @@ def metrics_at_threshold(y_true: np.ndarray, y_score: np.ndarray, thr: float) ->
     }
 
 
-def sweep_best_f1(y_true: np.ndarray, y_score: np.ndarray, grid_size: int = 1001) -> dict:
+def sweep_best_f1(y_true: np.ndarray, y_score: np.ndarray, grid_size: int = 1001):
     """
     searches for the best threshold
     """

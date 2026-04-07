@@ -89,7 +89,7 @@ STAGE2_FEATURE_GROUPS = {
 def make_ablation_specs(
     available_cols: List[str],
     feature_groups: Dict[str, List[str]],
-) -> Dict[str, List[str]]:
+):
     specs = {"baseline_full": available_cols.copy()}
 
     for group_name, cols_to_drop in feature_groups.items():
@@ -110,7 +110,7 @@ def run_tabular_ablation(
     n_classes: Optional[int],
     ablation_specs: Dict[str, List[str]],
     verbose: bool,
-) -> pd.DataFrame:
+):
     if stage == 1:
         base_models = get_stage1_tabular_models(cfg)
         is_binary = True
@@ -187,7 +187,7 @@ def run_seq_ablation(
     seq_len: int,
     ablation_specs: Dict[str, List[str]],
     verbose: bool,
-) -> pd.DataFrame:
+):
     if stage == 1:
         target_col = "y_pit"
         seq_models = get_stage1_sequential_models(cfg)

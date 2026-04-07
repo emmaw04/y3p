@@ -40,7 +40,7 @@ from src.models.models import (
     ModelConfig,
 )
 
-def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray) -> dict[str, float]:
+def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray):
     """calc evaluation metrics for binary classification"""
     y_pred = (proba_pos >= 0.5).astype(int)
     return {
@@ -51,7 +51,7 @@ def compute_binary_metrics(y_true: np.ndarray, proba_pos: np.ndarray) -> dict[st
         "logloss": float(log_loss(y_true, proba_pos, labels=[0, 1])),
     }
 
-def compute_multiclass_metrics(y_true: np.ndarray, proba: np.ndarray) -> dict[str, float]:
+def compute_multiclass_metrics(y_true: np.ndarray, proba: np.ndarray):
     """calc evaluation metrics for multiclassification"""
     y_pred = np.argmax(proba, axis=1)
     labels = np.arange(proba.shape[1])
@@ -61,13 +61,13 @@ def compute_multiclass_metrics(y_true: np.ndarray, proba: np.ndarray) -> dict[st
         "logloss": float(log_loss(y_true, proba, labels=labels)),
     }
 
-def summarise(metrics_list: list[dict[str, Any]], keys: list[str]) -> dict[str, float]:
+def summarise(metrics_list: list[dict[str, Any]], keys: list[str]):
     """get the mean of each metric across all folds"""
     if not metrics_list:
         return {f"{k}_mean": float("nan") for k in keys}
     return {f"{k}_mean": float(np.mean([m[k] for m in metrics_list])) for k in keys}
 
-def get_tcn_oof_preds(df1: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray]], cfg: ModelConfig) -> tuple[np.ndarray, np.ndarray]:
+def get_tcn_oof_preds(df1: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarray]], cfg: ModelConfig):
     """
     grabs out of fold predictions for the tcn model
     """
@@ -126,7 +126,7 @@ def get_tcn_oof_preds(df1: pd.DataFrame, folds: list[tuple[np.ndarray, np.ndarra
 
     return oof_pred, oof_eff_len
 
-def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool) -> np.ndarray:
+def collect_tabular_oof_preds(x, y, folds, models_dict, is_binary: bool):
     """
     trains base tabular models on the folds and grabs their out of fold predictions
     to be used as inputs by the meta model

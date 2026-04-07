@@ -7,7 +7,6 @@ outputs the final datasets in original units
 
 import os
 from pathlib import Path
-from typing import Optional
 import numpy as np
 import pandas as pd
 from imblearn.over_sampling import SMOTENC
@@ -38,7 +37,7 @@ def inverse_to_original_units(
     preprocessor: ColumnTransformer,
     num_cols: list[str],
     cat_cols: list[str],
-) -> pd.DataFrame:
+):
     """
     reverses the standard scaling and ordinal encoding so the smote outputs
     look like the original dataset again
@@ -64,7 +63,7 @@ def inverse_to_original_units(
 
     return df_inv
 
-def build_sampling_strategy(y_enc: np.ndarray, wet_mult: float, wet_label: int) -> dict[int, int]:
+def build_sampling_strategy(y_enc: np.ndarray, wet_mult: float, wet_label: int):
     """
     figures out exactly how many samples each class should have after oversampling
     brings all minority classes up to the majority count, except for wet which is multiplied
@@ -92,7 +91,7 @@ def build_sampling_strategy(y_enc: np.ndarray, wet_mult: float, wet_label: int) 
     return strategy
 
 
-def get_safe_k_neighbors(y_enc: np.ndarray, strategy: dict[int, int], k_max: int = 5) -> Optional[int]:
+def get_safe_k_neighbors(y_enc: np.ndarray, strategy: dict[int, int], k_max: int = 5):
     """fetches k neighbours safely (accounts for the wet class being so rare)"""
     if not strategy:
         return None
@@ -112,7 +111,7 @@ def build_resampled_metadata(
     y_res_enc: np.ndarray,
     le: LabelEncoder,
     seed: int,
-) -> pd.DataFrame:
+):
     """
     keeps the original metadata rows for original samples and assigns metadata
     to synthetic rows by sampling from real rows of the same target class.

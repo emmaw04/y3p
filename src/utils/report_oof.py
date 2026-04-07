@@ -71,7 +71,7 @@ def _require_columns(df: pd.DataFrame, cols: list[str], name: str):
     if missing:
         raise ValueError(f"{name} is missing columns: {missing}")
 
-def _race_slices(stage1: pd.DataFrame) -> dict[str, set[int]]:
+def _race_slices(stage1: pd.DataFrame):
     """
     builds a dictionary of each slice and the race ids of races that belong to that slice
     """
@@ -92,7 +92,7 @@ def _race_slices(stage1: pd.DataFrame) -> dict[str, set[int]]:
         "less_seen_tracks": less_seen_races,
     }
 
-def _binary_metrics(df: pd.DataFrame) -> dict[str, float]:
+def _binary_metrics(df: pd.DataFrame):
     """
     computes metrics for stage 1 of the model
     """
@@ -113,7 +113,7 @@ def _binary_metrics(df: pd.DataFrame) -> dict[str, float]:
     }
 
 
-def _multiclass_metrics(df: pd.DataFrame) -> dict[str, float]:
+def _multiclass_metrics(df: pd.DataFrame):
     """
     computes metrics for stage 2 of the model
     """
@@ -134,7 +134,7 @@ def _multiclass_metrics(df: pd.DataFrame) -> dict[str, float]:
         "logloss": float(log_loss(y_true, y_score, labels=list(range(len(COMPOUND_LABELS))))),
     }
 
-def _summarise(stage_name: str, df: pd.DataFrame, slices: dict[str, set[int]], metric_fn) -> pd.DataFrame:
+def _summarise(stage_name: str, df: pd.DataFrame, slices: dict[str, set[int]], metric_fn):
     """
     computes metrics for each slice
     """

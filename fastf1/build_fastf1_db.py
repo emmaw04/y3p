@@ -12,7 +12,7 @@ import os
 import re
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
@@ -343,7 +343,7 @@ _ABS_2018_TO_A: Dict[str, str] = {
 
 # general purpose helpers
 
-def td_to_s(val: Any) -> Optional[float]:
+def td_to_s(val: Any):
     """convert a timedelta like value to seconds float"""
     # handle nulls and nans
     if val is None or (isinstance(val, float) and np.isnan(val)):
@@ -358,7 +358,7 @@ def td_to_s(val: Any) -> Optional[float]:
         except Exception:
             return None
 
-def time_to_ms(val: Any) -> Optional[int]:
+def time_to_ms(val: Any):
     """convert a timedelta like or numeric value to integer milliseconds"""
     if val is None:
         return None
@@ -380,7 +380,7 @@ def time_to_ms(val: Any) -> Optional[int]:
     except Exception:
         return None
 
-def _safe_read_parquet(path: Path) -> Optional[pd.DataFrame]:
+def _safe_read_parquet(path: Path):
     """safely read a parquet file and normalise column names to lowercase"""
     try:
         df = pd.read_parquet(path)
@@ -397,7 +397,7 @@ def _norm(n):
     return n.lower().replace("grand prix", "").replace("gp", "").strip()
 
 # compound helpers
-def get_compound_allocation(season: int, gp_name: str) -> Optional[str]:
+def get_compound_allocation(season: int, gp_name: str):
     """retrieve the tire compound allocation for a specific race event"""
 
     # get the whole season of allocs
@@ -410,7 +410,7 @@ def get_compound_allocation(season: int, gp_name: str) -> Optional[str]:
             return compounds.replace(" ", "")
     return None
 
-def _parse_allocated_slicks(availablecompounds: str) -> List[str]:
+def _parse_allocated_slicks(availablecompounds: str):
     """parse the available compound string into a list of individual codes"""
     # handle empty strings
     if not availablecompounds:
@@ -428,7 +428,7 @@ def _parse_allocated_slicks(availablecompounds: str) -> List[str]:
         return [f"C{x}" for x in c]
     return []
 
-def _build_relative_map(slicks: List[str]) -> Dict[str, str]:
+def _build_relative_map(slicks: List[str]):
     """map absolute compound codes to relative hardness"""
     # we need exactly three slicks for this to work
     if len(slicks) != 3:
@@ -438,7 +438,7 @@ def _build_relative_map(slicks: List[str]) -> Dict[str, str]:
     # hardcode the mapping to the sorted list
     return {ordered[0]: "HARD", ordered[1]: "MEDIUM", ordered[2]: "SOFT"}
 
-def _normalise_compound(raw: Any, rel_map: Dict[str, str]) -> Optional[str]:
+def _normalise_compound(raw: Any, rel_map: Dict[str, str]):
     """
     converts the raw tyre label into the final stored compound label
     """
@@ -466,7 +466,7 @@ def _normalise_compound(raw: Any, rel_map: Dict[str, str]) -> Optional[str]:
 
     return None
 
-def _derive_availablecompounds_c(availablecompounds: str) -> Optional[str]:
+def _derive_availablecompounds_c(availablecompounds: str):
     """derive the C compound range equivalent string from an A compound"""
     # dictionary translating old to new
     a_to_c = {"A2": "C1", "A3": "C2", "A4": "C3", "A6": "C4", "A7": "C5"}
@@ -477,7 +477,7 @@ def _derive_availablecompounds_c(availablecompounds: str) -> Optional[str]:
     return ",".join(sorted(set(c_parts))) if c_parts else None
 
 # gap interval computation
-def compute_gap_interval_by_position(laps_df: pd.DataFrame) -> pd.DataFrame:
+def compute_gap_interval_by_position(laps_df: pd.DataFrame):
     """
     computes gap to leader and interval to car ahead per lap based on
     position order at lap completion
@@ -527,7 +527,7 @@ def compute_gap_interval_by_position(laps_df: pd.DataFrame) -> pd.DataFrame:
 
 # fcy phase helpers
 
-def _extract_fcy_phases(track_status_df: pd.DataFrame) -> List[Dict[str, Any]]:
+def _extract_fcy_phases(track_status_df: pd.DataFrame):
     """extract virtual safety car and safety car phases from track status data"""
     # handle missing track status df
     if track_status_df is None or track_status_df.empty:
@@ -578,7 +578,7 @@ def _extract_fcy_phases(track_status_df: pd.DataFrame) -> List[Dict[str, Any]]:
     return [p for p in phases if p["start"] is not None
             and (p["end"] is None or p["end"] > p["start"])]
 
-def _phase_times_to_laps(phases: List[Dict[str, Any]], leader_laps_df: pd.DataFrame) -> List[Dict[str, Any]]:
+def _phase_times_to_laps(phases: List[Dict[str, Any]], leader_laps_df: pd.DataFrame):
     """map fcy phase timestamps to specific lap numbers based on leader progress"""
     #if there are no fcy phases or no leader lap data return none
     if not phases or leader_laps_df is None or leader_laps_df.empty:
@@ -607,7 +607,7 @@ def _phase_times_to_laps(phases: List[Dict[str, Any]], leader_laps_df: pd.DataFr
 
 # position deduplication
 
-def _clean_positions(df: pd.DataFrame, season: int, location: str, session: str) -> Optional[pd.DataFrame]:
+def _clean_positions(df: pd.DataFrame, season: int, location: str, session: str):
     """remove duplicate positions from qualifying results to ensure uniqueness"""
     if "position" not in df.columns:
         return None
@@ -624,7 +624,7 @@ def _clean_positions(df: pd.DataFrame, season: int, location: str, session: str)
     return out
 
 # pit timing helpers
-def _precompute_pit_timing(laps_df: pd.DataFrame, group_key: str) -> pd.DataFrame:
+def _precompute_pit_timing(laps_df: pd.DataFrame, group_key: str):
     """
     Align pit timing so each pit stop is attached to the lap where pit entry occurred.
     """
@@ -700,7 +700,7 @@ def _precompute_pit_timing(laps_df: pd.DataFrame, group_key: str) -> pd.DataFram
 
 # database creation
 
-def create_database(db_path: str) -> sqlite3.Connection:
+def create_database(db_path: str):
     """initialise the sqlite database with the full schema"""
     # ensure parent dir exists
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)

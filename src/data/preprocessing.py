@@ -21,7 +21,7 @@ def build_preprocessor(
     num_cols: Sequence[str],
     cat_cols: Sequence[str],
     cfg: PreprocessConfig = PreprocessConfig(),
-) -> ColumnTransformer:
+):
     # numeric pipeline fills missing values, then scales if needed
     num_pipe = Pipeline([
         ("imputer", SimpleImputer(strategy=cfg.numeric_impute_strategy)),
@@ -49,7 +49,7 @@ def build_preprocessor(
     )
 
 
-def make_preprocessor_for_model(model_name: str, num_cols: Sequence[str], cat_cols: Sequence[str]) -> ColumnTransformer:
+def make_preprocessor_for_model(model_name: str, num_cols: Sequence[str], cat_cols: Sequence[str]):
     model = model_name.lower()
 
     # keras style models want dense inputs
@@ -72,7 +72,7 @@ def make_preprocessor_for_model(model_name: str, num_cols: Sequence[str], cat_co
     return build_preprocessor(num_cols, cat_cols)
 
 
-def make_preprocessor_for_keras(num_cols, cat_cols) -> ColumnTransformer:
+def make_preprocessor_for_keras(num_cols, cat_cols):
     num_pipe = Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
         ("scaler", StandardScaler()),

@@ -29,7 +29,6 @@ from src.data.data import (
     HOLDOUT_RACE_IDS,
     build_feature_sequences,
     build_feature_sequences_from_reference,
-    encode_y_compound,
     get_stage1_xy,
     get_stage2_xy,
     infer_feature_types,
@@ -73,7 +72,7 @@ from src.models.models import (
     make_tcn_gru_multiclass,
 )
 from sklearn.utils.class_weight import compute_class_weight
-from typing import Any, Optional
+from typing import Optional
 
 #hardcoded tuning values
 DATA_STAGE1 = "data/processed/dataset1.csv"
@@ -85,7 +84,7 @@ OUTDIR = "runs/tuning"
 SEED = 42
 N_SPLITS = 5
 
-def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> dict[str, float]:
+def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool):
     """calculates evaluation metrics"""
     if is_binary:
         proba = np.asarray(proba)
@@ -139,7 +138,7 @@ def compute_metrics(y_true: np.ndarray, proba: np.ndarray, is_binary: bool) -> d
             "logloss": float(log_loss(y_true, proba_norm, labels=labels)),
         }
 
-def mean_metric_dict(metric_dicts: list[dict[str, float]]) -> dict[str, float]:
+def mean_metric_dict(metric_dicts: list[dict[str, float]]):
     """
     computes average metrics across folds
     """
@@ -149,7 +148,7 @@ def mean_metric_dict(metric_dicts: list[dict[str, float]]) -> dict[str, float]:
         for k in keys
     }
 
-def suggest_rf_params(trial: optuna.Trial) -> dict[str, Any]:
+def suggest_rf_params(trial: optuna.Trial):
     """
     search space for random forest model
     """
@@ -163,7 +162,7 @@ def suggest_rf_params(trial: optuna.Trial) -> dict[str, Any]:
         "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
     }
 
-def suggest_xgb_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
+def suggest_xgb_params(trial: optuna.Trial, is_binary: bool):
     """
     search space for xgboost model
     """
@@ -180,7 +179,7 @@ def suggest_xgb_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
         "max_bin": trial.suggest_categorical("max_bin", [128, 256]),
     }
 
-def suggest_svm_params(trial: optuna.Trial) -> dict[str, Any]:
+def suggest_svm_params(trial: optuna.Trial):
     """
     search space for svm model
     """
@@ -190,7 +189,7 @@ def suggest_svm_params(trial: optuna.Trial) -> dict[str, Any]:
         "class_weight": trial.suggest_categorical("class_weight", [None, "balanced"]),
     }
 
-def suggest_ann_params(trial: optuna.Trial) -> dict[str, Any]:
+def suggest_ann_params(trial: optuna.Trial):
     """
     search space for ann model
     """
@@ -203,7 +202,7 @@ def suggest_ann_params(trial: optuna.Trial) -> dict[str, Any]:
         "batch_size": trial.suggest_categorical("batch_size", [32, 64, 128, 256]),
     }
 
-def build_cached_folds(x: pd.DataFrame, y: pd.Series, folds: list, pre_name: str) -> list:
+def build_cached_folds(x: pd.DataFrame, y: pd.Series, folds: list, pre_name: str):
     """precomputes all tabular preprocessing so trials run much faster"""
     num_cols, cat_cols = infer_feature_types(x)
     base_pre = make_preprocessor_for_model(pre_name, num_cols=num_cols, cat_cols=cat_cols) #fits preprocessor on training data only
@@ -233,7 +232,7 @@ def objective_tabular(
     is_binary: bool,
     n_classes: int,
     seed: int,
-) -> float:
+):
     """the function that optuna optimises for tabular models"""
     #samples hyperparameters for the chosen model
     if model_name == "rf":
@@ -338,7 +337,7 @@ def objective_tabular(
     trial.set_user_attr("cv_metrics", mean_metrics)
     return mean_metrics["logloss"] #returns mean log loss
 
-def suggest_seq_params(trial: optuna.Trial, model_name: str, is_binary: bool) -> dict[str, Any]:
+def suggest_seq_params(trial: optuna.Trial, model_name: str, is_binary: bool):
     """
     search space for sequence models
     """
@@ -368,7 +367,7 @@ def suggest_seq_params(trial: optuna.Trial, model_name: str, is_binary: bool) ->
 
     return params
 
-def build_cached_seq_folds(df: pd.DataFrame, x: pd.DataFrame, y: pd.Series, folds: list, seq_len: int) -> list:
+def build_cached_seq_folds(df: pd.DataFrame, x: pd.DataFrame, y: pd.Series, folds: list, seq_len: int):
     """precomputes and caches lap sequences for our sequential models so optuna runs much faster without recalculating every trial
     sequences are for stage 1 models
     """
@@ -417,7 +416,7 @@ def build_cached_stage2_seq_folds_from_reference(
     y_target: pd.Series,
     folds: list,
     seq_len: int,
-) -> list:
+):
     """
     builds cached sequence folds for stage 2 sequence models
 
@@ -513,7 +512,7 @@ def _as_dense(x):
     return x.toarray() if hasattr(x, "toarray") else np.asarray(x)
 
 
-def _binary_pos_col(proba: np.ndarray) -> np.ndarray:
+def _binary_pos_col(proba: np.ndarray):
     """
     standardises binary probabilities to a single positive class column
     """
@@ -527,7 +526,7 @@ def _binary_pos_col(proba: np.ndarray) -> np.ndarray:
     raise ValueError(f"unexpected binary proba shape: {proba.shape}")
 
 
-def _expand_multiclass_proba(proba: np.ndarray, classes_: np.ndarray, n_classes: int) -> np.ndarray:
+def _expand_multiclass_proba(proba: np.ndarray, classes_: np.ndarray, n_classes: int):
     """
     in the case of the compound class, expands probability outputs back to the full class set if a model was trained on a fold with missing classes (the wet compound)
     """
@@ -537,7 +536,7 @@ def _expand_multiclass_proba(proba: np.ndarray, classes_: np.ndarray, n_classes:
         full[:, int(cls)] = proba[:, j]
     return full
 
-def suggest_meta_lr_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
+def suggest_meta_lr_params(trial: optuna.Trial, is_binary: bool):
     """
     search space for logistic regression meta learner
     """
@@ -548,7 +547,7 @@ def suggest_meta_lr_params(trial: optuna.Trial, is_binary: bool) -> dict[str, An
     }
 
 
-def suggest_meta_mlp_params(trial: optuna.Trial) -> dict[str, Any]:
+def suggest_meta_mlp_params(trial: optuna.Trial):
     """
     search space for MLP meta learner
     """
@@ -563,7 +562,7 @@ def suggest_meta_mlp_params(trial: optuna.Trial) -> dict[str, Any]:
     }
 
 
-def suggest_meta_xgb_params(trial: optuna.Trial, is_binary: bool) -> dict[str, Any]:
+def suggest_meta_xgb_params(trial: optuna.Trial, is_binary: bool):
     """
     search space for xgboost meta learner
     """
@@ -587,8 +586,7 @@ def build_meta_folds(
     is_binary: bool,
     n_classes: int,
     seed: int,
-    reference_df: Optional[pd.DataFrame] = None,
-) -> list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+    reference_df: Optional[pd.DataFrame] = None):
     """
     builds the training data for stacked models using the OOF probabilities given by the base learners
 
@@ -700,7 +698,7 @@ def objective_meta(
     is_binary: bool,
     n_classes: int,
     seed: int,
-) -> float:
+):
     """
     the function that optuna optimises for meta models
     """
@@ -759,7 +757,7 @@ def objective_meta(
     trial.set_user_attr("cv_metrics", mean_metrics)
     return mean_metrics["logloss"]
 
-def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_binary: bool, n_classes: int, seed: int) -> float:
+def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_binary: bool, n_classes: int, seed: int):
     """
     the function that optuna optimises for sequence models
     """
@@ -843,7 +841,7 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
 def filter_stage2_to_reference(
     target_df: pd.DataFrame,
     reference_df: pd.DataFrame,
-) -> pd.DataFrame:
+):
     """
     keep only stage 2 pit-event rows whose (race_id, driver_id, lapno)
     exist in the lap-level reference dataframe

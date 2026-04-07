@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Dict
+from typing import Callable
 from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -21,7 +21,7 @@ class ModelConfig:
     n_jobs: int = -1
     use_class_weight: bool = False
 
-def build_model_pipeline(preprocessor, estimator: BaseEstimator) -> Pipeline:
+def build_model_pipeline(preprocessor, estimator: BaseEstimator):
     """wraps preprocessing and the estimator together so each fold fits both from scratch"""
     return Pipeline([
         ("preprocess", preprocessor),
@@ -36,7 +36,7 @@ def _make_keras_classifier(
     monitor: str,
     mode: str,
     patience: int,
-) -> BaseEstimator:
+):
     """shared scikeras wrapper so the keras factories stay short and readable"""
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -62,7 +62,7 @@ def _compile_binary_seq_model(
     use_focal: bool = False,
     focal_gamma: float = 1.0,
     focal_alpha: float = 0.5,
-) -> "keras.Model":
+):
     """compiles a binary sequence model with the metrics used in stage 1"""
 
     if use_focal:
@@ -83,7 +83,7 @@ def _compile_binary_seq_model(
 def _compile_multiclass_seq_model(
     model: "keras.Model",
     learning_rate: float = 1e-3,
-) -> "keras.Model":
+):
     """compiles a multiclass sequence model with the metric used in stage 2"""
 
     model.compile(
@@ -117,7 +117,7 @@ def _tcn_residual_block(x, filters: int, kernel_size: int, dilation: int, dropou
 
 # stage 1 tabular factories
 
-def make_stage1_rf(cfg: ModelConfig) -> BaseEstimator:
+def make_stage1_rf(cfg: ModelConfig):
     """returns the tuned random forest for stage 1
     """
 
@@ -134,7 +134,7 @@ def make_stage1_rf(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_stage1_xgb(cfg: ModelConfig) -> BaseEstimator:
+def make_stage1_xgb(cfg: ModelConfig):
     """returns the tuned xgboost model for stage 1
     """
 
@@ -157,7 +157,7 @@ def make_stage1_xgb(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_stage1_svm(cfg: ModelConfig) -> BaseEstimator:
+def make_stage1_svm(cfg: ModelConfig):
     """returns the stage 1 svm
     """
 
@@ -170,10 +170,10 @@ def make_stage1_svm(cfg: ModelConfig) -> BaseEstimator:
         random_state=cfg.random_state,
     )
 
-def make_stage1_ann(cfg: ModelConfig) -> BaseEstimator:
+def make_stage1_ann(cfg: ModelConfig):
     """returns the tuned stage 1 artificial neural network"""
 
-    def build_ann(input_dim: int) -> "keras.Model":
+    def build_ann(input_dim: int):
         model = keras.Sequential([
             layers.Input(shape=(input_dim,)),
             layers.Dense(32, activation="relu", kernel_regularizer=keras.regularizers.l2(0.0003129707937151823)),
@@ -207,7 +207,7 @@ def make_stage1_ann(cfg: ModelConfig) -> BaseEstimator:
 
 # stage 1 sequential factories
 
-def make_tcn_binary(cfg: ModelConfig) -> BaseEstimator:
+def make_tcn_binary(cfg: ModelConfig):
     """Stage 1 TCN classifier."""
 
     def model_fn(meta):
@@ -254,7 +254,7 @@ def make_tcn_binary(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_tcn_gru_binary(cfg: ModelConfig) -> BaseEstimator:
+def make_tcn_gru_binary(cfg: ModelConfig):
     """Stage 1 TCN-GRU classifier."""
 
     def model_fn(meta):
@@ -311,7 +311,7 @@ def make_tcn_gru_binary(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_lstm_binary(cfg: ModelConfig) -> BaseEstimator:
+def make_lstm_binary(cfg: ModelConfig):
     """Stage 1 LSTM classifier."""
 
     def model_fn(meta):
@@ -364,7 +364,7 @@ def make_lstm_binary(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_gru_binary(cfg: ModelConfig) -> BaseEstimator:
+def make_gru_binary(cfg: ModelConfig):
     """Stage 1 GRU classifier."""
 
     def model_fn(meta):
@@ -417,7 +417,7 @@ def make_gru_binary(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_hybrid_vse_binary(cfg: ModelConfig) -> BaseEstimator:
+def make_hybrid_vse_binary(cfg: ModelConfig):
     """Stage 1 hybrid VSE classifier."""
 
     def model_fn(meta):
@@ -471,7 +471,7 @@ def make_hybrid_vse_binary(cfg: ModelConfig) -> BaseEstimator:
 
 # stage 1 registries
 
-def get_stage1_tabular_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
+def get_stage1_tabular_models(cfg: ModelConfig):
     """registry for the stage 1 tabular models"""
     return {
         "rf": make_stage1_rf(cfg),
@@ -480,7 +480,7 @@ def get_stage1_tabular_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
         "ann": make_stage1_ann(cfg),
     }
 
-def get_stage1_sequential_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
+def get_stage1_sequential_models(cfg: ModelConfig):
     """registry for the stage 1 sequence models"""
     return {
         "tcn": make_tcn_binary(cfg),
@@ -491,11 +491,11 @@ def get_stage1_sequential_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
     }
 
 # stage 2 tabular factories
-def make_stage2_ffnn(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
+def make_stage2_ffnn(cfg: ModelConfig, n_classes: int):
     """the stage 2 feed forward network
     """
 
-    def build_ffnn(input_dim: int) -> "keras.Model":
+    def build_ffnn(input_dim: int):
         model = keras.Sequential([
             layers.Input(shape=(input_dim,)),
             layers.Dense(32, activation="relu", kernel_regularizer=keras.regularizers.l2(1.161257222624932e-05)),
@@ -525,7 +525,7 @@ def make_stage2_ffnn(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
     )
 
 
-def make_stage2_rf(cfg: ModelConfig) -> BaseEstimator:
+def make_stage2_rf(cfg: ModelConfig):
     """the tuned random forest for stage 2
     """
 
@@ -542,7 +542,7 @@ def make_stage2_rf(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_stage2_svm(cfg: ModelConfig) -> BaseEstimator:
+def make_stage2_svm(cfg: ModelConfig):
     """stage 2 svm
     """
     return SVC(
@@ -556,7 +556,7 @@ def make_stage2_svm(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_stage2_xgb(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
+def make_stage2_xgb(cfg: ModelConfig, n_classes: int):
     """xgboost model for stage 2"""
 
     return XGBClassifier(
@@ -579,7 +579,7 @@ def make_stage2_xgb(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
 
 # stage 2 sequential model factories
 
-def make_tcn_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
+def make_tcn_multiclass(cfg: ModelConfig, n_classes: int):
     """Stage 2 TCN classifier."""
 
     def model_fn(meta):
@@ -625,7 +625,7 @@ def make_tcn_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
 
 
 
-def make_tcn_gru_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
+def make_tcn_gru_multiclass(cfg: ModelConfig, n_classes: int):
     """Stage 2 TCN-GRU classifier."""
 
     def model_fn(meta):
@@ -679,7 +679,7 @@ def make_tcn_gru_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
 
 
 
-def make_lstm_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
+def make_lstm_multiclass(cfg: ModelConfig, n_classes: int):
     """Stage 2 LSTM classifier."""
 
     def model_fn(meta):
@@ -732,7 +732,7 @@ def make_lstm_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
     )
 
 
-def make_gru_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
+def make_gru_multiclass(cfg: ModelConfig, n_classes: int):
     """Stage 2 GRU classifier."""
 
     def model_fn(meta):
@@ -786,7 +786,7 @@ def make_gru_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
 
 # stage 2 registries
 
-def get_stage2_tabular_models(cfg: ModelConfig, n_classes: int) -> Dict[str, BaseEstimator]:
+def get_stage2_tabular_models(cfg: ModelConfig, n_classes: int):
     """tabular models registry"""
     return {
         "ann": make_stage2_ffnn(cfg, n_classes),
@@ -796,7 +796,7 @@ def get_stage2_tabular_models(cfg: ModelConfig, n_classes: int) -> Dict[str, Bas
     }
 
 
-def get_stage2_sequential_models(cfg: ModelConfig, n_classes: int) -> Dict[str, BaseEstimator]:
+def get_stage2_sequential_models(cfg: ModelConfig, n_classes: int):
     """sequential models registry"""
     return {
         "tcn": make_tcn_multiclass(cfg, n_classes),
@@ -808,7 +808,7 @@ def get_stage2_sequential_models(cfg: ModelConfig, n_classes: int) -> Dict[str, 
 
 # meta learner factories
 
-def make_meta_binary_mlp(cfg: ModelConfig) -> BaseEstimator:
+def make_meta_binary_mlp(cfg: ModelConfig):
     """binary mlp meta learner"""
 
     return MLPClassifier(
@@ -823,7 +823,7 @@ def make_meta_binary_mlp(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_meta_binary_lr(cfg: ModelConfig) -> BaseEstimator:
+def make_meta_binary_lr(cfg: ModelConfig):
     """binary logistic regression meta learner"""
 
     return LogisticRegression(
@@ -836,7 +836,7 @@ def make_meta_binary_lr(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_meta_binary_xgb(cfg: ModelConfig) -> BaseEstimator:
+def make_meta_binary_xgb(cfg: ModelConfig):
     """binary xgboost meta learner"""
 
     return XGBClassifier(
@@ -855,7 +855,7 @@ def make_meta_binary_xgb(cfg: ModelConfig) -> BaseEstimator:
         random_state=cfg.random_state,
     )
 
-def make_meta_multiclass_mlp(cfg: ModelConfig) -> BaseEstimator:
+def make_meta_multiclass_mlp(cfg: ModelConfig):
     """multiclass mlp meta learner"""
     return MLPClassifier(
         hidden_layer_sizes=(32,),
@@ -868,7 +868,7 @@ def make_meta_multiclass_mlp(cfg: ModelConfig) -> BaseEstimator:
         random_state=cfg.random_state,
     )
 
-def make_meta_multiclass_lr(cfg: ModelConfig) -> BaseEstimator:
+def make_meta_multiclass_lr(cfg: ModelConfig):
     """multiclass logistic regression meta learner"""
     return LogisticRegression(
         penalty="l2",
@@ -880,7 +880,7 @@ def make_meta_multiclass_lr(cfg: ModelConfig) -> BaseEstimator:
         random_state=cfg.random_state,
     )
 
-def make_meta_multiclass_xgb(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
+def make_meta_multiclass_xgb(cfg: ModelConfig, n_classes: int):
     """multiclass xgboost meta learner"""
     return XGBClassifier(
         n_estimators=338,
@@ -900,7 +900,7 @@ def make_meta_multiclass_xgb(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
     )
 
 #meta learner registries
-def get_meta_binary_learners(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
+def get_meta_binary_learners(cfg: ModelConfig):
     """registry for the binary meta learners"""
     return {
         "mlp": make_meta_binary_mlp(cfg),
@@ -908,7 +908,7 @@ def get_meta_binary_learners(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
         "xgb": make_meta_binary_xgb(cfg),
     }
 
-def get_meta_multiclass_learners(cfg: ModelConfig, n_classes: int) -> Dict[str, BaseEstimator]:
+def get_meta_multiclass_learners(cfg: ModelConfig, n_classes: int):
     """registry for the multiclass meta learners"""
     return {
         "mlp": make_meta_multiclass_mlp(cfg),
@@ -934,7 +934,7 @@ def build_stage1_rf(
     max_features,
     bootstrap: bool = True,
     class_weight=None,
-) -> BaseEstimator:
+):
     return RandomForestClassifier(
         n_estimators=n_estimators,
         max_depth=max_depth,
@@ -961,7 +961,7 @@ def build_stage1_xgb(
     reg_lambda: float,
     max_bin: int = 256,
     scale_pos_weight: float = 1.0,
-) -> BaseEstimator:
+):
     return XGBClassifier(
         tree_method="hist",
         n_estimators=n_estimators,
@@ -987,7 +987,7 @@ def build_stage1_svm(
     C: float,
     gamma: float,
     class_weight=None,
-) -> BaseEstimator:
+):
     return SVC(
         C=C,
         kernel="rbf",
@@ -1008,7 +1008,7 @@ def build_stage1_ann(
     batch_size: int,
     epochs: int = 80,
     patience: int = 10,
-) -> BaseEstimator:
+):
     def model_fn(meta):
         keras.utils.set_random_seed(cfg.random_state)
         input_dim = meta["n_features_in_"]
@@ -1062,7 +1062,7 @@ def build_stage2_ffnn(
     batch_size: int,
     epochs: int = 60,
     patience: int = 5,
-) -> BaseEstimator:
+):
     def model_fn(meta):
         keras.utils.set_random_seed(cfg.random_state)
         input_dim = meta["n_features_in_"]
@@ -1104,7 +1104,7 @@ def build_stage2_rf(
     max_features,
     bootstrap: bool = True,
     class_weight=None,
-) -> BaseEstimator:
+):
     return RandomForestClassifier(
         n_estimators=n_estimators,
         max_depth=max_depth,
@@ -1123,7 +1123,7 @@ def build_stage2_svm(
     C: float,
     gamma: float,
     class_weight=None,
-) -> BaseEstimator:
+):
     return SVC(
         C=C,
         kernel="rbf",
@@ -1148,7 +1148,7 @@ def build_stage2_xgb(
     reg_alpha: float,
     reg_lambda: float,
     max_bin: int = 256,
-) -> BaseEstimator:
+):
     return XGBClassifier(
         tree_method="hist",
         n_estimators=n_estimators,
@@ -1181,7 +1181,7 @@ def _build_tcn_binary(
     pooling: str = "last",
     focal_gamma: float = 1.0,
     focal_alpha: float = 0.75,
-) -> "keras.Model":
+):
     x_in = layers.Input(shape=(int(seq_len), int(n_features)))
 
     x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
@@ -1224,7 +1224,7 @@ def _build_tcn_gru_binary(
     dropout: float = 0.05,
     rnn_units: int = 16,
     rnn_dropout: float = 0.27,
-) -> "keras.Model":
+):
     x_in = layers.Input(shape=(int(seq_len), int(n_features)))
 
     x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
@@ -1264,7 +1264,7 @@ def _build_lstm_binary(
     learning_rate: float = 1e-3,
     rnn_units: int = 64,
     rnn_dropout: float = 0.04,
-) -> "keras.Model":
+):
     x_in = layers.Input(shape=(int(seq_len), int(n_features)))
 
     x = layers.LSTM(
@@ -1300,7 +1300,7 @@ def _build_gru_binary(
     learning_rate: float = 1e-3,
     rnn_units: int = 64,
     rnn_dropout: float = 0.01,
-) -> "keras.Model":
+):
     x_in = layers.Input(shape=(int(seq_len), int(n_features)))
 
     x = layers.GRU(
@@ -1341,7 +1341,7 @@ def _build_vse_hybrid_binary(
     learning_rate: float = 1e-3,
     rnn_units: int = 32,
     rnn_dropout: float = 0.2,
-) -> "keras.Model":
+):
     x_in = layers.Input(shape=(int(seq_len), int(n_features)))
     reg = keras.regularizers.l2(5e-4)
 
@@ -1380,7 +1380,7 @@ def _build_tcn_multiclass(
     kernel_size: int = 3,
     dropout: float = 0.3,
     pooling: str = "last",
-) -> "keras.Model":
+):
     x_in = layers.Input(shape=(int(seq_len), int(n_features)))
 
     x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
@@ -1421,7 +1421,7 @@ def _build_tcn_gru_multiclass(
     dropout: float = 0.14,
     rnn_units: int = 64,
     rnn_dropout: float = 0.001,
-) -> "keras.Model":
+):
     x_in = layers.Input(shape=(int(seq_len), int(n_features)))
 
     x = layers.Conv1D(filters, kernel_size, padding="causal", dilation_rate=1)(x_in)
@@ -1464,7 +1464,7 @@ def _build_lstm_multiclass(
     learning_rate: float = 1e-3,
     rnn_units: int = 32,
     rnn_dropout: float = 0.26,
-) -> "keras.Model":
+):
     x_in = layers.Input(shape=(int(seq_len), int(n_features)))
 
     x = layers.LSTM(
@@ -1501,7 +1501,7 @@ def _build_gru_multiclass(
     learning_rate: float = 1e-3,
     rnn_units: int = 32,
     rnn_dropout: float = 0.17,
-) -> "keras.Model":
+):
     x_in = layers.Input(shape=(int(seq_len), int(n_features)))
 
     x = layers.GRU(
@@ -1544,7 +1544,7 @@ def build_meta_binary_mlp(
     alpha: float,
     learning_rate_init: float,
     batch_size: int,
-) -> BaseEstimator:
+):
     return MLPClassifier(
         hidden_layer_sizes=hidden_layer_sizes,
         activation="relu",
@@ -1562,7 +1562,7 @@ def build_meta_binary_lr(
     C: float,
     class_weight=None,
     max_iter: int = 4000,
-) -> BaseEstimator:
+):
     return LogisticRegression(
         penalty="l2",
         C=C,
@@ -1584,7 +1584,7 @@ def build_meta_binary_xgb(
     reg_lambda: float,
     min_child_weight: int,
     gamma: float,
-) -> BaseEstimator:
+):
     return XGBClassifier(
         tree_method="hist",
         n_estimators=n_estimators,
@@ -1609,7 +1609,7 @@ def build_meta_multiclass_mlp(
     alpha: float,
     learning_rate_init: float,
     batch_size: int,
-) -> BaseEstimator:
+):
     return MLPClassifier(
         hidden_layer_sizes=hidden_layer_sizes,
         activation="relu",
@@ -1626,7 +1626,7 @@ def build_meta_multiclass_lr(
     C: float,
     class_weight=None,
     max_iter: int = 6000,
-) -> BaseEstimator:
+):
     return LogisticRegression(
         penalty="l2",
         C=C,
@@ -1649,7 +1649,7 @@ def build_meta_multiclass_xgb(
     reg_lambda: float,
     min_child_weight: int,
     gamma: float,
-) -> BaseEstimator:
+):
     return XGBClassifier(
         tree_method="hist",
         n_estimators=n_estimators,
