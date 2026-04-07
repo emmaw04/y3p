@@ -1,4 +1,3 @@
-from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Dict
 from sklearn.base import BaseEstimator
@@ -13,7 +12,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 # shared helpers
-@dataclass(frozen=True)
+@dataclass
 class ModelConfig:
     """small config object used across the model factories
     ensures seed number is consistent across classes
@@ -32,7 +31,6 @@ def build_model_pipeline(preprocessor, estimator: BaseEstimator) -> Pipeline:
 def _make_keras_classifier(
     cfg: ModelConfig,
     model_fn: Callable,
-    *,
     epochs: int,
     batch_size: int,
     monitor: str,
@@ -60,7 +58,6 @@ def _make_keras_classifier(
 
 def _compile_binary_seq_model(
     model: "keras.Model",
-    *,
     learning_rate: float = 1e-3,
     use_focal: bool = False,
     focal_gamma: float = 1.0,
@@ -85,7 +82,6 @@ def _compile_binary_seq_model(
 
 def _compile_multiclass_seq_model(
     model: "keras.Model",
-    *,
     learning_rate: float = 1e-3,
 ) -> "keras.Model":
     """compiles a multiclass sequence model with the metric used in stage 2"""
@@ -98,7 +94,7 @@ def _compile_multiclass_seq_model(
     return model
 
 
-def _tcn_residual_block(x, *, filters: int, kernel_size: int, dilation: int, dropout: float):
+def _tcn_residual_block(x, filters: int, kernel_size: int, dilation: int, dropout: float):
     """basic residual block used by the tcn models"""
 
     shortcut = x
@@ -202,11 +198,11 @@ def make_stage1_ann(cfg: ModelConfig) -> BaseEstimator:
     return _make_keras_classifier(
         cfg,
         model_fn,
-        epochs=80,
-        batch_size=64,
-        monitor="val_pr_auc",
-        mode="max",
-        patience=10,
+        80,
+        64,
+        "val_pr_auc",
+        "max",
+        10,
     )
 
 # stage 1 sequential factories
@@ -225,13 +221,7 @@ def make_tcn_binary(cfg: ModelConfig) -> BaseEstimator:
         x = layers.Activation("relu")(x)
 
         for d in [1, 2, 4, 8]:
-            x = _tcn_residual_block(
-                x,
-                filters=64,
-                kernel_size=4,
-                dilation=d,
-                dropout=0.15117968234330592,
-            )
+            x = _tcn_residual_block( x, 64, 4, d, 0.15117968234330592)
 
         x = layers.Lambda(lambda z: z[:, -1, :])(x)
         x = layers.Dense(64, activation="relu")(x)
@@ -240,10 +230,10 @@ def make_tcn_binary(cfg: ModelConfig) -> BaseEstimator:
 
         return _compile_binary_seq_model(
             keras.Model(x_in, y_out),
-            learning_rate=0.0009484229044417891,
-            use_focal=True,
-            focal_gamma=1.0,
-            focal_alpha=0.75,
+            0.0009484229044417891,
+            True,
+            1.0,
+            0.75,
         )
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -280,10 +270,10 @@ def make_tcn_gru_binary(cfg: ModelConfig) -> BaseEstimator:
         for d in [1, 2, 4, 8]:
             x = _tcn_residual_block(
                 x,
-                filters=64,
-                kernel_size=2,
-                dilation=d,
-                dropout=0.0444341795866854,
+                64,
+                2,
+                d,
+                0.0444341795866854,
             )
 
         x = layers.GRU(
@@ -300,7 +290,7 @@ def make_tcn_gru_binary(cfg: ModelConfig) -> BaseEstimator:
 
         return _compile_binary_seq_model(
             keras.Model(x_in, y_out),
-            learning_rate=0.0014409354395782717,
+            0.0014409354395782717,
         )
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -353,7 +343,7 @@ def make_lstm_binary(cfg: ModelConfig) -> BaseEstimator:
 
         return _compile_binary_seq_model(
             keras.Model(x_in, y_out),
-            learning_rate=0.0007454170873871039,
+            0.0007454170873871039,
         )
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -406,7 +396,7 @@ def make_gru_binary(cfg: ModelConfig) -> BaseEstimator:
 
         return _compile_binary_seq_model(
             keras.Model(x_in, y_out),
-            learning_rate=0.0009731654271003453,
+            0.0009731654271003453,
         )
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -459,7 +449,7 @@ def make_hybrid_vse_binary(cfg: ModelConfig) -> BaseEstimator:
 
         return _compile_binary_seq_model(
             keras.Model(x_in, y_out),
-            learning_rate=1e-3,
+            1e-3,
         )
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -501,7 +491,7 @@ def get_stage1_sequential_models(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
     }
 
 # stage 2 tabular factories
-def make_stage2_ffnn(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
+def make_stage2_ffnn(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
     """the stage 2 feed forward network
     """
 
@@ -527,11 +517,11 @@ def make_stage2_ffnn(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     return _make_keras_classifier(
         cfg,
         model_fn,
-        epochs=40,
-        batch_size=64,
-        monitor="val_loss",
-        mode="min",
-        patience=10,
+        40,
+        64,
+        "val_loss",
+        "min",
+        10,
     )
 
 
@@ -566,9 +556,9 @@ def make_stage2_svm(cfg: ModelConfig) -> BaseEstimator:
     )
 
 
-def make_stage2_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
+def make_stage2_xgb(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
     """xgboost model for stage 2"""
- 
+
     return XGBClassifier(
         n_estimators=444,
         max_depth=4,
@@ -589,7 +579,7 @@ def make_stage2_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
 
 # stage 2 sequential model factories
 
-def make_tcn_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
+def make_tcn_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
     """Stage 2 TCN classifier."""
 
     def model_fn(meta):
@@ -603,14 +593,7 @@ def make_tcn_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
         x = layers.Activation("relu")(x)
 
         for d in [1, 2, 4, 8]:
-            x = _tcn_residual_block(
-                x,
-                filters=32,
-                kernel_size=3,
-                dilation=d,
-                dropout=0.3189536660208673,
-            )
-
+            x = _tcn_residual_block(x,32,3,d,0.3189536660208673)
         x = layers.Lambda(lambda z: z[:, -1, :])(x)
         x = layers.Dense(64, activation="relu")(x)
         x = layers.Dropout(0.2)(x)
@@ -618,7 +601,7 @@ def make_tcn_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
 
         return _compile_multiclass_seq_model(
             keras.Model(x_in, y_out),
-            learning_rate=0.0012208142144753873,
+            0.0012208142144753873,
         )
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -639,7 +622,10 @@ def make_tcn_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     )
 
 
-def make_tcn_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
+
+
+
+def make_tcn_gru_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
     """Stage 2 TCN-GRU classifier."""
 
     def model_fn(meta):
@@ -653,14 +639,7 @@ def make_tcn_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimato
         x = layers.Activation("relu")(x)
 
         for d in [1, 2, 4, 8]:
-            x = _tcn_residual_block(
-                x,
-                filters=32,
-                kernel_size=3,
-                dilation=d,
-                dropout=0.1421548856945066,
-            )
-
+            x = _tcn_residual_block(x, 32, 3, d, 0.1421548856945066)
         x = layers.GRU(
             64,
             return_sequences=False,
@@ -675,7 +654,7 @@ def make_tcn_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimato
 
         return _compile_multiclass_seq_model(
             keras.Model(x_in, y_out),
-            learning_rate=0.0006671159654368591,
+            0.0006671159654368591,
         )
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -696,7 +675,11 @@ def make_tcn_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimato
     )
 
 
-def make_lstm_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
+
+
+
+
+def make_lstm_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
     """Stage 2 LSTM classifier."""
 
     def model_fn(meta):
@@ -728,7 +711,7 @@ def make_lstm_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
 
         return _compile_multiclass_seq_model(
             keras.Model(x_in, y_out),
-            learning_rate=0.0008962278983461516,
+            0.0008962278983461516,
         )
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -749,7 +732,7 @@ def make_lstm_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
     )
 
 
-def make_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
+def make_gru_multiclass(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
     """Stage 2 GRU classifier."""
 
     def model_fn(meta):
@@ -781,7 +764,7 @@ def make_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
 
         return _compile_multiclass_seq_model(
             keras.Model(x_in, y_out),
-            learning_rate=0.0008375958618273803,
+            0.0008375958618273803,
         )
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -803,23 +786,23 @@ def make_gru_multiclass(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
 
 # stage 2 registries
 
-def get_stage2_tabular_models(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
+def get_stage2_tabular_models(cfg: ModelConfig, n_classes: int) -> Dict[str, BaseEstimator]:
     """tabular models registry"""
     return {
-        "ann": make_stage2_ffnn(cfg, n_classes=n_classes),
+        "ann": make_stage2_ffnn(cfg, n_classes),
         "rf": make_stage2_rf(cfg),
         "svm": make_stage2_svm(cfg),
-        "xgb": make_stage2_xgb(cfg, n_classes=n_classes),
+        "xgb": make_stage2_xgb(cfg, n_classes),
     }
 
 
-def get_stage2_sequential_models(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
+def get_stage2_sequential_models(cfg: ModelConfig, n_classes: int) -> Dict[str, BaseEstimator]:
     """sequential models registry"""
     return {
-        "tcn": make_tcn_multiclass(cfg, n_classes=n_classes),
-        "tcn_gru": make_tcn_gru_multiclass(cfg, n_classes=n_classes),
-        "lstm": make_lstm_multiclass(cfg, n_classes=n_classes),
-        "gru": make_gru_multiclass(cfg, n_classes=n_classes),
+        "tcn": make_tcn_multiclass(cfg, n_classes),
+        "tcn_gru": make_tcn_gru_multiclass(cfg, n_classes),
+        "lstm": make_lstm_multiclass(cfg, n_classes),
+        "gru": make_gru_multiclass(cfg, n_classes),
     }
 
 
@@ -897,7 +880,7 @@ def make_meta_multiclass_lr(cfg: ModelConfig) -> BaseEstimator:
         random_state=cfg.random_state,
     )
 
-def make_meta_multiclass_xgb(cfg: ModelConfig, *, n_classes: int) -> BaseEstimator:
+def make_meta_multiclass_xgb(cfg: ModelConfig, n_classes: int) -> BaseEstimator:
     """multiclass xgboost meta learner"""
     return XGBClassifier(
         n_estimators=338,
@@ -925,12 +908,12 @@ def get_meta_binary_learners(cfg: ModelConfig) -> Dict[str, BaseEstimator]:
         "xgb": make_meta_binary_xgb(cfg),
     }
 
-def get_meta_multiclass_learners(cfg: ModelConfig, *, n_classes: int) -> Dict[str, BaseEstimator]:
+def get_meta_multiclass_learners(cfg: ModelConfig, n_classes: int) -> Dict[str, BaseEstimator]:
     """registry for the multiclass meta learners"""
     return {
         "mlp": make_meta_multiclass_mlp(cfg),
         "lr": make_meta_multiclass_lr(cfg),
-        "xgb": make_meta_multiclass_xgb(cfg, n_classes=n_classes),
+        "xgb": make_meta_multiclass_xgb(cfg, n_classes),
     }
 
 
@@ -944,7 +927,6 @@ def get_meta_multiclass_learners(cfg: ModelConfig, *, n_classes: int) -> Dict[st
 
 def build_stage1_rf(
     cfg: ModelConfig,
-    *,
     n_estimators: int,
     max_depth,
     min_samples_leaf: int,
@@ -968,7 +950,6 @@ def build_stage1_rf(
 
 def build_stage1_xgb(
     cfg: ModelConfig,
-    *,
     n_estimators: int,
     learning_rate: float,
     max_depth: int,
@@ -1003,7 +984,6 @@ def build_stage1_xgb(
 
 def build_stage1_svm(
     cfg: ModelConfig,
-    *,
     C: float,
     gamma: float,
     class_weight=None,
@@ -1020,7 +1000,6 @@ def build_stage1_svm(
 
 def build_stage1_ann(
     cfg: ModelConfig,
-    *,
     n_layers: int,
     hidden_units: int,
     dropout: float,
@@ -1057,19 +1036,23 @@ def build_stage1_ann(
     return _make_keras_classifier(
         cfg,
         model_fn,
-        epochs=epochs,
-        batch_size=batch_size,
-        monitor="val_pr_auc",
-        mode="max",
-        patience=patience,
+        epochs,
+        batch_size,
+        "val_pr_auc",
+        "max",
+        patience,
     )
+
+
+
+
+
 
 
 # stage 2 tabular builders
 
 def build_stage2_ffnn(
     cfg: ModelConfig,
-    *,
     n_classes: int,
     n_layers: int,
     hidden_units: int,
@@ -1104,17 +1087,16 @@ def build_stage2_ffnn(
     return _make_keras_classifier(
         cfg,
         model_fn,
-        epochs=epochs,
-        batch_size=batch_size,
-        monitor="val_loss",
-        mode="min",
-        patience=patience,
+        epochs,
+        batch_size,
+        "val_loss",
+        "min",
+        patience,
     )
 
 
 def build_stage2_rf(
     cfg: ModelConfig,
-    *,
     n_estimators: int,
     max_depth,
     min_samples_leaf: int,
@@ -1138,7 +1120,6 @@ def build_stage2_rf(
 
 def build_stage2_svm(
     cfg: ModelConfig,
-    *,
     C: float,
     gamma: float,
     class_weight=None,
@@ -1156,7 +1137,6 @@ def build_stage2_svm(
 
 def build_stage2_xgb(
     cfg: ModelConfig,
-    *,
     n_classes: int,
     n_estimators: int,
     learning_rate: float,
@@ -1194,7 +1174,6 @@ def build_stage2_xgb(
 def _build_tcn_binary(
     seq_len: int,
     n_features: int,
-    *,
     learning_rate: float = 1e-3,
     filters: int = 64,
     kernel_size: int = 4,
@@ -1212,10 +1191,10 @@ def _build_tcn_binary(
     for d in [1, 2, 4, 8]:
         x = _tcn_residual_block(
             x,
-            filters=filters,
-            kernel_size=kernel_size,
-            dilation=d,
-            dropout=dropout,
+            filters,
+            kernel_size,
+            d,
+            dropout,
         )
 
     if pooling == "gap":
@@ -1229,17 +1208,16 @@ def _build_tcn_binary(
 
     return _compile_binary_seq_model(
         keras.Model(x_in, y_out),
-        learning_rate=learning_rate,
-        use_focal=True,
-        focal_gamma=focal_gamma,
-        focal_alpha=focal_alpha,
+        learning_rate,
+        True,
+        focal_gamma,
+        focal_alpha,
     )
 
 
 def _build_tcn_gru_binary(
     seq_len: int,
     n_features: int,
-    *,
     learning_rate: float = 1e-3,
     filters: int = 64,
     kernel_size: int = 2,
@@ -1256,10 +1234,10 @@ def _build_tcn_gru_binary(
     for d in [1, 2, 4, 8]:
         x = _tcn_residual_block(
             x,
-            filters=filters,
-            kernel_size=kernel_size,
-            dilation=d,
-            dropout=dropout,
+            filters,
+            kernel_size,
+            d,
+            dropout,
         )
 
     x = layers.GRU(
@@ -1276,14 +1254,13 @@ def _build_tcn_gru_binary(
 
     return _compile_binary_seq_model(
         keras.Model(x_in, y_out),
-        learning_rate=learning_rate,
+        learning_rate,
     )
 
 
 def _build_lstm_binary(
     seq_len: int,
     n_features: int,
-    *,
     learning_rate: float = 1e-3,
     rnn_units: int = 64,
     rnn_dropout: float = 0.04,
@@ -1313,14 +1290,13 @@ def _build_lstm_binary(
 
     return _compile_binary_seq_model(
         keras.Model(x_in, y_out),
-        learning_rate=learning_rate,
+        learning_rate,
     )
 
 
 def _build_gru_binary(
     seq_len: int,
     n_features: int,
-    *,
     learning_rate: float = 1e-3,
     rnn_units: int = 64,
     rnn_dropout: float = 0.01,
@@ -1350,14 +1326,18 @@ def _build_gru_binary(
 
     return _compile_binary_seq_model(
         keras.Model(x_in, y_out),
-        learning_rate=learning_rate,
+        learning_rate,
     )
+
+
+
+
+
 
 
 def _build_vse_hybrid_binary(
     seq_len: int,
     n_features: int,
-    *,
     learning_rate: float = 1e-3,
     rnn_units: int = 32,
     rnn_dropout: float = 0.2,
@@ -1387,7 +1367,7 @@ def _build_vse_hybrid_binary(
 
     return _compile_binary_seq_model(
         keras.Model(x_in, y_out),
-        learning_rate=learning_rate,
+        learning_rate,
     )
 
 
@@ -1395,7 +1375,6 @@ def _build_tcn_multiclass(
     seq_len: int,
     n_features: int,
     n_classes: int,
-    *,
     learning_rate: float = 1e-3,
     filters: int = 32,
     kernel_size: int = 3,
@@ -1411,10 +1390,10 @@ def _build_tcn_multiclass(
     for d in [1, 2, 4, 8]:
         x = _tcn_residual_block(
             x,
-            filters=filters,
-            kernel_size=kernel_size,
-            dilation=d,
-            dropout=dropout,
+            filters,
+            kernel_size,
+            d,
+            dropout,
         )
 
     if pooling == "gap":
@@ -1428,7 +1407,7 @@ def _build_tcn_multiclass(
 
     return _compile_multiclass_seq_model(
         keras.Model(x_in, y_out),
-        learning_rate=learning_rate,
+        learning_rate,
     )
 
 
@@ -1436,7 +1415,6 @@ def _build_tcn_gru_multiclass(
     seq_len: int,
     n_features: int,
     n_classes: int,
-    *,
     learning_rate: float = 1e-3,
     filters: int = 32,
     kernel_size: int = 3,
@@ -1453,10 +1431,10 @@ def _build_tcn_gru_multiclass(
     for d in [1, 2, 4, 8]:
         x = _tcn_residual_block(
             x,
-            filters=filters,
-            kernel_size=kernel_size,
-            dilation=d,
-            dropout=dropout,
+            filters,
+            kernel_size,
+            d,
+            dropout,
         )
 
     x = layers.GRU(
@@ -1473,15 +1451,16 @@ def _build_tcn_gru_multiclass(
 
     return _compile_multiclass_seq_model(
         keras.Model(x_in, y_out),
-        learning_rate=learning_rate,
+        learning_rate,
     )
+
+
 
 
 def _build_lstm_multiclass(
     seq_len: int,
     n_features: int,
     n_classes: int,
-    *,
     learning_rate: float = 1e-3,
     rnn_units: int = 32,
     rnn_dropout: float = 0.26,
@@ -1511,7 +1490,7 @@ def _build_lstm_multiclass(
 
     return _compile_multiclass_seq_model(
         keras.Model(x_in, y_out),
-        learning_rate=learning_rate,
+        learning_rate,
     )
 
 
@@ -1519,7 +1498,6 @@ def _build_gru_multiclass(
     seq_len: int,
     n_features: int,
     n_classes: int,
-    *,
     learning_rate: float = 1e-3,
     rnn_units: int = 32,
     rnn_dropout: float = 0.17,
@@ -1549,15 +1527,19 @@ def _build_gru_multiclass(
 
     return _compile_multiclass_seq_model(
         keras.Model(x_in, y_out),
-        learning_rate=learning_rate,
+        learning_rate,
     )
+
+
+
+
+
 
 
 # meta builders
 
 def build_meta_binary_mlp(
     cfg: ModelConfig,
-    *,
     hidden_layer_sizes,
     alpha: float,
     learning_rate_init: float,
@@ -1577,7 +1559,6 @@ def build_meta_binary_mlp(
 
 def build_meta_binary_lr(
     cfg: ModelConfig,
-    *,
     C: float,
     class_weight=None,
     max_iter: int = 4000,
@@ -1594,7 +1575,6 @@ def build_meta_binary_lr(
 
 def build_meta_binary_xgb(
     cfg: ModelConfig,
-    *,
     n_estimators: int,
     max_depth: int,
     learning_rate: float,
@@ -1625,7 +1605,6 @@ def build_meta_binary_xgb(
 
 def build_meta_multiclass_mlp(
     cfg: ModelConfig,
-    *,
     hidden_layer_sizes,
     alpha: float,
     learning_rate_init: float,
@@ -1644,7 +1623,6 @@ def build_meta_multiclass_mlp(
 
 def build_meta_multiclass_lr(
     cfg: ModelConfig,
-    *,
     C: float,
     class_weight=None,
     max_iter: int = 6000,
@@ -1661,7 +1639,6 @@ def build_meta_multiclass_lr(
 
 def build_meta_multiclass_xgb(
     cfg: ModelConfig,
-    *,
     n_classes: int,
     n_estimators: int,
     max_depth: int,

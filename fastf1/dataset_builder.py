@@ -779,7 +779,7 @@ def make_dataset_2(df_full: pd.DataFrame) -> pd.DataFrame:
     return df_pit[[c for c in keep_cols if c in df_pit.columns]].copy()
 
 
-def main() -> None:
+def main():
     # these point to the two cleaned versions of the database built earlier
     db_clean_path = "../data/raw/f1_database__clean.sqlite"
     db_less_clean_path = "../data/raw/f1_database__less_clean.sqlite"

@@ -8,7 +8,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.preprocessing import OrdinalEncoder
 
 
-@dataclass(frozen=True)
+@dataclass
 class PreprocessConfig:
     # default settings for most models
     scale_numeric: bool = True

@@ -348,14 +348,14 @@ def suggest_seq_params(trial: optuna.Trial, model_name: str, is_binary: bool) ->
         "epochs": 60,
         "patience": 6,
     }
-    
+
     if model_name in {"tcn", "tcn_gru"}:
         params.update({
             "filters": trial.suggest_categorical("filters", [16, 32, 64]),
             "kernel_size": trial.suggest_categorical("kernel_size", [2, 3, 4]),
             "dropout": trial.suggest_float("dropout", 0.0, 0.4),
         })
-        
+
     if model_name == "tcn":
         params["pooling"] = trial.suggest_categorical("pooling", ["gap", "last"])
         if is_binary:
@@ -374,14 +374,14 @@ def build_cached_seq_folds(df: pd.DataFrame, x: pd.DataFrame, y: pd.Series, fold
     """
     num_cols, cat_cols = infer_feature_types(x)
     base_pre = make_preprocessor_for_model("tcn", num_cols=num_cols, cat_cols=cat_cols)
-    
+
     cached = []
     has_seq_keys = "lapno" in df.columns and "driver_id" in df.columns
-    
+
     for tr_idx, va_idx in folds:
         pre = clone(base_pre)
         pre.fit(x.iloc[tr_idx], y.iloc[tr_idx])
-        
+
         xt_all = pre.transform(x)
         if hasattr(xt_all, "toarray"):
             xt_all = xt_all.toarray()
@@ -390,13 +390,13 @@ def build_cached_seq_folds(df: pd.DataFrame, x: pd.DataFrame, y: pd.Series, fold
         if has_seq_keys:
             keys = df[["race_id", "driver_id", "lapno"]].copy()
             x_seq, y_seq, _, seq_idx, _ = build_feature_sequences(keys, xt_all, y, seq_len=seq_len, pad_left=True, add_timestep_mask=True) #builds lap sequences
-            
+
             def all_in(s_idx, allowed):
                 return np.all((s_idx == -1) | np.isin(s_idx, allowed), axis=1)
 
             tr_mask = all_in(seq_idx, tr_idx)
             va_mask = all_in(seq_idx, va_idx)
-            
+
             x_tr, y_tr = x_seq[tr_mask], y_seq[tr_mask]
             x_va, y_va = x_seq[va_mask], y_seq[va_mask]
         else:
@@ -405,9 +405,9 @@ def build_cached_seq_folds(df: pd.DataFrame, x: pd.DataFrame, y: pd.Series, fold
             y_tr, y_va = y.iloc[tr_idx].to_numpy(), y.iloc[va_idx].to_numpy()
             x_tr = np.expand_dims(x_tr, axis=1)
             x_va = np.expand_dims(x_va, axis=1)
-        
+
         cached.append((x_tr.astype(np.float32), y_tr.astype(int), x_va.astype(np.float32), y_va.astype(int), tr_idx, va_idx))
-        
+
     return cached
 
 def build_cached_stage2_seq_folds_from_reference(
@@ -584,7 +584,6 @@ def build_meta_folds(
     x: pd.DataFrame,
     y: pd.Series,
     folds: list,
-    *,
     is_binary: bool,
     n_classes: int,
     seed: int,
@@ -644,7 +643,7 @@ def build_meta_folds(
         svm_cached = build_cached_folds(x, y, folds, "svm")
         rf_cached = build_cached_folds(x, y, folds, "rf")
         xgb_cached = build_cached_folds(x, y, folds, "xgb")
-        seq_cached = build_cached_stage2_seq_folds_from_reference(reference_df=reference_df,target_df=df,x_target=x,y_target=y,folds=folds,seq_len=8,)
+        seq_cached = build_cached_stage2_seq_folds_from_reference(reference_df=reference_df, target_df=df, x_target=x, y_target=y, folds=folds, seq_len=8)
 
         for fold_idx in range(len(folds)):
             cols = []
@@ -767,10 +766,10 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
     #sample sequence model hyperparameters
     params = suggest_seq_params(trial, model_name, is_binary)
     tf.keras.utils.set_random_seed(seed)
-    
+
     losses = []
     fold_metrics = []
-    
+
     #for each fold
     for fold, (x_tr, y_tr, x_va, y_va, _, _) in enumerate(cached_folds):
         #remove sequences that don't have a valid class label
@@ -779,13 +778,13 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
             valid_va = y_va >= 0
             x_tr, y_tr = x_tr[valid_tr], y_tr[valid_tr]
             x_va, y_va = x_va[valid_va], y_va[valid_va]
-            
+
         seq_len = x_tr.shape[1]
         n_features = x_tr.shape[2]
-        
+
         # safely extract args to pass to model builder
         builder_kwargs = {k: v for k, v in params.items() if k not in ["batch_size", "epochs", "patience"]}
-        
+
         #build sequence model
         if is_binary:
             if model_name == "tcn":
@@ -798,12 +797,12 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
                 model = _build_gru_binary(seq_len, n_features, **builder_kwargs)
             elif model_name == "hybrid_vse":
                 model = _build_vse_hybrid_binary(seq_len, n_features, **builder_kwargs)
-            
+
             n_pos = int(np.sum(y_tr == 1))
             n_neg = int(np.sum(y_tr == 0))
             pos_w = min(20.0, float(n_neg / n_pos)) if n_pos > 0 else 1.0 #cap positive class weight at 20
             class_w = {0: 1.0, 1: pos_w}
-            
+
         else:
             if model_name == "tcn":
                 model = _build_tcn_multiclass(seq_len, n_features, n_classes, **builder_kwargs)
@@ -813,7 +812,7 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
                 model = _build_lstm_multiclass(seq_len, n_features, n_classes, **builder_kwargs)
             elif model_name == "gru":
                 model = _build_gru_multiclass(seq_len, n_features, n_classes, **builder_kwargs)
-            
+
             present = np.unique(y_tr)
             w = compute_class_weight("balanced", classes=present, y=y_tr)
             class_w = {int(c): float(wi) for c, wi in zip(present, w)}
@@ -823,19 +822,19 @@ def objective_seq(trial: optuna.Trial, cached_folds: list, model_name: str, is_b
         #train with early stopping
         cb = keras.callbacks.EarlyStopping(monitor="val_pr_auc" if is_binary else "val_acc", mode="max", patience=params["patience"], restore_best_weights=True)
         model.fit(x_tr, y_tr, validation_data=(x_va, y_va), epochs=params["epochs"], batch_size=params["batch_size"], class_weight=class_w, verbose=0, callbacks=[cb])
-        
+
         proba = model.predict(x_va, batch_size=params["batch_size"], verbose=0)
         m = compute_metrics(y_va, proba, is_binary)
         losses.append(m["logloss"])
         fold_metrics.append(m)
-        
+
         #reports mean loss so far to optuna and prunes bad trials early
         trial.report(float(np.mean(losses)), step=fold)
         if trial.should_prune():
             raise optuna.TrialPruned()
-            
+
         tf.keras.backend.clear_session()
-        
+
     #return mean log loss
     mean_metrics = mean_metric_dict(fold_metrics)
     trial.set_user_attr("cv_metrics", mean_metrics)
@@ -930,7 +929,7 @@ def main():
 
     if is_meta:
         #if the model is a meta leaner build folds with oof probabilities then create the study
-        meta_folds = build_meta_folds(df,x,y,fb.folds,is_binary=is_binary,n_classes=n_classes,seed=SEED,reference_df=None if is_binary else reference_df,)
+        meta_folds = build_meta_folds(df, x, y, fb.folds, is_binary, n_classes, SEED, None if is_binary else reference_df)
         study.optimize(
             lambda t: objective_meta(t, meta_folds, MODEL, is_binary, n_classes, SEED),
             n_trials=N_TRIALS,

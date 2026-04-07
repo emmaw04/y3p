@@ -314,7 +314,7 @@ def run_seq_ablation(
 
     return pd.DataFrame(results)
 
-def main() -> None:
+def main():
     data_path = "data/processed/dataset1.csv"
     stage = 1
     # data_path = "data/processed/dataset2.csv"

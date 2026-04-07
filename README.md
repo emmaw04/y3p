@@ -67,15 +67,18 @@ where all the outputs, logs, and trained model artifacts get saved when scripts 
 - `SMOTE_metrics/`: stores the evaluation results from experiments testing different SMOTE strategies. this wasn't fully completed so isn't mentioned in the final report
 
 ### `/VSE`
-Submodule from the github repository 'https://github.com/TUMFTM/race-simulation' created by Heilmeier, this is where the simulator is defined and used for counterfactual evaluation of the model.
-The relevant files and functions:
+This directory is a Git submodule of the public `TUMFTM/race-simulation` repository by Alexander Heilmeier et al. The link for the repo is `https://github.com/TUMFTM/race-simulation`.
+It is not original code written for this project, although I have made some alterations discussed below. I used the simulator implemented in this directory for counterfactual evaluation of my model.
+
+Relevant files and functions:
 - `main_racesim.py`: the primary entry point for running the race simulation.
 - `racesim/` where the simulator used for this project is defined, simulates lap times then adds them together
 - `racesim_basic/`: a simplified version of the race simulation environment for quicker less computationally expensive testing, doesn't model traffic or include rivals on track and is a purely physics focused (determines optimal pit stop strategy purely on tyre degradation)
 - `VSE/racesim/src/mcs_analysis.py` computes the average finishing time of the driver across all monte carlo simulations
 
-
 The files that I edited were:
-`VSE/main_racesim.py`: i modified the default 
-`VSE/racesim/src/vse.py` this is where my model was called from to be used within the simulation. this file loads the artifacts from runs/final_run/artifacts/, did the necessary geature engineering to get the inputs needed for my model, constructed sequences of lap data for the sequential models. The data is then passed to stage 1 of the model, and if the model decides to pit then the data is also passed to stage 2 to decide which compound to fit
+`VSE/main_racesim.py`: i modified the simulation parameters (use_prob_infl, use_vse, no_sim_runs, no_workers) which changed the nature of different simulation runs (e.g., i had to change use_prob_infl and no_sim_runs when i was doing a deterministic run)
+`VSE/racesim/src/vse.py` this is where my model was called from to be used within the simulation. this file loads the artifacts from runs/final_run/artifacts/, did the necessary feature engineering to get the inputs needed for my model, constructed sequences of lap data for the sequential models. The data is then passed to stage 1 of the model, and if the model decides to pit then the data is also passed to stage 2 to decide which compound to fit
 `VSE/racesim/input/parameters/pars_Spielberg_2019.ini` this file stores the parameters for the race (e.g., selected compounds, drivers taking part in the race) as well as parameters for the simulator (e.g., kg fuel at the start, amount of fuel burned each lap). through this file i was able to adjust whether in the simulation of the race the driver followed their historical pit stop strategy or would follow the models predictions.
+`racesim/src/_race_raceanalysis.py` I updated depracated NumPy types used in Pandas DataFrames, e.g., changing np.int to standard Python int to ensure compatibility with newer versions of NumPy
+`racesim/src/import_pars.py` changed so that the simulator is now able to load my model instead of heilmeiers when needing a model to make strategy decisions

@@ -9,8 +9,6 @@ reports/meta_ablation_results_stageX.csv (fold-level results)
 reports/meta_ablation_summary_stageX.csv (average across the fold results)
 """
 
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -58,7 +56,7 @@ from src.models.models import (
 SEED_DEFAULT = 42
 
 
-def vprint(verbose: bool, *args, **kwargs) -> None:
+def vprint(verbose: bool, *args, **kwargs):
     if verbose:
         print(*args, **kwargs, flush=True)
 
@@ -68,7 +66,7 @@ def _ensure_dir(p: Path) -> Path:
     return p
 
 
-def _write_json(path: Path, obj: Any) -> None:
+def _write_json(path: Path, obj: Any):
     path.write_text(json.dumps(obj, indent=2, default=str))
 
 
@@ -85,7 +83,6 @@ def _safe_logloss_multi(y_true: np.ndarray, proba: np.ndarray, labels: np.ndarra
 def compute_fold_metrics_binary(
     y_true: np.ndarray,
     proba_pos: np.ndarray,
-    *,
     threshold: float,
 ) -> Dict[str, float]:
     y_true = y_true.astype(int)
@@ -136,7 +133,6 @@ def collect_oof_base_probs_tabular(
     X: pd.DataFrame,
     y: pd.Series,
     folds: List[Tuple[np.ndarray, np.ndarray]],
-    *,
     cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int] = None,
@@ -202,11 +198,10 @@ def collect_oof_base_probs_tabular(
 def collect_oof_seq_models(
     df: pd.DataFrame,
     folds: List[Tuple[np.ndarray, np.ndarray]],
-    *,
     cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int] = None,
-    seq_len: int,
+    seq_len: int = 8,
     pad_left: bool = True,
     add_timestep_mask: bool = True,
     verbose: bool = False,
@@ -343,11 +338,10 @@ def build_meta_table(
     X: pd.DataFrame,
     y: pd.Series,
     folds: List[Tuple[np.ndarray, np.ndarray]],
-    *,
     cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int] = None,
-    seq_len: int,
+    seq_len: int = 8,
     verbose: bool = False,
 ) -> pd.DataFrame:
 
@@ -407,7 +401,6 @@ def build_meta_table(
 
 
 def make_ablation_specs_meta(
-    *,
     baseline_cols: List[str],
     prob_cols_dict: Dict[str, List[str]],
     tabular_cols: List[str],
@@ -443,7 +436,6 @@ def make_ablation_specs_meta(
 def run_meta_ablation_cv(
     meta_df: pd.DataFrame,
     folds_meta: List[Tuple[np.ndarray, np.ndarray]],
-    *,
     cfg: ModelConfig,
     stage: int,
     n_classes: Optional[int],
@@ -553,7 +545,7 @@ def summarize_ablation_results(
     return agg
 
 
-def print_top5_damage(summary_df: pd.DataFrame, title: str) -> None:
+def print_top5_damage(summary_df: pd.DataFrame, title: str):
     def _top(df: pd.DataFrame, col: str) -> pd.DataFrame:
         return df[df["ablation_name"] != "baseline_full"].sort_values(col, ascending=False).head(5)
 
@@ -576,7 +568,7 @@ def print_top5_damage(summary_df: pd.DataFrame, title: str) -> None:
         )
 
 
-def main() -> None:
+def main():
     """
     hardcoded entry point for meta-ablation evaluation.
     edit the values below directly instead of passing cli arguments.

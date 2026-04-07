@@ -2,7 +2,6 @@
 # it writes lap-level probabilities, predicted positive events, per-driver plots,
 # and per-race metrics.
 
-from __future__ import annotations
 from typing import Dict, List, Tuple
 import json
 from pathlib import Path
@@ -21,7 +20,7 @@ from sklearn.metrics import (
 import tensorflow as tf
 from src.data.data import build_feature_sequences
 
-HOLDOUT_RACE_IDS = [2, 24, 53, 73, 75] #races being evaluated
+HOLDOUT_RACE_IDS = [2, 24, 53, 73, 75]  # races being evaluated
 
 # hardcoded paths and threshold
 STAGE1_CSV = Path("data/processed/dataset1.csv")
@@ -29,13 +28,14 @@ ARTIFACTS_ROOT = Path("runs/final_run")
 OUTDIR = Path("runs/holdout_run")
 PIT_THRESHOLD = 0.264
 
+
 def _race_metrics(y_true: np.ndarray, y_score: np.ndarray, threshold: float) -> Dict[str, float]:
     """
     calculate metrics for one race
     """
     y_true = np.asarray(y_true).astype(int)
     y_score = np.asarray(y_score).astype(float)
-    y_pred = (y_score >= threshold).astype(int) #convert probabilities to hard predictions
+    y_pred = (y_score >= threshold).astype(int)  # convert probabilities to hard predictions
 
     out = {
         "n": float(len(y_true)),
@@ -47,6 +47,8 @@ def _race_metrics(y_true: np.ndarray, y_score: np.ndarray, threshold: float) -> 
         "roc_auc": float(roc_auc_score(y_true, y_score)),
         "pr_auc": float(average_precision_score(y_true, y_score)),
     }
+    return out
+
 
 def _segments_from_bool_mask(x: np.ndarray, mask: np.ndarray) -> List[Tuple[float, float]]:
     # find contiguous true segments in a boolean mask for background shading (rain, fcy phases) in plots
@@ -112,7 +114,6 @@ def _predict_sequence_model_from_builder(
     keys_df: pd.DataFrame,
     X_row: np.ndarray,
     window: int,
-    *,
     add_timestep_mask: bool = True,
 ) -> np.ndarray:
     """
@@ -175,7 +176,7 @@ def main():
     X_raw = _prepare_raw_features(dfh, x1_cols)
     keys_df = dfh[["race_id", "driver_id", "lapno"]]
 
-    #base models
+    # base models
     p_svm = base_svm.predict_proba(X_raw)[:, 1].astype(float)
     p_xgb = base_xgb.predict_proba(X_raw)[:, 1].astype(float)
 
@@ -186,8 +187,8 @@ def main():
         lstm_model,
         keys_df,
         X_lstm_row,
-        window=expected_T_lstm,
-        add_timestep_mask=True,
+        expected_T_lstm,
+        True,
     )
 
     # tcn-gru base model
@@ -197,8 +198,8 @@ def main():
         tcn_gru_model,
         keys_df,
         X_tcn_gru_row,
-        window=expected_T_tcn_gru,
-        add_timestep_mask=True,
+        expected_T_tcn_gru,
+        True,
     )
 
     # meta input
@@ -292,6 +293,7 @@ def main():
     metrics_path = OUTDIR / "holdout_stage1_metrics_by_race.csv"
     metrics_df.to_csv(metrics_path, index=False)
     print(f"wrote: {metrics_path}")
+
 
 if __name__ == "__main__":
     main()

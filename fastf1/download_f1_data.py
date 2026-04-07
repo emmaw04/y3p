@@ -53,7 +53,7 @@ class F1DataEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-def save_session_metadata(session: fastf1.core.Session, base_path: Path) -> None:
+def save_session_metadata(session: fastf1.core.Session, base_path: Path):
     """Serialises session attributes to a JSON file."""
 
     # this stores a few useful scalar session attributes in a json file
@@ -78,7 +78,7 @@ def save_session_metadata(session: fastf1.core.Session, base_path: Path) -> None
         json.dump(meta, f, indent=4, cls=F1DataEncoder)
 
 
-def save_dataframe_attributes(session: fastf1.core.Session, base_path: Path) -> None:
+def save_dataframe_attributes(session: fastf1.core.Session, base_path: Path):
     """Exports structured DataFrames (laps, results, weather) to Parquet format."""
 
     # these are the main session level tables we want to save
@@ -100,7 +100,7 @@ def save_dataframe_attributes(session: fastf1.core.Session, base_path: Path) -> 
             logger.error(f"Failed to export '{attr}': {e}")
 
 
-def save_telemetry_data(session: fastf1.core.Session, base_path: Path) -> None:
+def save_telemetry_data(session: fastf1.core.Session, base_path: Path):
     """Iterates through per-driver telemetry dictionaries and saves to individual files."""
 
     # telemetry is stored separately for each driver
@@ -121,7 +121,7 @@ def save_telemetry_data(session: fastf1.core.Session, base_path: Path) -> None:
             logger.error(f"Failed to process telemetry '{attr}': {e}")
 
 
-def save_session(session: fastf1.core.Session, path: Path) -> None:
+def save_session(session: fastf1.core.Session, path: Path):
     """Main entry point for session serialisation."""
 
     # make the output folder for this session
@@ -133,7 +133,7 @@ def save_session(session: fastf1.core.Session, path: Path) -> None:
     save_telemetry_data(session, path)
 
 
-def download_season(year: int) -> None:
+def download_season(year: int):
     """Processes all requested session types for a given F1 season."""
 
     logger.info(f"Starting ingestion for {year} season")

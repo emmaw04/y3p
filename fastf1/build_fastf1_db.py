@@ -726,7 +726,7 @@ def create_database(db_path: str) -> sqlite3.Connection:
 
 # main processing
 
-def process_sessions(input_dir: str, conn: sqlite3.Connection) -> None:
+def process_sessions(input_dir: str, conn: sqlite3.Connection):
     """main processing loop iterating through all seasons and events"""
     cur = conn.cursor()
 

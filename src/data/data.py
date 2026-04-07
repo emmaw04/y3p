@@ -1,4 +1,3 @@
-from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple, Union
@@ -55,17 +54,17 @@ def _read_any(path: Union[str, Path]) -> pd.DataFrame:
 
     if path.suffix.lower() == ".csv":
         return pd.read_csv(path)
-    
+
     raise ValueError(f"Unsupported file type: {path.suffix} use .csv")
 
 
-def _normalize_compound_series(s: pd.Series, *, allow_null: bool) -> pd.Series:
+def _normalize_compound_series(s: pd.Series, allow_null: bool) -> pd.Series:
     """
     cleans up the tyre compound text making sure everything is uppercase and valid
     it throws an error if it sees something weird or if there are blanks when there shouldnt be
     """
-    s = s.replace({"": np.nan}) #replaces all empty/not defined tyres with nan
-    s = s.apply(lambda x: x.strip().upper() if isinstance(x, str) else x) #triple checks everything is valid
+    s = s.replace({"": np.nan})  #replaces all empty/not defined tyres with nan
+    s = s.apply(lambda x: x.strip().upper() if isinstance(x, str) else x)  #triple checks everything is valid
 
     if not allow_null and s.isna().any():
         raise ValueError("Compound column has missing values")
@@ -83,7 +82,6 @@ def build_feature_sequences(
     keys: pd.DataFrame,
     X_all: np.ndarray,
     y_all: pd.Series,
-    *,
     seq_len: int = 8,
     pad_left: bool = False,
     add_timestep_mask: bool = False,
@@ -108,30 +106,30 @@ def build_feature_sequences(
     # keep track of the original row index so we know each rows original location in X_all and y_all
     df_idx = keys[["race_id", "driver_id", "lapno"]].copy()
     df_idx["_row"] = np.arange(n, dtype=int)
-    df_idx = df_idx.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort") #sort by race, then driver, then lap
+    df_idx = df_idx.sort_values(["race_id", "driver_id", "lapno"], kind="mergesort")  #sort by race, then driver, then lap
 
     d = X_all.shape[1]
-    d_out = d + 1 if add_timestep_mask else d #add an extra dimension to store the mask that tells us how much of the sequence is real or padding
+    d_out = d + 1 if add_timestep_mask else d  #add an extra dimension to store the mask that tells us how much of the sequence is real or padding
 
-    X_seq_list = [] #the sequence
-    y_seq_list = [] #the label for the sequence
-    idx_last_list = [] #the original row index for the last lap
-    seq_idx_list = [] #the original row indices for all laps in the sequence
-    eff_len_list = [] #how many real laps are in the sequence
+    X_seq_list = []  #the sequence
+    y_seq_list = []  #the label for the sequence
+    idx_last_list = []  #the original row index for the last lap
+    seq_idx_list = []  #the original row indices for all laps in the sequence
+    eff_len_list = []  #how many real laps are in the sequence
 
     #split the data up by driver per race
     for (_, _), g in df_idx.groupby(["race_id", "driver_id"], sort=False):
-        g_rows = g["_row"].to_numpy(dtype=int) #get original row indices
+        g_rows = g["_row"].to_numpy(dtype=int)  #get original row indices
 
         if len(g_rows) == 0:
             continue
 
-        if (not pad_left) and (len(g_rows) < seq_len): #if we choose not to pad sequences (we do choose to pad sequences in the final model) we skip groups shorter than the given sequence length
+        if (not pad_left) and (len(g_rows) < seq_len):  #if we choose not to pad sequences (we do choose to pad sequences in the final model) we skip groups shorter than the given sequence length
             continue
 
-        start_end = 0 if pad_left else (seq_len - 1) #decides what lap the sequences can start from
+        start_end = 0 if pad_left else (seq_len - 1)  #decides what lap the sequences can start from
 
-        for end in range(start_end, len(g_rows)): #slide a window through the drivers laps to get all possible sequences for a specific driver at a specific race
+        for end in range(start_end, len(g_rows)):  #slide a window through the drivers laps to get all possible sequences for a specific driver at a specific race
             if pad_left:
                 real = g_rows[max(0, end - seq_len + 1): end + 1]
                 n_pad = seq_len - len(real)
@@ -140,7 +138,7 @@ def build_feature_sequences(
             else:
                 window = g_rows[end - seq_len + 1: end + 1]
 
-            real_mask = window != -1 #figure out which laps in the sequence are real and which are padding
+            real_mask = window != -1  #figure out which laps in the sequence are real and which are padding
             eff_len = int(np.sum(real_mask))
 
             #create the feature matrix
@@ -148,12 +146,12 @@ def build_feature_sequences(
             if eff_len > 0:
                 Xw[real_mask] = X_all[window[real_mask]].astype(np.float32, copy=False)
 
-            if add_timestep_mask: #add a feature which explicitly tells the model what input is real and what is padding
+            if add_timestep_mask:  #add a feature which explicitly tells the model what input is real and what is padding
                 mask = real_mask.astype(np.float32).reshape(seq_len, 1)
                 Xw = np.concatenate([Xw, mask], axis=1)
 
             X_seq_list.append(Xw)
-            y_seq_list.append(int(y_all.iloc[g_rows[end]])) #attach the label for the final lap in the sequence
+            y_seq_list.append(int(y_all.iloc[g_rows[end]]))  #attach the label for the final lap in the sequence
             idx_last_list.append(int(g_rows[end]))
             seq_idx_list.append(window)
             eff_len_list.append(eff_len)
@@ -180,7 +178,6 @@ def build_prob_sequences_4lap(
     keys_df: pd.DataFrame,
     proba_pos: np.ndarray,
     y: pd.Series,
-    *,
     seq_len: int = 4,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -216,7 +213,7 @@ def build_prob_sequences_4lap(
 
         for j in range(seq_len - 1, len(idxs)):
             last_idx = int(idxs[j])
-            seq_idxs = idxs[j - seq_len + 1 : j + 1].astype(int)
+            seq_idxs = idxs[j - seq_len + 1: j + 1].astype(int)
 
             X_list.append(proba_pos[seq_idxs].reshape(seq_len, 1))
             y_list.append(int(y.iloc[last_idx]))
@@ -239,20 +236,20 @@ def build_prob_sequences_4lap(
     )
 
 # functions for loading datasets
-def load_stage1_dataset(path: Union[str, Path],*,exclude_holdouts: bool = True,) -> pd.DataFrame:
+def load_stage1_dataset(path: Union[str, Path], exclude_holdouts: bool = True) -> pd.DataFrame:
     """
     loads the data we need for the first stage which predicts if a pit stop happens
     cleans up the text columns and makes sure the numeric ones are actually numbers
     """
-    df = _read_any(path) #loads the csv file to a pandas dataframe
+    df = _read_any(path)  #loads the csv file to a pandas dataframe
 
-    for col in ["race_id", "driver_id", "lapno", "y_pit"]: #forces key columns to be integrers
+    for col in ["race_id", "driver_id", "lapno", "y_pit"]:  #forces key columns to be integrers
         df[col] = pd.to_numeric(df[col], errors="raise").astype(int)
 
-    if exclude_holdouts: #get rid of races that we exclude because they aren't good training examples of if we want to use them in evaluation
+    if exclude_holdouts:  #get rid of races that we exclude because they aren't good training examples of if we want to use them in evaluation
         df = _exclude_holdout_races(df)
 
-    df["current_compound"] = _normalize_compound_series(df["current_compound"], allow_null=True) #normalises tyres
+    df["current_compound"] = _normalize_compound_series(df["current_compound"], allow_null=True)  #normalises tyres
 
     #normalise race track
     if "race_track" in df.columns:
@@ -298,7 +295,6 @@ def load_stage1_dataset(path: Union[str, Path],*,exclude_holdouts: bool = True,)
 
 def load_stage2_dataset(
     path: Union[str, Path],
-    *,
     strict: bool = True,
     exclude_holdouts: bool = True,
 ) -> pd.DataFrame:
@@ -306,12 +302,12 @@ def load_stage2_dataset(
     grabs the data for the second stage which predicts the next tyre compound
     it throws away rows where we dont know the next compound if strict is true
     """
-    df = _read_any(path) #read csv file
+    df = _read_any(path)  #read csv file
 
-    for col in ["race_id", "driver_id", "lapno"]: #forces key columns to be integrers
+    for col in ["race_id", "driver_id", "lapno"]:  #forces key columns to be integrers
         df[col] = pd.to_numeric(df[col], errors="raise").astype(int)
 
-    if exclude_holdouts: #remove races for evaluation
+    if exclude_holdouts:  #remove races for evaluation
         df = _exclude_holdout_races(df)
 
     #normalising tyres
@@ -386,7 +382,6 @@ def make_xy(
 
 def get_stage1_xy(
     df1: pd.DataFrame,
-    *,
     drop_cols: Optional[Sequence[str]] = None,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     """
@@ -403,7 +398,6 @@ def get_stage1_xy(
 
 def get_stage2_xy(
     df2: pd.DataFrame,
-    *,
     drop_cols: Optional[Sequence[str]] = None,
     encoded_target_col: str = "y_compound_encoded",
 ) -> Tuple[pd.DataFrame, pd.Series]:
@@ -413,7 +407,7 @@ def get_stage2_xy(
     """
     #make sure compound labels are encoded
     df2 = encode_y_compound(df2, col="y_compound", out_col=encoded_target_col)
-    df2 = df2.loc[~df2[encoded_target_col].isna()].copy() #drop rows where the encoded target is missing
+    df2 = df2.loc[~df2[encoded_target_col].isna()].copy()  #drop rows where the encoded target is missing
 
     #drop the label column and the columns used to uniquely identify each data entry
     default_drop = ["y_compound", encoded_target_col, "race_id", "driver_id", "lapno"]
@@ -427,11 +421,10 @@ def get_stage2_xy(
 
 def infer_feature_types(
     X_df: pd.DataFrame,
-    *,
     force_categorical: Optional[Sequence[str]] = None,
 ) -> Tuple[List[str], List[str]]:
     """
-    determines which columns are treated as numeric and which are treated as categorical 
+    determines which columns are treated as numeric and which are treated as categorical
     """
     cat_set = set(CATEGORICAL_FEATURES)
     if force_categorical is not None:
@@ -453,7 +446,6 @@ def build_feature_sequences_from_reference(
     X_reference: np.ndarray,
     target_keys: pd.DataFrame,
     y_target: pd.Series,
-    *,
     seq_len: int = 8,
     pad_left: bool = True,
     add_timestep_mask: bool = False,
@@ -604,17 +596,16 @@ def build_feature_sequences_from_reference(
     )
 
 #splitting data into training and validation (randomly shuffling races instead of laps to avoid temporal leakage)
-@dataclass(frozen=True)
+@dataclass
 class FoldBundle:
     """
     holds the split data ready for cross validation
     """
-    folds: List[Tuple[np.ndarray, np.ndarray]] 
-    fold_race_ids: List[List[int]] # stores a list of folds where each fold is a list of race ids belonging to it
+    folds: List[Tuple[np.ndarray, np.ndarray]]
+    fold_race_ids: List[List[int]]  # stores a list of folds where each fold is a list of race ids belonging to it
 
 def make_race_group_folds(
     df: pd.DataFrame,
-    *,
     group_col: str = "race_id",
     n_splits: int = 5,
     seed: int = 42,
