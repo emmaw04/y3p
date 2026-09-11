@@ -343,7 +343,7 @@ def make_lstm_binary(cfg: ModelConfig):
 
         return _compile_binary_seq_model(
             keras.Model(x_in, y_out),
-            0.0007454170873871039,
+            0.0007454170873871039, #learning rate
         )
 
     early_stop = keras.callbacks.EarlyStopping(
@@ -1213,7 +1213,6 @@ def _build_tcn_binary(
         focal_gamma,
         focal_alpha,
     )
-
 
 def _build_tcn_gru_binary(
     seq_len: int,

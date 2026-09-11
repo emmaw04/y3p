@@ -19,7 +19,7 @@ drivers = ["HAM", "RIC", "MAG", "HUL", "KVY", "RAI", "VET", "BOT", "PER", "GRO",
 def set_vse_type(strategies):
     """
     this function takes a dictionary of driver strategies and updates the ini file
-    it reads the whole file in, swaps out the strategy part using some regex magic
+    it reads the whole file in, swaps out the strategy part using some regex
     and then writes it all back out to the file
     """
     # open up the ini file and read all the text inside it
